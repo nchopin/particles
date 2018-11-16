@@ -66,8 +66,9 @@ alg = particles.SMC(fk=ssm.Bootstrap(ssm=my_model, data=y), N=200)
 alg.run()
 ```
 
-That's it! Head to the documentation for more examples, explanations, 
-and installation instructions. 
+That's it! Head to the
+[documentation]<https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/> 
+for more examples, explanations, and installation instructions. 
 
 ### Who do I talk to? ###
 

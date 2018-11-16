@@ -48,10 +48,10 @@ machine::
 Manual installation
 ===================
 
-The package is available at XXX
+The package is available at <https://github.com/nchopin/particles.git>
 and may be installed using git::
 
-    git clone XXX 
+    git clone https://github.com/nchopin/particles.git
     pip install -e --user . 
     cd particles
     f2py -c ../src/LowDiscrepancy.f -m lowdiscrepancy

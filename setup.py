@@ -10,6 +10,7 @@ from numpy.distutils.extension import Extension
 import particles
 
 NAME = 'particles'
+DESCRIPTION = 'Sequential Monte Carlo in Python'
 
 with open('README.md') as f:
     long_description = f.read()
@@ -30,8 +31,8 @@ setup(
     #                   ],
     #cmdclass={'test': PyTest},
     author_email='nicolas.chopin@ensae.fr',
-    description='Sequential Monte Carlo in python', 
-    # long_description=long_description,
+    description=DESCRIPTION, 
+    long_description='%s - %s' %(NAME, DESCRIPTION),
     packages=['particles'],
     include_package_data=True,
     platforms='any',
