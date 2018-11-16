@@ -1,0 +1,59 @@
+
+Python 2 vs Python 3 
+====================
+
+**particles** is currently compatible with both Python 2 and Python 3. When 
+Python 2 gets deprecated (around 2020) Python 2 support may be dropped. 
+
+Requirements
+============
+
+The short version: install anaconda (https://www.anaconda.com/distribution), 
+to get all the scientific computing libraries you may ever need in one go. 
+
+The long version: **particles** requires the following libraries: 
+
+* NumPy (>=1.9, http://www.numpy.org/)
+* SciPy (>=0.14, https://www.scipy.org/) 
+* `numba <https://numba.pydata.org/>`_: just-in-time compiler; 
+  **particles** runs without it, but not as fast. 
+
+In addition, it is **strongly recommended** to install: 
+
+* `Matplotlib <http://matplotlib.org/>`_, 
+  `seaborn <https://seaborn.pydata.org/>`_: plotting libraries.
+  Not needed for core functionality, but most of the examples require these
+  libraries to plot results. 
+
+Again, the easiest way to install all these libraries in one go is to simply
+install the anaconda distribution (or alternatively the EPD, Enthought Python 
+distribution, see 
+`here <https://www.enthought.com/product/enthought-python-distribution/>`_). 
+Manual installation is also possible on Linux machines; e.g. on Ubuntu::
+
+    sudo apt install python-numpy python-scipy python-matplotlib python-seaborn
+
+Note however that numba is available in Ubuntu 18.04, but not in previous
+versions, and installing it manually is a bit of a pain. 
+
+Basic installation
+==================
+
+The package is available on `pypi <https://pypi.python.org/pypi>` 
+(the Python package index), so you may install it by running pip. On a Linux 
+machine:: 
+
+    pip install particles
+
+Manual installation
+===================
+
+The package is available at XXX
+and may be installed using git::
+
+    git clone XXX 
+    pip install -e --user . 
+    cd particles
+    f2py -c ../src/LowDiscrepancy.f -m lowdiscrepancy
+
+
