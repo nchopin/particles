@@ -1,4 +1,4 @@
 numba
 numpy
 scipy
-nbshinx
+nbsphinx
