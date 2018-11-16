@@ -22,6 +22,8 @@ import os
 
 # -- General configuration ------------------------------------------------
 
+autodoc_mock_imports = ["lowdiscrepancy"]
+
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
@@ -34,7 +36,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
-    # 'nbsphinx',
+    'nbsphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
