@@ -1,0 +1,4 @@
+numba
+numpy
+scipy
+nbshinx
