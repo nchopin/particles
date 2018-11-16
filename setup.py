@@ -21,8 +21,8 @@ extensions = [ext,]
 setup(
     name=NAME, 
     version='0.1', 
-    # url='http://github.com/jeffknupp/sandman/',
-    #license='Apache Software License',
+     url='http://github.com/nchopin/particles/',
+    license='MIT', 
     author='Nicolas Chopin',
     # tests_require=['pytest'],
     # install_requires=['numpy>=1.9',

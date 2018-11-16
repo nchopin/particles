@@ -14,8 +14,7 @@ Nicolas Chopin and Omiros Papaspiliopoulos
 This package is intended to be modular, extensible, and feature-rich. The
 following methods are implemented: 
 
-* resampling: all popular (and some less popular) schemes are available: 
-  multinomial, residual, stratified, systematic and SSP. 
+* resampling: multinomial, residual, stratified, systematic and SSP. 
 
 * particle filtering: bootstrap filter, guided filter, APF.
 
@@ -33,7 +32,8 @@ following methods are implemented:
 
 * SMC samplers: IBIS, SMC tempering, IBIS (a.k.a. data tempering). 
 
-* PMMC (PMMH, Particle Gibbs) and SMC^2. 
+* Bayesian parameter inference for state-space models: PMMC (PMMH, Particle Gibbs) 
+  and SMC^2. 
 
 * Basic support for parallel computation (i.e. running multiple SMC algorithms 
 on different CPU cores). 
@@ -62,7 +62,7 @@ x, y = my_model.simulate(200)  # sample size is 200
 To run a bootstrap particle filter for this model and data `y`, simply do:
 
 ```python
-alg = particles.SMC(model=ssm.Bootstrap(ssm=my_model, data=y), N=200)
+alg = particles.SMC(fk=ssm.Bootstrap(ssm=my_model, data=y), N=200)
 alg.run()
 ```
 
