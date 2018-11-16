@@ -22,7 +22,7 @@ import os
 
 # -- General configuration ------------------------------------------------
 
-autodoc_mock_imports = ["lowdiscrepancy"]
+autodoc_mock_imports = ['particles.lowdiscrepancy']
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
