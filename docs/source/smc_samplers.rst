@@ -15,5 +15,6 @@ Module summary
     ThetaParticles
     MetroParticles
     IBIS
-    TemperingSMC
+    Tempering
+    AdaptiveTempering
     SMC2
