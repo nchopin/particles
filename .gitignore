@@ -1,3 +1,8 @@
 *.py~
 *.pyc
-tags
+*.so
+dist/
+build/
+particles.egg-info/
+docs/build/
+docs/source/_autosummary/

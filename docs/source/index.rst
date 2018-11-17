@@ -2,13 +2,13 @@
 Welcome to **particles**' documentation!
 ========================================
 
-This package was developed while writing the following book: 
+This package was developed to complement the forthcoming book: 
 
-*A concise introduction to Sequential Monte Carlo* 
-by Nicolas Chopin and Omiros Papaspiliopoulos
+*An introduction to Sequential Monte Carlo* 
+- Nicolas Chopin and Omiros Papaspiliopoulos
 
 The documentation refers sometimes to the book for some theoretical details,
-but otherwise it is meant to be self-sufficient. 
+but otherwise is meant to be self-sufficient. 
 
 To get an overview of what particles can do, we strongly recommend that you
 have a look at the notebook tutorials first (in the `overview` section).  
