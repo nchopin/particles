@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+This mock setup may be used to build the documentation on "Read the docs". 
+The actual setup needs to compile fortran files, and RTD does not like it.
+"""
+
 from setuptools import setup, find_packages
 import io
 

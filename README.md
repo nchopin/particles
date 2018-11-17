@@ -11,34 +11,31 @@ Nicolas Chopin and Omiros Papaspiliopoulos
 
 ## Features ##
 
-This package is intended to be modular, extensible, and feature-rich. The
-following methods are implemented: 
+* **resampling**: multinomial, residual, stratified, systematic and SSP. 
 
-* resampling: multinomial, residual, stratified, systematic and SSP. 
+* **particle filtering**: bootstrap filter, guided filter, APF.
 
-* particle filtering: bootstrap filter, guided filter, APF.
-
-* possibility to define a  state-space model using some (basic) form of 
+* possibility to define  **state-space model** using some (basic) form of 
   probabilistic programming; see below for an example. 
 
-* SQMC (Sequential quasi Monte Carlo);  routines for computing the Hilbert curve, 
+* **SQMC** (Sequential quasi Monte Carlo);  routines for computing the Hilbert curve, 
   and generating RQMC sequences. 
 
-* particle smoothing: on-line smoothing, FFBS (forward filtering, backward
+* **particle smoothing**: on-line smoothing, FFBS (forward filtering, backward
   sampling), two-filter smoothing. O(N) and O(N^2) variants. 
   FFBS for SQMC is also implemented. 
 
-* Kalman filtering and smoothing. 
+* **Kalman** filtering and smoothing. 
 
-* SMC samplers: IBIS, SMC tempering, IBIS (a.k.a. data tempering). 
+* **SMC samplers**: IBIS, SMC tempering, IBIS (a.k.a. data tempering). 
 
-* Bayesian parameter inference for state-space models: PMMC (PMMH, Particle Gibbs) 
-  and SMC^2. 
+* Bayesian parameter inference for state-space models: **PMCMC** (PMMH, Particle Gibbs) 
+  and **SMC^2**. 
 
-* Basic support for parallel computation (i.e. running multiple SMC algorithms 
+* Basic support for **parallel computation** (i.e. running multiple SMC algorithms 
 on different CPU cores). 
 
-### Example
+## Example ##
 
 Here is how you may define a parametric state-space model: 
 
@@ -67,10 +64,10 @@ alg.run()
 ```
 
 That's it! Head to the
-[documentation]<https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/> 
+[documentation](https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/) 
 for more examples, explanations, and installation instructions. 
 
-### Who do I talk to? ###
+## Who do I talk to? ##
 
 Nicolas Chopin (nicolas.chopin@ensae.fr) is the main author, contributor, and 
 person to blame if things do not work as expected. 
