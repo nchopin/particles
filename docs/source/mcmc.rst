@@ -1,9 +1,9 @@
 **mcmc**
 ********
 
-.. automodule:: pysqmc.mcmc
+.. automodule:: particles.mcmc
 
-.. currentmodule:: pysqmc.mcmc
+.. currentmodule:: particles.mcmc
 
 Module summary
 ==============

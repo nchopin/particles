@@ -1,9 +1,9 @@
 **hilbert**
 ************
 
-.. automodule:: pysqmc.hilbert
+.. automodule:: particles.hilbert
 
-.. currentmodule:: pysqmc.hilbert
+.. currentmodule:: particles.hilbert
 
 Module summary
 ==============

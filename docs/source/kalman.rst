@@ -1,9 +1,9 @@
 **kalman**
 ********
 
-.. automodule:: pysqmc.kalman
+.. automodule:: particles.kalman
 
-.. currentmodule:: pysqmc.kalman
+.. currentmodule:: particles.kalman
 
 Module summary
 ==============

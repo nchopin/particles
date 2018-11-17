@@ -1,9 +1,9 @@
 **utils**
 ********
 
-.. automodule:: pysqmc.utils
+.. automodule:: particles.utils
 
-.. currentmodule:: pysqmc.utils
+.. currentmodule:: particles.utils
 
 Module summary
 ==============

@@ -4,13 +4,13 @@
 from setuptools import setup, find_packages
 import io
 
-import pysqmc
+import particles
 
 with open('README.md') as f:
     long_description = f.read()
 
 setup(
-    name='pysqmc',
+    name='particles',
     version='0.1', 
     # url='http://github.com/jeffknupp/sandman/',
     #license='Apache Software License',
@@ -23,7 +23,7 @@ setup(
     author_email='nicolas.chopin@ensae.fr',
     description='Sequential Monte Carlo in python', 
     # long_description=long_description,
-    packages=['pysqmc'],
+    packages=['particles'],
     include_package_data=True,
     platforms='any',
     # test_suite='sandman.test.test_sandman',

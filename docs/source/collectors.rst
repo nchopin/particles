@@ -1,9 +1,9 @@
 **collectors**
 *************
 
-.. automodule:: pysqmc.collectors
+.. automodule:: particles.collectors
 
-.. currentmodule:: pysqmc.collectors
+.. currentmodule:: particles.collectors
 
     
 

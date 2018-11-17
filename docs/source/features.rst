@@ -1,7 +1,7 @@
 Features
 ********
 
-Here is a brief list of the features of pysqmc: 
+Here is a brief list of the features of particles: 
 
 * state-space models may be defined as python objects, in a basic form of
   probabilistic programming. 

@@ -1,9 +1,9 @@
 **smoothing**
 *************
 
-.. automodule:: pysqmc.smoothing
+.. automodule:: particles.smoothing
 
-.. currentmodule:: pysqmc.smoothing
+.. currentmodule:: particles.smoothing
 
 
 

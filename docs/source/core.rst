@@ -1,9 +1,9 @@
 **core**
 ********
 
-.. automodule:: pysqmc.core
+.. automodule:: particles.core
 
-.. currentmodule:: pysqmc.core
+.. currentmodule:: particles.core
 
 Module summary
 ==============

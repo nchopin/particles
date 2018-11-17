@@ -1,9 +1,9 @@
 **state_space_models**
 *********************
 
-.. automodule:: pysqmc.state_space_models
+.. automodule:: particles.state_space_models
 
-.. currentmodule:: pysqmc.state_space_models
+.. currentmodule:: particles.state_space_models
 
 Summary of module
 =================

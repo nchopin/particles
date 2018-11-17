@@ -1,9 +1,9 @@
 **smc_samplers**
 ********
 
-.. automodule:: pysqmc.smc_samplers
+.. automodule:: particles.smc_samplers
 
-.. currentmodule:: pysqmc.smc_samplers
+.. currentmodule:: particles.smc_samplers
 
 Module summary
 ==============

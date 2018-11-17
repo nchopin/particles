@@ -1,7 +1,7 @@
-pysqmc.smoothing.ParticleHistory
+particles.smoothing.ParticleHistory
 ================================
 
-.. currentmodule:: pysqmc.smoothing
+.. currentmodule:: particles.smoothing
 
 .. autoclass:: ParticleHistory
 

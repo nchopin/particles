@@ -1,9 +1,9 @@
 **distributions**
 *****************
 
-.. automodule:: pysqmc.distributions
+.. automodule:: particles.distributions
 
-.. currentmodule:: pysqmc.distributions
+.. currentmodule:: particles.distributions
 
 .. autosummary::
    :toctree: _autosummary

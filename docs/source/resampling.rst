@@ -1,9 +1,9 @@
 **resampling**
 **************
 
-.. automodule:: pysqmc.resampling
+.. automodule:: particles.resampling
 
-.. currentmodule:: pysqmc.resampling
+.. currentmodule:: particles.resampling
 
 Module summary
 ==============
