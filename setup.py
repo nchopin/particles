@@ -1,29 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# from setuptools import setup, find_packages
+from setuptools import setup, find_packages
 import io
-import setuptools  # only mention of setuptools
-from numpy.distutils.core import setup
-from numpy.distutils.extension import Extension
 
-import particles
-
-NAME = 'particles'
-DESCRIPTION = 'Sequential Monte Carlo in Python'
+import pysqmc
 
 with open('README.md') as f:
     long_description = f.read()
 
-ext = Extension(name=NAME + ".lowdiscrepancy", 
-              sources=["src/LowDiscrepancy.f"])
-extensions = [ext,]
-
 setup(
-    name=NAME, 
+    name='pysqmc',
     version='0.1', 
-     url='http://github.com/nchopin/particles/',
-    license='MIT', 
+    # url='http://github.com/jeffknupp/sandman/',
+    #license='Apache Software License',
     author='Nicolas Chopin',
     # tests_require=['pytest'],
     # install_requires=['numpy>=1.9',
@@ -31,9 +21,9 @@ setup(
     #                   ],
     #cmdclass={'test': PyTest},
     author_email='nicolas.chopin@ensae.fr',
-    description=DESCRIPTION, 
-    long_description='%s - %s' %(NAME, DESCRIPTION),
-    packages=['particles'],
+    description='Sequential Monte Carlo in python', 
+    # long_description=long_description,
+    packages=['pysqmc'],
     include_package_data=True,
     platforms='any',
     # test_suite='sandman.test.test_sandman',
@@ -46,6 +36,5 @@ setup(
         #'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Topic :: Scientific/Engineering :: Mathematics',
-    ],
-    ext_modules=extensions
+    ]
 )
