@@ -7,13 +7,13 @@ Overview
 This module defines:  
 
     1. the `StateSpaceModel` class, which lets you define a state-space model
-       object has a Python object. 
+       as a Python object;
 
     2. `FeynmanKac` classes that automatically define the Bootstrap, guided or
-       auxililiary Feynman-Kac models associated to a given state-space model.
+       auxililiary Feynman-Kac models associated to a given state-space model;
 
     3. several standard state-space models (stochastic volatility, 
-       bearings-only tracking, and so on)
+       bearings-only tracking, and so on).
 
 The recommended import is::
 
@@ -35,6 +35,7 @@ Consider the following (simplified) stochastic volatility model:
 
 To define this particular model, we sub-class `StateSpaceModel` as follows:: 
 
+    import numpy as np
     from particles import distributions as dists 
 
     class SimplifiedStochVol(ssm.StateSpaceModel):
@@ -471,9 +472,9 @@ class StochVolLeverage(StochVol):
 
         X_0                         & \sim N(\mu, \sigma^2/(1-\rho^2))     \\
         X_t|X_{t-1}=x_{t-1}         & \sim N(\mu + \rho (x-\mu), \sigma^2) \\
-        Y_t|X_{t-1:t} =x_{t-1:t}    & \sim N( s*\phi*z, s^2*(1-\phi**2) ) 
+        Y_t|X_{t-1:t} =x_{t-1:t}    & \sim N( s \phi z, s^2 (1-\phi^2) ) 
 
-    with :math:`s=\exp(x_t/2), z = [x_t-\mu-\rho*(x_{t-1}-\mu)]/\sigma
+    with :math:`s=\exp(x_t/2), z = [x_t-\mu-\rho*(x_{t-1}-\mu)]/\sigma`
 
     Note
     ----

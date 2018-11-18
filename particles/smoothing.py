@@ -60,7 +60,7 @@ class ParticleHistory(object):
     X: list
         X[t] is the object that represents the N particles at iteration t
     wgt: list
-        wgt[t] is a Weights object (see module resampling) that represents 
+        wgt[t] is a `Weights` object (see module `resampling`) that represents 
         the N weights at time t
     A: list
         A[t] is the vector of ancestor indices at time t
@@ -69,12 +69,14 @@ class ParticleHistory(object):
 
     def __init__(self, model, N):
         """
+        Constructor.
+
         Parameters
         ----------
-        N: int
-            the number of particles
         model: `FeynmanKac` object
-            the Feynman-Kac model 
+            Feynman-Kac model 
+        N: int
+            number of particles
         """
         self.A, self.X, self.wgt, self.h_orders = [], [], [], []
         self.model = model

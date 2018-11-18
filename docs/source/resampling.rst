@@ -25,3 +25,5 @@ Module summary
     log_mean_exp
     log_sum_exp
     wmean_and_var
+    wmean_and_var_str_array
+    wquantiles

@@ -7,13 +7,13 @@ Python 2 gets deprecated (around 2020) Python 2 support may be dropped.
 Requirements
 ============
 
-The short version: install anaconda (https://www.anaconda.com/distribution), 
+The short version: install [anaconda](https://www.anaconda.com/distribution), 
 to get all the scientific computing libraries you may ever need in one go. 
 
 The long version: **particles** requires the following libraries: 
 
-* NumPy (>=1.9, http://www.numpy.org/)
-* SciPy (>=0.14, https://www.scipy.org/) 
+* [NumPy](http://www.numpy.org/)>=1.9, 
+* [SciPy](https://www.scipy.org/)>=0.14,
 * `numba <https://numba.pydata.org/>`_: just-in-time compiler; 
   **particles** runs without it, but not as fast. 
 
@@ -47,7 +47,7 @@ machine::
 Manual installation
 ===================
 
-The package is available at <https://github.com/nchopin/particles.git>
+The package is available on Github [here](https://github.com/nchopin/particles.git)
 and may be installed using git::
 
     git clone https://github.com/nchopin/particles.git

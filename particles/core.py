@@ -3,10 +3,10 @@
 """
 This module defines the following core objects:
 
-* `FeynmanKac`: the base class for Feynman-Kac models
-* `SMC`: the base class for SMC algorithms 
+* `FeynmanKac`: the base class for Feynman-Kac models;
+* `SMC`: the base class for SMC algorithms;
 * `multiSMC`: a function to run a SMC algorithm several times, in
-  parallel and/or with varying options
+  parallel and/or with varying options.
 
 You don't need to import this module: these objects 
 are automatically imported when you import the package itself::
@@ -41,7 +41,7 @@ To define a Feynman-Kac model in particles, one should, in principle:
         the documentation of `FeynmanKac` for more details; 
     (b) instantiate (define an object that belongs to) that sub-class. 
 
-In most cases however, you do not have to do this manually:
+In many cases however, you do not need to do this manually:
 
     * module `state_space_models` defines classes that automatically
       generate the bootstrap, guided or auxiliary Feynman-Kac model associated 
@@ -434,16 +434,6 @@ class SMC(object):
 def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     """Run SMC algorithms in parallel, for different combinations of parameters.
 
-    Parameters
-    ----------
-    * nruns: int (default=10)
-        number of runs
-    * nprocs: int (default=1) 
-        number of processors to use
-    * out_func: callable
-        function to transform the output of each SMC run. 
-    * args: dict
-        arguments passed to SMC class 
 
     `multiSMC` relies on the `multiplexer` utility, and obeys the same logic. 
     A basic usage is:: 
@@ -486,9 +476,24 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     resampling set to multinomial, 20 times with N=100 and resampling set to
     residual and so on. 
 
-    See also the `multiplexer` utility (in the `utils` module) 
-    for more details on the syntax. 
+    Parameters
+    ----------
+    * nruns: int (default=10)
+        number of runs
+    * nprocs: int (default=1) 
+        number of processors to use (if negative, number of cores not to use)
+    * out_func: callable
+        function to transform the output of each SMC run. 
+    * args: dict
+        arguments passed to SMC class 
 
+    Returns
+    -------
+    A list of dicts 
+
+    See also
+    --------
+    `utils.multiplexer`: for more details on the syntax. 
     """
     def f(**args):
         pf = SMC(**args) 
