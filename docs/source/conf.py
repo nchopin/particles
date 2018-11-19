@@ -22,7 +22,8 @@ import os
 
 # -- General configuration ------------------------------------------------
 
-autodoc_mock_imports = ['particles.lowdiscrepancy']
+# not sure this is really needed for ReadTheDocs...
+# autodoc_mock_imports = ['particles.lowdiscrepancy']
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
@@ -291,6 +292,6 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-# Fuck this, can't you make this by default??? 
+# Can't you make this by default??? 
 autosummary_generate = True  # Make _autosummary files and include them
 # autoclass_content = 'both'  # to also include __init__'s doc, but does not work... 
