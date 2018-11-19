@@ -6,8 +6,7 @@ Sequential Monte Carlo in python.
 
 This package was developed to complement the forthcoming book:
 
-An introduction to Sequential Monte Carlo
-Nicolas Chopin and Omiros Papaspiliopoulos
+*An introduction to Sequential Monte Carlo* - Nicolas Chopin and Omiros Papaspiliopoulos
 
 ## Features ##
 

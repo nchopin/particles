@@ -44,15 +44,37 @@ machine::
 
     pip install --user particles
 
-Manual installation
-===================
+It is best to install any package from pypi **without** root privilege.
+Option --user lets you install the package in your home directory, rather than
+globally for all users. 
+
+Manual/Editable installation
+============================
 
 The package is available on Github [here](https://github.com/nchopin/particles.git)
 and may be installed using git::
 
+    cd some_folder_of_your_choosing
     git clone https://github.com/nchopin/particles.git
     pip install -e --user . 
 
-The toggle -e installs the package in editable mode so that you may modify
-directly the package. 
+Option -e installs the package in editable mode: i.e. the package points to the
+files in the folder you chose, which you may modify directly. 
+
+Troubleshooting
+===============
+
+If the two methods above fail, you may try this::
+
+    python setup.py --force 
+
+This will install the package, without compiling the little bit of Fortran code 
+that is used in module `qmc`. At this stage, you may already use the package if
+you do not use anything related to quasi-Monte Carlo (i.e. option `qmc` in
+class `SMC`). In addition, you may compile manually the said piece of Fortran 
+as follows:: 
+
+    pip show particles  # tells you the folder where the package is installed
+    cd where_particles_is_installed/particles 
+    f2py -c ../src/LowDiscrepancy.f -m lowdiscrepancy
 

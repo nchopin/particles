@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# from setuptools import setup, find_packages
 import io
-import setuptools  # only mention of setuptools
-from numpy.distutils.core import setup
-from numpy.distutils.extension import Extension
+import setuptools  
+import sys
 
 import particles
 
@@ -15,11 +13,7 @@ DESCRIPTION = 'Sequential Monte Carlo in Python'
 with open('README.md') as f:
     long_description = f.read()
 
-ext = Extension(name=NAME + ".lowdiscrepancy", 
-                sources=["src/LowDiscrepancy.f"])
-extensions = [ext,]
-
-setup(
+METADATA = dict(
     name=NAME, 
     version='0.1', 
     url='http://github.com/nchopin/particles/',
@@ -45,6 +39,18 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Topic :: Scientific/Engineering :: Mathematics',
-    ],
-    ext_modules=extensions
+    ]
 )
+
+# Readthedocs uses the --force option, and does not work if we ask to 
+# compile fortran code, so we disable this in that case.
+if '--force' in sys.argv: 
+    from setuptools import setup 
+else:
+    from numpy.distutils.core import setup
+    from numpy.distutils.extension import Extension
+    ext = Extension(name=NAME + ".lowdiscrepancy", 
+                    sources=["src/LowDiscrepancy.f"])
+    METADATA['ext_modules'] = [ext,]
+    
+setup(**METADATA)
