@@ -14,6 +14,7 @@ Here is a list of the modules available in ``particles``:
    collectors
    qmc
    hilbert
+   hmm
    kalman
    smc_samplers
    mcmc

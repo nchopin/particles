@@ -4,7 +4,7 @@ r"""
 A basic implementation of the Kalman filter (and smoother). 
 
 Overview
-=========
+========
 
 The Kalman filter/smoother is a well-known algorithm to compute recursively 
 the expectation and variance of the filtering/smoothing distributions of 

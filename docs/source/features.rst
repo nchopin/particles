@@ -7,6 +7,7 @@ Here is a brief list of the features of particles:
   probabilistic programming. 
 * Bootstrap filter, guided filter, auxiliary particle filter. 
 * Kalman filter and smoother. 
+* Baum-Welch filter and smoother (for hidden Markov models).
 * All popular resampling are implemented. 
 * Sequential quasi-Monte Carlo (and related tools: Hilbert ordering, RQMC
   sampling). 

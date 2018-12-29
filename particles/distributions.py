@@ -81,7 +81,7 @@ The only *standard* multivariate distribution currently implemented is
 `MvNormal`, (multivariate Normal distribution). 
 
 However, the module provides two ways to construct multivariate
-distributions by combining univariate distributions: 
+distributions from a collection of univariate distributions: 
 
 * `IndepProd`: product of independent distributions. May be used to 
   define state-space models. 
@@ -98,7 +98,9 @@ from base class ``ProbDist``, and  implement the following methods:
 
 * ``logpdf(self, x)``: computes the log-pdf (probability density function) at 
   point ``x``;
-* ``rvs(self, size=1)``: simulates ``size`` random variates;
+* ``rvs(self, size=None)``: simulates ``size`` random variates; (if set to
+None, number of samples is either one if all parameters are scalar, or 
+the same number as the common size of the parameters, see below);  
 * ``ppf(self, u)``: computes the quantile function (or Rosenblatt transform 
   for a multivariate distribution) at point ``u``. 
     from particles import distributions as dists
@@ -109,14 +111,35 @@ A quick example::
     x = some_dist.rvs(size=30)  # a (30,) ndarray containing IID N(2, 3^2) variates
     z = some_dist.logpdf(x)  # a (30,) ndarray containing the log-pdf at x 
 
-By default, the inputs and outputs of these methods are ndarrays with appropriate 
-type and shape (see `StructDist` for an exception to this rule). 
+By default, the inputs and outputs of these methods are either scalars or Numpy
+arrays (with with appropriate type and shape. In particular, passing a Numpy 
+array to a distribution parameter makes it possible to define "array
+distributions". For instance:: 
+
+    some_dist = dists.Normal(loc=np.arange(1., 11.))
+    vars = some_dist.rvs(size=10)
+
+generates 10 Gaussian-distributed variates, with respective means 1., ..., 10.   
+This is how we manage to define "Markov kernels" in state-space models; e.g.
+when defining the distribution of X_t given X_{t-1} in a state-space model:: 
+
+    class StochVol(ssm.StateSpaceModel):
+        def PX(self, t, xp, x):
+            return stats.norm(loc=xp)
+        ### ... see module state_space_models for more details 
+
+Then, in practice, in e.g. the bootstrap filter, when we generate particles
+$X_t^n$, we call method ``PX`` and pass as an argument a numpy array of shape
+(N,) containing the N ancestors. 
 
 ..  note:: 
     ProbDist objects are roughly similar to the frozen distributions of package
     :package:`scipy.stats`. However, they are not equivalent. Using such a
     frozen distribution when e.g. defining a state-space model will return an
     error. 
+
+Posterior distributions
+=======================
 
 A few classes also implement a ``posterior`` method, which returns the posterior
 distribution that corresponds to a prior set to ``self``, a model which is
@@ -129,11 +152,23 @@ conjugate for the considered class, and some data. Here is a quick example::
     # prior is conjugate wrt model X_1, ..., X_n ~ N(0, theta) 
     print("posterior is Gamma(%f, %f)" % (post.a, post.b)) 
 
+Here is a list of distributions implementing posteriors: 
+
+============    ===================
+Distribution    Corresponding model 
+============    ===================
+
+Normal          N(theta, sigma^2),   sigma fixed (passed as extra argument)
+TruncNormal     same 
+Gamma           N(0, 1/theta) 
+InvGamma        N(0, theta)
+MvNormal        N(theta, Sigma)     Sigma fixed (passed as extra argument)
+
 
 Implementing your own distributions
 ===================================
 
-If you would like to create your own univariate probablity distribution, the
+If you would like to create your own univariate probability distribution, the
 easiest way to do so is to sub-class :class:`ProbDist`, for a continuous
 distribution, or :class:`DiscreteDist`, for a discrete distribution. This will
 properly set class attributes `dim` (the dimension, set to one, for a
@@ -141,34 +176,6 @@ univariate distribution), and `dtype`, so that they play nicely with StructDist
 and so on. You will also have to properly define methods `rvs`, `logpdf` and
 `ppf`. You may omit `ppf` if you do not plan to use SQMC (Sequential quasi
 Monte Carlo). 
-
-
-Passing arrays as distribution parameters 
-=========================================
-
-The following code is legit:: 
-
-    xp = dists.Normal().rvs(size=30)
-    random_walk_step = dists.Normal(loc=xp)  # parameter is a ndarray
-    x = random_walk_step.rvs(size=30)
-
-and does what you would expect: generate independently `xp[n]` from 
-N(0,1), then `x[n]` from N(`xp[n]`,1). However, if you forget to specify 
-`size` in the last line::
-
-    x = random_walk_step.rvs()  # default for size is 1
-
-you are in for a surprise. The line above is equivalent to::
-
-    x = xp + dists.Normal().rvs(size=1)
-
-i.e. a **single** random increment will be simulated.
-
-Sampling from a distribution class with parameters `loc` and `scale` works
-as follows: first we sample from some base distribution (e.g. N(0,1)), then
-we multiply the result by `scale`, and add `loc`. In doing so, the standard 
-numpy broadcasting rules apply ; in particular adding a scalar x to a ndarray 
-y returns a ndarray containing the sums (y[i] + x). 
 
 
 """
@@ -195,7 +202,7 @@ class ProbDist(object):
     def pdf(self, x):
         return np.exp(self.logpdf(x))
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         raise NotImplementedError
 
     def ppf(self, u):
@@ -215,7 +222,7 @@ class LocScaleDist(ProbDist):
 
 class Normal(LocScaleDist):
     """N(loc,scale^2) distribution"""
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.normal(loc=self.loc, scale=self.scale, size=size)
 
     def logpdf(self, x):
@@ -235,7 +242,7 @@ class Normal(LocScaleDist):
 
 class Logistic(LocScaleDist):
     """Logistic(loc,scale) distribution"""
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.logistic(loc=self.loc, scale=self.scale, size=size)
 
     def logpdf(self, x):
@@ -248,7 +255,7 @@ class Logistic(LocScaleDist):
 class Laplace(LocScaleDist):
     """Laplace(loc,scale) distribution"""
 
-    def rvs(self, size):
+    def rvs(self, size=None):
         return random.laplace(loc=self.loc, scale=self.scale, size=size)
 
     def logpdf(self, x):
@@ -268,7 +275,7 @@ class Beta(ProbDist):
         self.a = a
         self.b = b
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.beta(self.a, self.b, size=size)
 
     def logpdf(self, x):
@@ -285,7 +292,7 @@ class Gamma(ProbDist):
         self.b = b
         self.scale = 1. / b
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.gamma(self.a, scale=self.scale, size=size)
 
     def logpdf(self, x):
@@ -306,7 +313,7 @@ class InvGamma(ProbDist):
         self.a = a
         self.b = b
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return stats.invgamma.rvs(self.a, scale=self.b, size=size)
 
     def logpdf(self, x):
@@ -328,7 +335,7 @@ class Uniform(ProbDist):
         self.b = b
         self.scale = b - a
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.uniform(low=self.a, high=self.b, size=size)
 
     def logpdf(self, x):
@@ -345,7 +352,7 @@ class Student(ProbDist):
         self.loc = loc
         self.scale = scale
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return stats.t.rvs(self.df, loc=self.loc, scale=self.scale, size=size)
 
     def logpdf(self, x):
@@ -360,12 +367,13 @@ class Dirac(ProbDist):
     def __init__(self, loc=0.):
         self.loc = loc
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         if isinstance(self.loc, np.ndarray):
             return self.loc.copy()
             # seems safer to make a copy here
         else:  # a scalar
-            return np.full(size, self.loc)
+            N = 1 if size is None else size
+            return np.full(N, self.loc)
 
     def logpdf(self, x):
         return np.where(x==self.loc, 0., -np.inf)
@@ -385,7 +393,7 @@ class TruncNormal(ProbDist):
         self.au = (a - mu) / sigma
         self.bu = (b - mu) / sigma
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return stats.truncnorm.rvs(self.au, self.bu, loc=self.mu,
                                    scale=self.sigma, size=size)
 
@@ -398,7 +406,7 @@ class TruncNormal(ProbDist):
                                    scale=self.sigma)
 
     def posterior(self, x, s=1.):
-        """Model is X_1,...,X_n ~ N(theta, s^2), theta~self, sigma fixed"""
+        """Model is X_1,...,X_n ~ N(theta, s^2), theta~self, s fixed"""
         pr0 = 1. / self.sigma**2  # prior precision
         prd = x.size / s**2  # data precision
         varp = 1. / (pr0 + prd)  # posterior variance
@@ -420,7 +428,7 @@ class Poisson(DiscreteDist):
     def __init__(self, rate=1.):
         self.rate = rate
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.poisson(self.rate, size=size)
 
     def logpdf(self, x):
@@ -437,7 +445,7 @@ class Binomial(DiscreteDist):
         self.n = n
         self.p = p
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.binomial(self.n, self.p, size=size)
 
     def logpdf(self, x):
@@ -452,7 +460,7 @@ class Geometric(DiscreteDist):
     def __init__(self, p=0.5):
         self.p = p
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return random.geometric(self.p, size=size)
 
     def logpdf(self, x):
@@ -461,6 +469,32 @@ class Geometric(DiscreteDist):
     def ppf(self, u):
         return stats.geom.ppf(u, self.p)
 
+
+class Categorical(DiscreteDist):
+    """Categorical distribution.
+
+    Parameter
+    ---------
+    p:  (k,) or (N,k) float array
+        vector(s) of k probabilities that sum to one
+    """
+    def __init__(self, p=None):
+        self.p = p
+
+    def logpdf(self, x):
+        return np.log(self.p[x])
+
+    def rvs(self, size=None):
+        if self.p.ndim == 1:
+            N = 1 if size is None else size
+            u =random.rand(N)
+            return np.searchsorted(np.cumsum(self.p), u)
+        else:
+            N = self.p.shape[0] if size is None else size
+            u = random.rand(N)
+            cp = np.cumsum(self.p, axis=1)
+            return np.array([np.searchsorted(cp[i], u[i]) 
+                             for i in range(N)])
 
 #########################
 # distribution transforms
@@ -501,7 +535,7 @@ class TransformedDist(ProbDist):
         Obtained by differentiating finv, and then taking the log."""
         raise NotImplementedError(self.error_msg('logJac'))
 
-    def rvs(self, size=1):
+    def rvs(self, size=None):
         return self.f(self.base_dist.rvs(size=size))
 
     def logpdf(self, x):
@@ -615,35 +649,34 @@ class MvNormal(ProbDist):
         x = m + s * dists.MvNormal(cov=Sigma).rvs(size=30)
 
     The idea is that they are many cases when we may want to pass 
-    varying means, and scales. 
+    varying means and scales (but a fixed correlation matrix).  
 
     dx (dimension of vectors x) is determined by matrix cov; for rvs,
-    size must be (N, dx), otherwise an error should be raised
+    size must be (N, ), otherwise an error is raised. 
 
     Notes:
     * if du<dx, fill the remaining dimensions by location 
         (i.e. scale should be =0.)
     * cov does not need to be a correlation matrix; more generally
-    > mvnorm(loc=x,scale=s,cor=C)
+    > mvnorm(loc=x, scale=s, cor=C)
     correspond to N(m,diag(s)*C*diag(s))
 
     In addition, note that x and s may be (N, d) vectors;
-    i.e for each n=1...N we have a different mean, and a different scale
+    i.e for each n=1...N we have a different mean, and a different scale.
     """
 
     def __init__(self, loc=0., scale=1., cov=None):
         self.loc = loc
         self.scale = scale
         self.cov = cov
-        cov_error = ValueError('mvnorm: argument cov must be a dxd ndarray, \
-                               with d>1, defining a symetric positive matrix')
+        err_msg = 'mvnorm: argument cov must be a dxd ndarray, \
+                with d>1, defining a symmetric positive matrix'
         try:
             self.L = cholesky(cov, lower=True)  # L*L.T = cov
             self.halflogdetcor = np.sum(np.log(np.diag(self.L)))
         except:
-            raise cov_error
-        if self.dim < 2 or cov.shape != (self.dim, self.dim):
-            raise cov_error
+            raise ValueError(err_msg)
+        assert cov.shape == (self.dim, self.dim), err_msg
 
     @property
     def dim(self):
@@ -663,8 +696,14 @@ class MvNormal(ProbDist):
         logdet += self.halflogdetcor
         return - 0.5 * np.sum(z * z, axis=0) - logdet - self.dim * HALFLOG2PI
 
-    def rvs(self, size=1):
-        z = stats.norm.rvs(size=(size, self.dim))
+    def rvs(self, size=None):
+        if size is None: 
+            sh = np.broadcast(self.loc, self.scale).shape
+            # sh=() when both loc and scale are scalars
+            N = 1 if len(sh) == 0 else sh[0]  
+        else:
+            N = size
+        z = stats.norm.rvs(size=(N, self.dim))
         return self.linear_transform(z)
 
     def ppf(self, u):
@@ -739,23 +778,16 @@ class IndepProd(ProbDist):
     def dim(self):
         return len(self.dists)
 
-    def rvs(self, size=1):
-        out = np.empty((size, self.dim), self.dtype)
-        for i, dist in enumerate(self.dists):
-            out[:, i] = dist.rvs(size=size)
-        return out
+    def rvs(self, size=None):
+        return np.stack([d.rvs(size=size) for d in self.dists], axis=1)
 
     def logpdf(self, x):
-        l = 0.
-        for i, dist in enumerate(self.dists):
-            l += dist.logpdf(x[:, i])
-        return l
+        return np.sum([d.logpdf(x[:, i]) for i, d in enumerate(self.dists)],
+                      axis=1)
 
     def ppf(self, u):
-        out = np.empty(u.shape, self.dtype)
-        for d in xrange(self.dim):
-            out[:, d] = self.dists[d].ppf(u[:, d])
-        return out
+        return np.stack([d.ppf(u[:, i]) for i, d in enumerate(self.dists)],
+                        axis=1)
 
 
 ###################################
@@ -828,7 +860,7 @@ class StructDist(ProbDist):
         self.dtype = {'names': list(self.laws.keys()), 'formats': formats}
         # list added for python 3 compatibility
 
-    def rvs(self, size=1):
+    def rvs(self, size=1):  # Default for size is 1, not None
         out = np.empty(size, dtype=self.dtype)
         for par, law in self.laws.items():
             cond_law = law(out) if callable(law) else law

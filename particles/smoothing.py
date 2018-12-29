@@ -47,7 +47,7 @@ from particles import resampling as rs
 class ParticleHistory(object):
     """Particle history. 
 
-    A class that stores the history of the particle system, i.e.
+    A class to store the history of a particle algorithm, i.e.
     at each time t=0,...T, the N particles, their weights, and their ancestors.
     Smoothing algorithms are methods of this class.
 
@@ -181,7 +181,7 @@ class ParticleHistory(object):
             return paths
 
     def _backward_sampling_ON(self, M, idx):
-        """O(N) version of backward sampling 
+        """O(N) version of backward sampling.
 
         not meant to be called directly, see backward_sampling
         """
@@ -206,7 +206,7 @@ class ParticleHistory(object):
         return (M * (self.T - 1)) / nattempts
 
     def _backward_sampling_ON2(self, M, idx):
-        """O(N^2) version of backward sampling 
+        """O(N^2) version of backward sampling.
 
         not meant to be called directly, see backward_sampling
         """
