@@ -692,7 +692,7 @@ class MvNormal(ProbDist):
         if np.asarray(self.scale).ndim == 0:
             logdet = self.dim * np.log(self.scale)
         else:
-            logdet = np.sum(np.log(self.scale, axis=-1))
+            logdet = np.sum(np.log(self.scale), axis=-1)
         logdet += self.halflogdetcor
         return - 0.5 * np.sum(z * z, axis=0) - logdet - self.dim * HALFLOG2PI
 

@@ -14,7 +14,7 @@ This package was developed to complement the forthcoming book:
 
 * **particle filtering**: bootstrap filter, guided filter, APF.
 
-* possibility to define  **state-space model** using some (basic) form of 
+* possibility to define  **state-space models** using some (basic) form of 
   probabilistic programming; see below for an example. 
 
 * **SQMC** (Sequential quasi Monte Carlo);  routines for computing the Hilbert curve, 
@@ -24,7 +24,8 @@ This package was developed to complement the forthcoming book:
   sampling), two-filter smoothing. O(N) and O(N^2) variants. 
   FFBS for SQMC is also implemented. 
 
-* **Kalman** filtering and smoothing. 
+* Exact filtering/smoothing algorithms: **Kalman** (for linear Gaussian models) 
+and **Baum-Welch** (for hidden Markov models).
 
 * **SMC samplers**: IBIS, SMC tempering, IBIS (a.k.a. data tempering). 
 

@@ -30,7 +30,6 @@ The distributions of Y_t|X_t must be defined by sub-classing HMM. For instance,
 this module defines a GaussianHMM class as follows::
     
     class GaussianHMM(HMM):
-        """Gaussian HMM: Y_t|X_t=k ~ N(mu_k, sigma_k^2)"""
         default_params = {'mus': None, 'sigmas': None}
         default_params.update(HMM.default_params)
 
@@ -67,6 +66,29 @@ run first. The output of the forward and backward passes are attributes of
 object `bw`, which are lists of K-length numpy arrays. For instance,
 `self.filt` is a list of arrays containing the filtering probabilities; see the
 documentation of ``BaumWelch`` for more details.
+
+
+Running the forward pass step by step
+=====================================
+
+A ``BaumWelch`` object is an iterator; each iteration performs a single step of
+the forward pass. It is thus possible for the user to run the forward pass step
+by step::
+
+    next(bw)  # performs one step of the forward pass
+
+This may be useful in a variety of scenarios, such as when data are acquired on
+the fly (in that case, modify attribute `self.data` directly), or when one
+wants to perform the smoothing pass at different times; in particular::
+
+    bw = BaumWelch(hmm=mh_hmm, data=y)
+    for t, _ in enumerate(y):
+        bw.step()
+        bw.backward()
+        ## save the results in bw.smth somewhere
+
+would compute all the intermediate smoothing distributions (for data $Y_0$,
+then $Y_{0:1}$, and so on). This is expensive, of course (cost is O(T^2)). 
 """
 
 from __future__ import division, print_function
@@ -117,7 +139,7 @@ class BaumWelch(object):
     ----------
     hmm:   HMM object 
         the hidden Markov model of interest
-    data:  iterable 
+    data:  list-like 
         the data
 
     Attributes
@@ -144,6 +166,10 @@ class BaumWelch(object):
         self.data = data
         self.pred, self.filt, self.logpyt, self.logft = [], [], [], []
 
+    @property
+    def t(self):
+        return len(self.filt)
+
     def pred_step(self):
         if self.filt:
             p = np.matmul(self.filt[-1], self.hmm.trans_mat)
@@ -160,6 +186,20 @@ class BaumWelch(object):
         self.logpyt.append(lp)
         self.filt.append(f)
 
+    def __next__(self):
+        try:
+            yt = self.data[self.t]
+        except IndexError:
+            raise StopIteration
+        self.pred_step()
+        self.filt_step(self.t, yt)
+
+    def next(self):
+        return self.__next__()  # Python 2 compatibility
+
+    def __iter__(self):
+        return self 
+
     def forward(self):
         """Forward recursion. 
 
@@ -168,9 +208,8 @@ class BaumWelch(object):
         * pred: predicting probabilities
         * logpyt: log-likelihood factor, i.e. log of p(y_t|y_{0:t-1})
         """
-        for t, yt in enumerate(self.data):
-            self.pred_step()
-            self.filt_step(t, yt)
+        for _ in self:
+            pass
 
     def backward(self):
         """Backward recursion. 
