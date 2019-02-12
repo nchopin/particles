@@ -464,10 +464,34 @@ class Geometric(DiscreteDist):
         return random.geometric(self.p, size=size)
 
     def logpdf(self, x):
-        return stats.geom.logpdf(x, self.p)
+        return stats.geom.logpmf(x, self.p)
 
     def ppf(self, u):
         return stats.geom.ppf(u, self.p)
+
+class NegativeBinomial(DiscreteDist):
+    """Negative Binomial distribution.
+    
+    Parameters
+    ----------
+    n:  int, or array of ints
+        number of failures until the experiment is run
+    p:  float, or array of floats
+        probability of success
+
+    Note:
+        Returns the distribution of the number of successes: support is 
+        0, 1, ...
+
+    """
+    def rvs(self, size=None):
+        return random.negative_binomial(self.n, self.p, size=size)
+
+    def logpdf(self, x):
+        return stats.nbinom.logpmf(x, self.p, self.n)
+
+    def ppf(self, u):
+        return stats.nbinom.ppf(u, self.p, self.n)
 
 
 class Categorical(DiscreteDist):
@@ -782,8 +806,7 @@ class IndepProd(ProbDist):
         return np.stack([d.rvs(size=size) for d in self.dists], axis=1)
 
     def logpdf(self, x):
-        return np.sum([d.logpdf(x[:, i]) for i, d in enumerate(self.dists)],
-                      axis=1)
+        return sum([d.logpdf(x[:, i]) for i, d in enumerate(self.dists)])
 
     def ppf(self, u):
         return np.stack([d.ppf(u[:, i]) for i, d in enumerate(self.dists)],
