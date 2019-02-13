@@ -27,7 +27,7 @@ This package was developed to complement the forthcoming book:
 * Exact filtering/smoothing algorithms: **Kalman** (for linear Gaussian models) 
 and **Baum-Welch** (for hidden Markov models).
 
-* **SMC samplers**: IBIS, SMC tempering, IBIS (a.k.a. data tempering). 
+* **SMC samplers**: SMC tempering, IBIS (a.k.a. data tempering). 
 
 * Bayesian parameter inference for state-space models: **PMCMC** (PMMH, Particle Gibbs) 
   and **SMC^2**. 
