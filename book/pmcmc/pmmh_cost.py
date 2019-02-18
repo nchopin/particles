@@ -14,8 +14,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 from particles import distributions as dists
+from particles import kalman
 from particles import mcmc
-from particles import state_space_models as ssm
 
 # prior 
 dict_prior = {'varX': dists.InvGamma(a=2., b=2.),
@@ -25,14 +25,14 @@ dict_prior = {'varX': dists.InvGamma(a=2., b=2.),
 prior = dists.StructDist(dict_prior)
 
 # State-space model 
-class ReparamLinGauss(ssm.LinearGauss):
+class ReparamLinGauss(kalman.LinearGauss):
     def __init__(self, varX=1., varY=1., rho=0.):
         sigmaX = np.sqrt(varX)
         sigmaY = np.sqrt(varY)
         sigma0 = sigmaX
         # Note: We take X_0 ~ N(0, sigmaX^2) so that Gibbs step is tractable
-        ssm.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
-                                 sigma0=sigma0)
+        kalman.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
+                                    sigma0=sigma0)
  
 # data was simulated as follows: 
 # _, data = ReparamLinGauss(varX=1., varY=(0.2)**2, rho=.9).simulate(100)

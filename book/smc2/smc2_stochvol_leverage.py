@@ -27,7 +27,7 @@ import particles
 from particles import distributions as dists
 from particles import resampling as rs
 from particles import smc_samplers as ssp
-from particles import state_space_models as ssm
+from particles import state_space_models 
 
 # data 
 raw_data = np.loadtxt('../datasets/GBP_vs_USD_9798.txt',
@@ -50,13 +50,13 @@ def qtiles(W, x):
 # algorithms 
 N = 10**3 
 fks = {}
-fk_opts = {'ssm_cls': ssm.StochVolLeverage, 'prior': prior, 'data': data, 
-           'init_Nx': 100, 'mh_options': {'nsteps': 5},
+fk_opts = {'ssm_cls': state_space_models.StochVolLeverage, 'prior': prior, 
+           'data': data, 'init_Nx': 100, 'mh_options': {'nsteps': 5},
            'smc_options': {'qmc': False}, 'ar_to_increase_Nx': 0.1}
 fks['smc2'] = ssp.SMC2(**fk_opts)
 fk_opts['smc_options']['qmc'] = True
 fks['smc2_qmc'] = ssp.SMC2(**fk_opts)
-fk_opts['ssm_cls'] = ssm.StochVol
+fk_opts['ssm_cls'] = state_space_models.StochVol
 fks['smc2_sv'] = ssp.SMC2(**fk_opts)
 
 runs = particles.multiSMC(fk=fks, N=N, moments=qtiles, verbose=True, 

@@ -23,8 +23,8 @@ Defining a hidden Markov model
 Hidden Markov models are represented as ``HMM`` objects; ``HMM`` is a subclass
 of ``StateSpaceModels`` (from module ``state_space_models``), which assigns: 
 
-    * A Categorical distribution to X_0 (parameter `init_dist`)
-    * A Categorical distribution to X_t given X_{t-1} (parameter `trans_mat`)
+    * A categorical distribution to X_0 (parameter `init_dist`)
+    * A categorical distribution to X_t given X_{t-1} (parameter `trans_mat`)
 
 The distributions of Y_t|X_t must be defined by sub-classing HMM. For instance,
 this module defines a GaussianHMM class as follows::
@@ -98,9 +98,9 @@ from numpy import random
 
 from particles import resampling as rs
 from particles import distributions as dists
-from particles import state_space_models as ssm 
+from particles import state_space_models as ssms 
 
-class HMM(ssm.StateSpaceModel):
+class HMM(ssms.StateSpaceModel):
     """Base class for hidden Markov models. 
 
     To define a HMM, subclass HMM and define method PY.
@@ -108,7 +108,7 @@ class HMM(ssm.StateSpaceModel):
     """
     default_params = {'init_dist': None, 'trans_mat': None}
     def __init__(self, **kwargs):
-        ssm.StateSpaceModel.__init__(self, **kwargs)
+        ssms.StateSpaceModel.__init__(self, **kwargs)
         if self.trans_mat is None:
             raise ValueError('Transition Matrix is missing')
         self.dim = self.trans_mat.shape[0]

@@ -33,7 +33,8 @@ import seaborn as sb
 from scipy import stats
 
 import particles
-from particles import state_space_models as ssm 
+from particles import kalman
+from particles import state_space_models as ssms
 
 #parameter values 
 alpha0 = 0.4
@@ -44,18 +45,19 @@ dims = range(5, 21, 5)
 models = OrderedDict()
 true_loglik, true_filt_means = {}, {}
 for d in dims: 
-    my_ssm = ssm.MVLinearGauss_Guarniero_etal(alpha=alpha0, dx=d)
-    _, data = my_ssm.simulate(T)
-    truth = my_ssm.kalman_filter(data)
-    true_loglik[d] = truth.logpyts.cumsum()
-    true_filt_means[d] = truth.filt.means
-    models['boot_%i' % d] = ssm.Bootstrap(ssm=my_ssm, data=data)
-    models['guided_%i' % d] = ssm.GuidedPF(ssm=my_ssm, data=data)
+    ssm = kalman.MVLinearGauss_Guarniero_etal(alpha=alpha0, dx=d)
+    _, data = ssm.simulate(T)
+    kf = kalman.Kalman(ssm=ssm, data=data)
+    kf.filter()
+    true_loglik[d] = np.cumsum(kf.logpyt) 
+    true_filt_means[d] = [f.mean for f in kf.filt]
+    models['boot_%i' % d] = ssms.Bootstrap(ssm=ssm, data=data)
+    models['guided_%i' % d] = ssms.GuidedPF(ssm=ssm, data=data)
 
 # Get results 
 N = 10**4 
 results = particles.multiSMC(fk=models, qmc=[False, True], N=N, moments=True,
-                          nruns=100, nprocs=0) 
+                          nruns=100, nprocs=1) 
 
 # Format results 
 results_mse = []

@@ -16,17 +16,17 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
 import particles
-from particles import state_space_models as ssm
+from particles import state_space_models as ssms
 
 # Model 
 def fkmod(**kwargs):
-    return ssm.GuidedPF(ssm=ssm.ThetaLogistic(**kwargs), data=data)
+    return ssms.GuidedPF(ssm=ssms.ThetaLogistic(**kwargs), data=data)
 
 # data 
 T = 100
 refresh_data = False 
 if refresh_data:
-    data, _ = ssm.ThetaLogistic().simulate(T)
+    data, _ = ssms.ThetaLogistic().simulate(T)
 else:
     data = np.loadtxt('simulated_data_ecological.txt')
 plt.figure()

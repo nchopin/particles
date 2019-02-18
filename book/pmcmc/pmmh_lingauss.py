@@ -27,9 +27,10 @@ from statsmodels.tsa.stattools import acf
 
 import particles
 from particles import distributions as dists
+from particles import kalman
 from particles import mcmc
 from particles import smc_samplers
-from particles import state_space_models as ssm 
+from particles import state_space_models as ssms 
 
 # prior 
 dict_prior = {'varX': dists.InvGamma(a=2., b=2.),
@@ -39,14 +40,14 @@ dict_prior = {'varX': dists.InvGamma(a=2., b=2.),
 prior = dists.StructDist(dict_prior)
 
 # State-space model 
-class ReparamLinGauss(ssm.LinearGauss):
+class ReparamLinGauss(kalman.LinearGauss):
     def __init__(self, varX=1., varY=1., rho=0.):
         sigmaX = np.sqrt(varX)
         sigmaY = np.sqrt(varY)
         sigma0 = sigmaX
         # Note: We take X_0 ~ N(0, sigmaX^2) so that Gibbs step is tractable
-        ssm.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
-                                 sigma0=sigma0)
+        kalman.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
+                                    sigma0=sigma0)
  
 # data was simulated as follows: 
 # _, data = ReparamLinGauss(varX=1., varY=(0.2)**2, rho=.9).simulate(100)
@@ -67,8 +68,9 @@ class StaticLGModel(smc_samplers.StaticModel):
         ll = np.zeros(theta.shape[0])
         for n, th in enumerate(theta): 
             mod = ReparamLinGauss(**smc_samplers.rec_to_dict(th))
-            exact = mod.kalman_filter(data)
-            ll[n] = np.sum(exact.logpyts)
+            kf = kalman.Kalman(ssm=mod, data=data)
+            kf.filter()
+            ll[n] = np.sum(kf.logpyt)
         return ll 
 
 sm = StaticLGModel(data=data, prior=prior)
@@ -104,7 +106,7 @@ for alg_name, alg in algos.items():
 ###################
 thin = int(niter / 100)  # compute average (of variances) over 100 points
 thetas = algos['mh'].chain.theta[(burnin - 1)::thin]
-fks = {k: ssm.Bootstrap(ssm=ReparamLinGauss(**smc_samplers.rec_to_dict(th)), data=data)
+fks = {k: ssms.Bootstrap(ssm=ReparamLinGauss(**smc_samplers.rec_to_dict(th)), data=data)
                         for k, th in enumerate(thetas)}
 outf = lambda pf: pf.logLt
 print('Computing variances of log-lik estimates as a function of N')

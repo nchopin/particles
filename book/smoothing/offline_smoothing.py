@@ -30,11 +30,11 @@ import seaborn as sb  # box-plots
 
 from particles import utils
 from particles.smoothing import smoothing_worker
-from particles import state_space_models as ssm
+from particles import state_space_models as ssms
 
 # considered class of models
 
-class DiscreteCox_with_add_f(ssm.DiscreteCox):
+class DiscreteCox_with_add_f(ssms.DiscreteCox):
     """ A discrete Cox model:
     Y_t ~ Poisson(e^{X_t})
     X_t - mu = phi(X_{t-1}-mu)+U_t,   U_t ~ N(0,1)
@@ -69,9 +69,9 @@ def psit(t, x, xf):
                                                        phi0 * (x - mu0))**2
 
 # FK models
-fkmod = ssm.Bootstrap(ssm=my_ssm, data=data)
+fkmod = ssms.Bootstrap(ssm=my_ssm, data=data)
 # FK model for information filter: same model with data in reverse
-fk_info = ssm.Bootstrap(ssm=my_ssm, data=data[::-1])
+fk_info = ssms.Bootstrap(ssm=my_ssm, data=data[::-1])
 
 # logpdf of gamma_{t}(dx_t), the 'prior' of the information filter
 def log_gamma(x):

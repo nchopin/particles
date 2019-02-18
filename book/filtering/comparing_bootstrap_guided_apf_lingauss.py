@@ -18,25 +18,28 @@ import numpy as np
 import seaborn as sb
 
 import particles
-from particles import state_space_models as ssm 
+from particles import kalman
+from particles import state_space_models as ssms 
 
 # Define ssm, simulate data 
 T = 100
-my_ssm = ssm.LinearGauss(sigmaX=1., sigmaY=.2, rho=.9)
+my_ssm = kalman.LinearGauss(sigmaX=1., sigmaY=.2, rho=.9)
 true_states, data = my_ssm.simulate(T)
 
 # FK models
 models = OrderedDict()
-models['bootstrap'] = ssm.Bootstrap(ssm=my_ssm, data=data)
-models['guided'] = ssm.GuidedPF(ssm=my_ssm, data=data)
-models['APF'] = ssm.AuxiliaryPF(ssm=my_ssm, data=data)
+models['bootstrap'] = ssms.Bootstrap(ssm=my_ssm, data=data)
+models['guided'] = ssms.GuidedPF(ssm=my_ssm, data=data)
+models['APF'] = ssms.AuxiliaryPF(ssm=my_ssm, data=data)
 # Uncomment line below if you want to include the "Boostrap APF"
 # (APF with proposal set to dist. of X_t|X_{t-1}) in the comparison
 #models['bootAPF'] = ssm.AuxiliaryBootstrap(ssm=my_ssm, data=data)
 
 # Compute "truth" 
-truth = my_ssm.kalman_filter(data)
-true_loglik = np.cumsum(truth.logpyts)
+kf = kalman.Kalman(ssm=my_ssm, data=data)
+kf.filter()
+true_loglik = np.cumsum(kf.logpyt)
+true_filt_means = [f.mean for f in kf.filt]
 
 # Get results 
 N = 10**3
@@ -67,7 +70,7 @@ if savefigs:
 plt.figure()
 for mod in models.keys():
     errors = np.array( [ [mom['mean']-truemean for mom, truemean in 
-                           zip(r['output'].summaries.moments, truth.filt.means)] 
+                           zip(r['output'].summaries.moments, true_filt_means)] 
                                 for r in results if r['fk']==mod] ).squeeze()
     plt.plot(np.sqrt(np.mean(errors**2, axis=0)), label=mod)
 plt.xlabel(r'$t$')

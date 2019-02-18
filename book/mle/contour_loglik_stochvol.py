@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
 import particles
-from particles import state_space_models as ssm
+from particles import state_space_models as ssms
 
 # data
 raw_data = np.loadtxt('../../datasets/GBP_vs_USD_9798.txt',
@@ -27,7 +27,7 @@ data = 100. * np.diff(np.log(raw_data[:(T + 1)]))
 
 
 def fkmod(**kwargs):
-    return ssm.Bootstrap(ssm=ssm.StochVol(**kwargs), data=data)
+    return ssms.Bootstrap(ssm=ssms.StochVol(**kwargs), data=data)
 
 sigma = 0.18
 ng = 100

@@ -19,7 +19,7 @@ from scipy.optimize import fmin
 
 import particles
 from particles import resampling as rs
-from particles import state_space_models as ssm
+from particles import state_space_models as ssms
 
 # data
 raw_data = np.loadtxt('../../datasets/GBP_vs_USD_9798.txt',
@@ -31,7 +31,7 @@ def ssmod(theta):
     mu = theta[0]
     rho = theta[1]
     sigma = theta[2]
-    return ssm.StochVol(mu=mu, rho=rho, sigma=sigma)
+    return ssms.StochVol(mu=mu, rho=rho, sigma=sigma)
 
 
 def log_joint_density(theta, x):
@@ -47,7 +47,7 @@ def log_joint_density(theta, x):
 
 # FK models
 def fkmod(theta, T):
-    return ssm.Bootstrap(ssm=ssmod(theta), data=data[:T])
+    return ssms.Bootstrap(ssm=ssmod(theta), data=data[:T])
 
 # Choice of theta_0 and range of theta's
 mu0 = -1.

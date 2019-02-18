@@ -17,7 +17,7 @@ This module defines:
 
 The recommended import is::
 
-    from particles import state_space_models as ssm
+    from particles import state_space_models as ssms
 
 For more details on state-space models and their properties, see Chapter 2 of
 the book. 
@@ -38,7 +38,7 @@ To define this particular model, we sub-class `StateSpaceModel` as follows::
     import numpy as np
     from particles import distributions as dists 
 
-    class SimplifiedStochVol(ssm.StateSpaceModel):
+    class SimplifiedStochVol(ssms.StateSpaceModel):
         default_parameters = {'sigma': 1., 'rho': 0.8}  # optional
         def PY(self, t, xp, x):  # dist of Y_t at time t, given X_t and X_{t-1}
             return dists.Normal(scale=np.exp(x))
@@ -85,7 +85,7 @@ Associated Feynman-Kac models
 Now that our state-space model is defined, we obtain the associated Bootstrap 
 Feynman-Kac model as follows:: 
 
-    my_fk_model = ssm.Bootstrap(ssm=my_stoch_vol_model, data=y)
+    my_fk_model = ssms.Bootstrap(ssm=my_stoch_vol_model, data=y)
 
 That's it! You are now able to run a bootstrap filter for this model:: 
 
@@ -107,7 +107,7 @@ an ancestor X_{t-1})::
             return dists.Normal(loc=rho * xp + data[t], scale=self.sigma) 
 
     my_second_ssm = StochVol_with_prop(sigma=0.3)
-    my_better_fk_model = ssm.Guided(ssm=my_second_ssm, data=y)
+    my_better_fk_model = ssms.Guided(ssm=my_second_ssm, data=y)
     # then run a SMC as above
 
 Voilà! You have now implemented a guided filter. 
@@ -127,10 +127,30 @@ functions, that is functions ::
             return -(x-data[t])**2
 
     my_third_ssm = StochVol_with_prop_and_aux_func()
-    apf_fk_model = ssm.AuxiliaryPF(ssm=my_third_ssm, data=y)
+    apf_fk_model = ssms.AuxiliaryPF(ssm=my_third_ssm, data=y)
 
 Again, this particular choice does not make much sense, and is just given to
 show how to define an auxiliary function. 
+
+Already implemented state-space models
+======================================
+
+Linear Gaussian state-space models are implemented in module `kalman`;
+similarly hidden Markov models (state-space models with a finite state-space)
+are implemented in module `hmm`. This module implements a few basic state-space
+models that are often used as numerical examples: 
+
+===================     =====================================================
+Class                   Comments
+===================     =====================================================
+StochVol                Basic, univariate stochastic volatility model
+StochVolLeverage        Univariate stochastic volatility model with leverage 
+MVStochVol              Multivariate stochastic volatility model
+BearingsOnly            Bearings-only tracking
+Gordon_etal             Popular toy model often used as a benchmark
+DiscreteCox             A discrete Cox model (Y_t|X_t is Poisson)
+ThetaLogistic           Theta-logistic model from Population Ecology
+===================     =====================================================
 
 """
 
@@ -140,7 +160,6 @@ import numpy as np
 
 import particles
 from particles import distributions as dists
-from particles import kalman  # for linear Gaussian state space models
 
 err_msg_missing_cst = """
     State-space model %s is missing method upper_bound_log_pt, which provides
@@ -251,7 +270,7 @@ class StateSpaceModel(object):
 
     def simulate_given_x(self, x):
         lag_x = [None] + x[:-1]
-        return [self.PY(t, xp, x).rvs()
+        return [self.PY(t, xp, x).rvs(size=1)
                 for t, (xp, x) in enumerate(zip(lag_x, x))]
 
     def simulate(self, T):
@@ -270,7 +289,7 @@ class StateSpaceModel(object):
         x = []
         for t in range(T):
             law_x = self.PX0() if t == 0 else self.PX(t, x[-1])
-            x.append(law_x.rvs())
+            x.append(law_x.rvs(size=1))
         y = self.simulate_given_x(x)
         return x, y
 
@@ -409,8 +428,9 @@ class AuxiliaryBootstrap(Bootstrap):
         return self.ssm.logeta(t, self.data)
 
 
-############################################
-# EXAMPLES
+################################
+# Specific state-space models
+################################
 
 class StochVol(StateSpaceModel):
     r"""Univariate stochastic volatility model. 
@@ -509,140 +529,6 @@ class StochVolLeverage(StochVol):
                             scale=std_x * np.sqrt(1. - self.phi**2))
 
 
-class MVLinearGauss(StateSpaceModel):
-    """Multivariate linear Gaussian model.
-
-    .. math::
-        X_0 & \sim N(\mu_0, cov_X) \\
-        X_t & = F * X_{t-1} + U_t, \quad   U_t\sim N(0, cov_X) \\
-        Y_t & = G * X_t + V_t,     \quad   V_t \sim N(0, cov_Y)
-
-    Note
-    ----
-    When instantiated, this class initialise a Kalman filter, from which
-    it is possible to compute the exact filtering and smoothing distributions.
-    """
-
-    default_parameters = {'F': None, 'G': None, 'covX': None, 'covY': None,
-                          'mu0': None, 'cov0': None}
-
-    def __init__(self, **kwargs):
-        StateSpaceModel.__init__(self, **kwargs)
-        self.kf = kalman.Kalman(F=self.F, G=self.G, covX=self.covX,
-                                covY=self.covY, mu0=self.mu0, cov0=self.cov0)
-
-    def kalman_filter(self, data):
-        return self.kf.filter(data)
-
-    def kalman_smoother(self, data):
-        return self.kf.smoother(data=data)
-
-    def PX0(self):
-        return dists.MvNormal(loc=self.mu0, cov=self.covX)
-
-    def PX(self, t, xp):
-        return dists.MvNormal(loc=np.dot(xp, self.F.T), cov=self.covX)
-
-    def PY(self, t, xp, x):
-        return dists.MvNormal(loc=np.dot(x, self.G.T), cov=self.covY)
-
-    def proposal(self, t, xp, data):
-        fm, fc, _ = self.kf.posterior_t(xp, data[t])
-        return dists.MvNormal(loc=fm, cov=fc)
-
-    def proposal0(self, data):
-        fm, fc, _ = self.kf.posterior_0(data[0])
-        return dists.MvNormal(loc=fm, cov=fc)
-
-    def logeta(self, t, x, data):
-        _, _, logpyt = self.kf.posterior_t(x, data[t + 1])
-        return logpyt
-
-
-class MVLinearGauss_Guarniero_etal(MVLinearGauss):
-    """Special case of a MV Linear Gaussian ssm from Guarnierio et al. 
-
-    .. math:: 
-        G = cov_X = cov_Y = cov_0 = I_{d_x}
-
-        F_{i, j} = \alpha^ { 1 + |i-j|}
-
-    See `MVLinearGauss` for the definition of these quantities. 
-
-    Reference
-    ---------
-    Guarnierio et al (2015), arxiv:1511.06286
-    """
-    def __init__(self, alpha=0.4, dx=2, data=None):
-        F = np.empty((dx, dx))
-        for i in range(dx):
-            for j in range(dx):
-                F[i, j] = alpha**(1 + abs(i - j))
-        MVLinearGauss.__init__(self, F=F, G=np.eye(dx), covX=np.eye(dx),
-                               covY=np.eye(dx), mu0=np.zeros(dx), 
-                               cov0=np.eye(dx), data=data) 
-
-class LinearGauss(MVLinearGauss):
-    r"""A simple (univariate) linear Gaussian model.
-
-        .. math::
-            X_0                 & \sim N(0, \sigma_0^2) \\
-            X_t|X_{t-1}=x_{t-1} & \sim N(\rho * X_{t-1},\sigma_X^2) \\
-            Y_t |X_t=x_t        & \sim N(x_t, \sigma_Y^2)
-
-        Parameters
-        ----------
-        sigma0 
-        sigmaX
-        sigmaY
-        rho
-
-        Note
-        ----
-        If parameter sigma0 is set to None, it is replaced by 
-        :math:`\sigma_X^2 / (1 - \rho^2)` 
-    """
-    default_params = {'sigmaY': .2, 'rho': 0.9, 'sigmaX': 1., 
-                      'sigma0': None}
-
-    def __init__(self, **kwargs):
-        StateSpaceModel.__init__(self, **kwargs)
-        if self.sigma0 is None:
-            self.sigma0 = self.sigmaX / np.sqrt(1. - self.rho**2)
-        self.kf = kalman.Kalman(F=self.rho, G=1., covX=self.sigmaX**2,
-                                covY=self.sigmaY**2,
-                                cov0=self.sigma0**2)
-        # methods kalman_filter and kalman_smoother inherited from
-        # MVLinearGauss
-
-    def PX0(self):
-        return dists.Normal(scale=self.sigma0)
-
-    def PX(self, t, xp):
-        return dists.Normal(loc=self.rho * xp, scale=self.sigmaX)
-
-    def PY(self, t, xp, x):
-        return dists.Normal(loc=x, scale=self.sigmaY)
-
-    def proposal0(self, data):
-        sig2post = 1. / (1. / self.sigma0**2 + 1. / self.sigmaY**2)
-        mupost = sig2post * (data[0] / self.sigmaY**2)
-        return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
-
-    def proposal(self, t, xp, data):
-        sig2post = 1. / (1. / self.sigmaX**2 + 1. / self.sigmaY**2)
-        mupost = sig2post * (self.rho * xp / self.sigmaX**2
-                             + data[t] / self.sigmaY**2)
-        return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
-
-    def logeta(self, t, x, data):
-        law = dists.Normal(loc=self.rho * x,
-                           scale=np.sqrt(self.sigmaX**2 + self.sigmaY**2))
-        return law.logpdf(data[t + 1])
-
-###############################
-
-
 class Gordon_etal(StateSpaceModel):
     r"""Popular toy example that appeared initially in Gordon et al (1993).
 
@@ -666,10 +552,8 @@ class Gordon_etal(StateSpaceModel):
     def PY(self, t, xp, x):
         return dists.Normal(loc=self.a * x**2)
 
-###############################
 
-
-class Tracking(StateSpaceModel):
+class BearingsOnly(StateSpaceModel):
     """ Bearings-only tracking SSM.
 
     """
@@ -695,7 +579,6 @@ class Tracking(StateSpaceModel):
         angle[x[:, 2] < 0.] += np.pi
         return dists.Normal(loc=angle, scale=self.sigmaY)
 
-###############################
 
 class DiscreteCox(StateSpaceModel):
     r"""A discrete Cox model. 
@@ -718,7 +601,6 @@ class DiscreteCox(StateSpaceModel):
     def PY(self, t, xp, x):
         return dists.Poisson(rate=np.exp(x))
 
-################################
 
 class MVStochVol(StateSpaceModel):
     """Multivariate stochastic volatility model. 
@@ -743,7 +625,6 @@ class MVStochVol(StateSpaceModel):
     def PY(self, t, xp, x):
         return dists.MvNormal(scale=np.exp(0.5 * x), cov=self.corY)
 
-###############################
 
 class ThetaLogistic(StateSpaceModel):
     r""" Theta-Logistic state-space model (used in Ecology). 

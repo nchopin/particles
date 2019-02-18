@@ -21,19 +21,21 @@ sb.set_palette("dark")
 
 import particles
 from particles import distributions as dists
-from particles import state_space_models as ssm
+from particles import kalman
+from particles import state_space_models
 
 # set up models, simulate data
 maxT = 10**4
-my_ssm = ssm.LinearGauss(sigmaX=1., sigmaY=.2, rho=0.9)
-_, data = my_ssm.simulate(maxT)
-exact = my_ssm.kalman_filter(data)
-true_loglik = np.cumsum(exact.logpyts)
+ssm = kalman.LinearGauss(sigmaX=1., sigmaY=.2, rho=0.9)
+_, data = ssm.simulate(maxT)
+kf = kalman.Kalman(ssm=ssm, data=data)
+kf.filter()
+true_loglik = np.cumsum(kf.logpyt)
 
 
 def fk_mod(T):
     "FeynmanKac object, given T"
-    return ssm.Bootstrap(ssm=my_ssm, data=data[:T])
+    return state_space_models.Bootstrap(ssm=ssm, data=data[:T])
 
 # Plot the simulated data
 plt.style.use('ggplot')

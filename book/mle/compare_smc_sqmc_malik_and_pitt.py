@@ -23,7 +23,7 @@ import matplotlib.cm as cm
 from scipy.optimize import fmin 
 
 import particles
-from particles import state_space_models as ssm
+from particles import state_space_models as ssms
 
 from malikpitt_interpolation import MalikPitt_SMC
 
@@ -35,7 +35,7 @@ data = 100. * np.diff(np.log(raw_data[:(T+1)]))
 
 def fkmod(theta):
     mu = theta[0]; rho = theta[1]; sigma = theta[2] 
-    return ssm.Bootstrap(ssm=ssm.StochVol(mu=mu, rho=rho, sigma=sigma), 
+    return ssms.Bootstrap(ssm=ssms.StochVol(mu=mu, rho=rho, sigma=sigma), 
                          data=data)
 
 def loglik(theta, seed=None, qmc=False, N=10**4, verbose=False, interpol=False):

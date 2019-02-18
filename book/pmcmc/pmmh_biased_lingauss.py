@@ -23,9 +23,9 @@ from statsmodels.tsa.stattools import acf
 
 import particles
 from particles import distributions as dists
+from particles import kalman
 from particles import mcmc
 from particles import smc_samplers
-from particles import state_space_models as ssm 
 
 # prior 
 dict_prior = {'varX': dists.Gamma(a=.5, b=1.),
@@ -35,14 +35,14 @@ dict_prior = {'varX': dists.Gamma(a=.5, b=1.),
 prior = dists.StructDist(dict_prior)
 
 # State-space model 
-class ReparamLinGauss(ssm.LinearGauss):
+class ReparamLinGauss(kalman.LinearGauss):
     def __init__(self, varX=1., varY=1., rho=0.):
         sigmaX = np.sqrt(varX)
         sigmaY = np.sqrt(varY)
         sigma0 = sigmaX
         # Note: We take X_0 ~ N(0, sigmaX^2) so that Gibbs step is tractable
-        ssm.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
-                                 sigma0=sigma0)
+        kalman.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
+                                    sigma0=sigma0)
  
 data = np.loadtxt('./simulated_linGauss_T100_varX1_varY.04_rho.9.txt')
 
@@ -59,8 +59,9 @@ class StaticLGModel(smc_samplers.StaticModel):
         ll = np.zeros(theta.shape[0])
         for n, th in enumerate(theta): 
             mod = ReparamLinGauss(**smc_samplers.rec_to_dict(th))
-            exact = mod.kalman_filter(data)
-            ll[n] = np.sum(exact.logpyts)
+            kf = kalman.Kalman(data=data, ssm=mod)
+            kf.filter()
+            ll[n] = np.sum(kf.logpyt)
         return ll 
 
 sm = StaticLGModel(data=data, prior=prior)

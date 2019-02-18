@@ -1,233 +1,313 @@
 # -*- coding: utf-8 -*-
 
 r"""
-A basic implementation of the Kalman filter (and smoother). 
+Basic implementation of the Kalman filter (and smoother). 
 
 Overview
-========
+=========
 
-The Kalman filter/smoother is a well-known algorithm to compute recursively 
-the expectation and variance of the filtering/smoothing distributions of 
-a linear Gaussian model, i.e. a model of the form:
+The Kalman filter/smoother is a well-known algorithm for computing recursively
+the filtering/smoothing distributions of a linear Gaussian model, i.e. a model
+of the form:
 
 .. math::
-    X_0 & \sim N(\mu_0,C_0) \\
+    X_0 & \sim N(\mu_0,C_0) \\
     X_t & = F X_{t-1} + U_t, \quad   U_t \sim N(0, C_X) \\
     Y_t & = G X_t + V_t,     \quad   V_t \sim N(0, C_Y)
+
+Linear Gaussian models and the Kalman filter are covered in Chapter 7 of the
+book. 
+
+MVLinearGauss class and subclasses
+==================================
+
+To define a specific linear Gaussian model, we instantiate class
+`MVLinearGauss` (or one its subclass) as follows::
+
+    import numpy as np
+    from particles import kalman
+
+    ssm = kalman.MVLinearGauss(F=np.ones((1, 2)), G=np.eye(2), covX=np.eye(2),
+                               covY=.3)
+
+where the parameters have the same meaning as above. It is also possible to
+specify `mu0`and  `cov0` (the mean and covariance of the initial state $X_0$).
+(See the documentation of the class for more details.)
+
+Class `MVLinearGauss` is a sub-class of `StateSpaceModel` in module
+`state_space_models`, so it inherits methods from its parent such as:: 
+
+    true_states, data = ssm.simulate(30)
+
+Class `MVLinearGauss` implements methods `proposal`, `proposal0` and `logeta`,
+which correspond respectively to the optimal proposal distributions and
+auxiliary function for a guided or auxiliary particle filter; see Chapter 11
+and module `state_space_models` for more details. (That the optimal quantities
+are tractable is, of course, due to the fact that the model is linear and
+Gaussian.) 
+
+To define a univariate linear Gaussian model, you may want to use instead the
+more conveniently parametrised class `LinearGauss` (which is a sub-class of
+``MVLinearGauss`):: 
+
+    ssm = LinearGauss(rho=0.3, sigX=1., sigY=.2, sig0=1.) 
+
+which corresponds to model: 
+
+.. math::
+    X_0                 & \sim N(0, \sigma_0^2) \\
+    X_t|X_{t-1}=x_{t-1} & \sim N(\rho * X_{t-1},\sigma_X^2) \\
+    Y_t |X_t=x_t        & \sim N(x_t, \sigma_Y^2)
+
+Another sub-class of `MVLinearGauss` defined in this module is
+`MVLinearGauss_Guarniero_etal`, which implements a particular class of linear
+Gaussian models often used as a benchmark (after Guarniero et al, 2016).  
+
 
 `Kalman` class
 ==============
 
 The Kalman filter is implemented as a class, `Kalman`, with methods
 `filter` and `smoother`. When instantiating the class, one passes 
-as arguments the value of the parameters of the model above. Here is a simple 
-example::
+as arguments the data, and an object that represents the considered model (i.e.
+an instance of MvLinearGauss, see above)::
 
-    import numpy as np
+    kf = kalman.Kalman(ssm=ssm, data=data)
+    kf.filter()
 
-    # ... get some data
-    F = np.array([[1., 0.3], [0., 1.]])
-    kf = Kalman(F=F, covX=np.eye(2), covY=.01)
-    fwd = kf.filter(data)
+The second line implements the forward pass of a Kalman filter. The results are
+stored as lists of `MeanAndCov` objects, that is, named tuples with attributes
+'mean' and 'cov' that represent a Gaussian distribution. For instance::
 
-In this example, the states X_t are of dimension 2, the observations Y_t are
-of dimension 1. These dimensions are inferred from arguments `covX` and `covY`. 
-The other arguments are optional; if not present, they are set to default
-values with the proper dimension. For instance, G was set to the identity
-matrix of dimension 1 (that is, the scalar 1.). 
+    kf.filt[3].mean  # mean of the filtering distribution at time 3
+    kf.pred[7].cov  # cov matrix of the predictive distribution at time 7
 
-Object `fwd` is an instance of `KalmanOutputs`; it has the
-following attributes: 
+The forward pass also computes the log-likelihood of the data: 
 
-    * `fwd.pred`: prediction distributions: `fwd.pred.mean` and 
-      `fwd.pred.cov` are (T,d) and (T, d, d) arrays containing the T mean
-      vectors and the T covariance matrices of the prediction distributions.
-    * `fwd.filt`: filtering distributions: same structure as for `fwd.pred`.
-    * `filt.logpyts`: array containing the incremental log-likelihoods (i.e. 
-      the log of density of Y_t given Y_{0:t-1}). 
+    kf.logpyt[5]  # log-density of Y_t | Y_{0:t-1} at time t=5
 
-Smoothing works along the same lines. One may perform smoothing directly as
-follows::
+Smoothing works along the same lines::
 
-    bwd = kf.smoother(data=data)
+    kf.smoother()
 
-or, alternatively, since the Kalman smoother works by doing a backward pass
-that involves quantities computed during the forward (filtering pass), 
-you may "recycle" the results of the filter as follows:: 
+then object kf contains a list called smooth, which represents the successive
+(marginal) smoothing distributions::
 
-    bwd = kf.smoother(out_fwd=fwd)
+    kf.smth[8].mean  # mean of the smoothing dist at time 8
 
-Both commands will return the same results, but the latter is faster because it
-does not repeat the computations done during the forward pass. Object `bwd` is
-again a `KalmanOutputs` object, with the same attributes as above, plus an
-extra attribute, `smth`, which contains the smoothing means and covariance 
-matrices. 
+It is possible to call method `smoother` directly (without calling `filter`
+first). In that case, the filtering step is automatically performed as a
+preliminary step.
 
+Kalman objects as iterators
+===========================
+
+It is possible to perform the forward pass step by step; in fact a `Kalman`
+object is an iterator::
+
+    kf = kalman.Kalman(ssm=ssm, data=data)
+    next(kf)  # one step
+    next(kf)  # one step 
+
+If you run the smoother after k such steps, you will obtain the smoothing
+distribution based on the k first data-points. It is therefore possible to
+compute recursively the successive smoothing distributions, but (a) at a high
+CPU cost; and (b) at each time, you must save the results somewhere, as
+attribute `kf.smth` gets written over and over. 
 
 Functions to perform a single step
 ==================================
 
-The module also defines functions that perform a single step of the forward 
-or backward step. Some of these function makes it possible to perform such 
-steps *in parallel* (e.g. for N predictive means). This may be useful in a
-particle filter.  
+The module also defines low-level functions that perform a single step of the
+forward or backward step. Some of these function makes it possible to perform
+such steps *in parallel* (e.g. for N predictive means).  The table below lists
+these functions. Some of the required inputs are `MeanAndCov` objects, which
+may be defined as follows: 
+
+    my_predictive_dist = kalman.MeanAndCov(mean=np.ones(2), cov=np.eye(2))
+
+==============================================
+function (with signature)
+==============================================
+
+predict_step(F, covX, filt)
+filter_step(G, covY, pred, yt)
+filter_step_asarray(G, covY, pred, yt)
+smoother_step(F, filt, next_pred, next_smth)
+==============================================
 
 """
 
 from __future__ import division, print_function
 
+import collections 
 import numpy as np
 from numpy.linalg import inv
 
 from particles import distributions as dists
+from particles import state_space_models as ssms
 
 error_msg = "arguments of KalmanFilter.__init__ have inconsistent shapes"
 
-#######################
-
-# Idea: means and dta points are 1D, covs, F and G are 2D
-# however, works too if means are (N,d)
-# this is why computations are "transposed" for the means
-
+########################
+# Low-level functions
+########################
 
 def dotdot(a, b, c):
     return np.dot(np.dot(a, b), c)
 
+MeanAndCov = collections.namedtuple('MeanAndCov', 'mean cov')
 
-def predict_step(F, covX, filt_mean, filt_cov):
-    """Predictive step.
+def predict_step(F, covX, filt):
+    """Predictive step of Kalman filter.
+
+    Parameters
+    ----------
+    F:  (dx, dx) numpy array
+        Mean of X_t | X_{t-1} is F * X_{t-1} 
+    covX: (dx, dx) numpy array 
+        covariance of X_t | X_{t-1}
+    filt: MeanAndCov object
+        filtering distribution at time t-1
+
+    Returns
+    -------
+    pred: MeanAndCov object
+        predictive distribution at time t
     
     Note
     ----
-    filt_mean may either be of shape (dx,) or (N, dx); in the latter case 
+    filt.mean may either be of shape (dx,) or (N, dx); in the latter case 
     N predictive steps are performed in parallel. 
     """
-    pred_mean = np.matmul(filt_mean, F.T)
-    pred_cov = dotdot(F, filt_cov, F.T) + covX
-    return (pred_mean, pred_cov)
+    pred_mean = np.matmul(filt.mean, F.T)
+    pred_cov = dotdot(F, filt.cov, F.T) + covX
+    return MeanAndCov(mean=pred_mean, cov=pred_cov)
 
 
-def filter_step(G, covY, pred_mean, pred_cov, yt):
-    """Filtering step.
+def filter_step(G, covY, pred, yt):
+    """Filtering step of Kalman filter.
 
-    Note
-    ----
-    filt_mean may either be of shape (dx,) or (N, dx); in the latter case 
-    N predictive steps are performed in parallel. 
+    Parameters
+    ----------
+    G:  (dy, dx) numpy array
+        mean of Y_t | X_t is G * X_t
+    covX: (dx, dx) numpy array 
+        covariance of Y_t | X_t
+    pred: MeanAndCov object
+        predictive distribution at time t
+
+    Returns
+    -------
+    pred: MeanAndCov object
+        filtering distribution at time t
+    logpyt: float
+        log density of Y_t | Y_{0:t-1}
     """
     # data prediction
-    data_pred_mean = np.matmul(pred_mean, G.T)
-    data_pred_cov = dotdot(G, pred_cov, G.T) + covY
+    data_pred_mean = np.matmul(pred.mean, G.T)
+    data_pred_cov = dotdot(G, pred.cov, G.T) + covY
     if covY.shape[0] == 1:
         logpyt = dists.Normal(loc=data_pred_mean,
                               scale=np.sqrt(data_pred_cov)).logpdf(yt)
     else:
-        logpyt = dists.MvNormal(
-            loc=data_pred_mean,
-            cov=data_pred_cov).logpdf(yt)
-    # filter
+        logpyt = dists.MvNormal(loc=data_pred_mean,
+                                cov=data_pred_cov).logpdf(yt)
+    # filter
     residual = yt - data_pred_mean
-    gain = dotdot(pred_cov, G.T, inv(data_pred_cov))
-    filt_mean = pred_mean + np.matmul(residual, gain.T)
-    filt_cov = pred_cov - dotdot(gain, G, pred_cov)
-    return filt_mean, filt_cov, logpyt
+    gain = dotdot(pred.cov, G.T, inv(data_pred_cov))
+    filt_mean = pred.mean + np.matmul(residual, gain.T)
+    filt_cov = pred.cov - dotdot(gain, G, pred.cov)
+    return MeanAndCov(mean=filt_mean, cov=filt_cov), logpyt
 
 
-def filter_step_asarray(G, covY, pred_mean, pred_cov, yt):
-    # deals with the case where shape of input is (N,) ==> (N,1)
-    pm = pred_mean[:, np.newaxis] if pred_mean.ndim == 1 else pred_mean
-    filt_mean, filt_cov, logpyt = filter_step(G, covY, pm, pred_cov, yt)
-    if pred_mean.ndim == 1:
-        filt_mean.squeeze()
-    return filt_mean, filt_cov, logpyt
+def filter_step_asarray(G, covY, pred, yt):
+    """Filtering step of Kalman filter: array version. 
 
-
-def smoother_step(F, filt_mean, filt_cov, next_pred_mean, next_pred_cov,
-                  next_smth_mean, next_smth_cov):
-    """Smoothing step.
-    """
-    J = dotdot(filt_cov, F.T, inv(next_pred_cov))
-    smth_cov = filt_cov + dotdot(J, next_smth_cov - next_pred_cov, J.T)
-    smth_mean = filt_mean + np.matmul(next_smth_mean - next_pred_mean, J.T)
-    return smth_mean, smth_cov
-
-#############################
-
-
-class MeansAndCovs(object):
-    """Stores a collection of means and covariance matrices.
-    """
-
-    def __init__(self, d, T):
-        self.means = np.empty((T, d))
-        self.covs = np.empty((T, d, d))
-
-    def __getitem__(self, t):
-        return self.means[t, :], self.covs[t, :, :]
-
-    def __setitem__(self, t, item):
-        self.means[t, :] = item[0]
-        self.covs[t, :, :] = item[1]
-
-
-class KalmanOutputs(object):
-    """Stores the output of the filter and smoother steps of class `Kalman`.
-
-    Attributes
+    Parameters
     ----------
-    d: int
-        dimension of the states
-    T: int 
-        number of time steps 
-    logpyts: (T,) numpy array 
-        the log-density of Y_t given Y_{0:t-1} for t=0, ..., T-1
-    pred: MeansAndCovs objects: 
-        + pred.means is a (T, d) array containing the T predictive means
-        + pred.cov is a (T, d, d) array containing the T predictive covariance
-          matrices 
-    filt: `MeansAndCovs` object (as above) 
-    smth: `MeansAndCovs` object (as above)
+    G:  (dy, dx) numpy array
+        mean of Y_t | X_t is G * X_t
+    covX: (dx, dx) numpy array 
+        covariance of Y_t | X_t
+    pred: MeanAndCov object
+        predictive distribution at time t
+
+    Returns
+    -------
+    pred: MeanAndCov object
+        filtering distribution at time t
+    logpyt: float
+        log density of Y_t | Y_{0:t-1}
+
+    Note
+    ----
+    This performs the filtering step for N distinctive predictive means: 
+    filt.mean should be a (N, dx) or (N) array; pred.mean in the output
+    will have the same shape. 
+    
+    """
+    pm = pred.mean[:, np.newaxis] if pred.mean.ndim == 1 else pred.mean
+    new_pred = MeanAndCov(mean=pm, cov=pred.cov)
+    filt, logpyt = filter_step(G, covY, new_pred, yt)
+    if pred.mean.ndim == 1:
+        filt.mean.squeeze()
+    return filt, logpyt
+
+
+def smoother_step(F, filt, next_pred, next_smth):
+    """Smoothing step of Kalman filter/smoother.
+
+    Parameters
+    ----------
+    F:  (dx, dx) numpy array
+        Mean of X_t | X_{t-1} is F * X_{t-1} 
+    filt: MeanAndCov object
+        filtering distribution at time t
+    next_pred: MeanAndCov object
+        predictive distribution at time t+1
+    next_smth: MeanAndCov object
+        smoothing distribution at time t+1
+
+    Returns
+    -------
+    smth: MeanAndCov object
+        smoothing distribution at time t 
+    """
+    J = dotdot(filt.cov, F.T, inv(next_pred.cov))
+    smth_cov = filt.cov + dotdot(J, next_smth.cov - next_pred.cov, J.T)
+    smth_mean = filt.mean + np.matmul(next_smth.mean - next_pred.mean, J.T)
+    return MeanAndCov(mean=smth_mean, cov=smth_cov)
+
+
+###############################
+# State-space model classes 
+###############################
+
+class MVLinearGauss(ssms.StateSpaceModel):
+    """Multivariate linear Gaussian model.
+
+    .. math::
+        X_0 & \sim N(\mu_0, cov_0) \\
+        X_t & = F * X_{t-1} + U_t, \quad   U_t\sim N(0, cov_X) \\
+        Y_t & = G * X_t + V_t,     \quad   V_t \sim N(0, cov_Y)
+
+    The only mandatory parameters are `covX` and `covY` (from which the
+    dimensions dx and dy of, respectively, X_t, and Y_t, are deduced). The
+    default values for the other parameters are: 
+        * `mu0`:: an array of zeros (of size dx)
+        * `cov0`: cov_X
+        * `F`: Identity matrix of shape (dx, dx)
+        * `G`: (dx, dy) matrix such that G[i, j] = 1[i=j]
+
+    Note
+    ----
+    The Kalman filter takes as an input an instance of this class (or one of
+    its subclasses). 
     """
 
-    def __init__(self, d, T):
-        self.d, self.T = d, T
-        self.pred = MeansAndCovs(d, T)
-        self.filt = MeansAndCovs(d, T)
-        self.logpyts = np.empty(T)
-
-    def set(self, t, pred_mean, pred_cov, filt_mean, filt_cov, logpyt):
-        self.pred[t] = pred_mean, pred_cov
-        self.filt[t] = filt_mean, filt_cov
-        self.logpyts[t] = logpyt
-
-    def add_smooth_means_covs(self):
-        self.smth = MeansAndCovs(self.d, self.T)
-
-
-class Kalman(object):
-    """ Kalman filter/smoother for the linear Gaussian model above.
-    """
-
-    def __init__(self, F=None, G=None, covX=None,
-                 covY=None, mu0=None, cov0=None):
-        """
-        Parameters
-        ----------
-        F: numpy array
-            transition matrix, i.e. X_t = F X_{t-1} + noise (if None, set to 
-            identity matrix) 
-        G: numpy array 
-            observation matrix, i.e. Y_t = G X_t + noise (if None set to 
-            matrix of shape (dx, dy) with 1 on the diagonal)
-        covX: numpy array 
-            covariance matrix of state transition 
-        covY: numpy array
-            covariance matrix of observation equation 
-        mu0: numpy array
-            initial mean of the states (if None, set to a vector of zeros)
-        cov0: numpy array
-            initial cov of the states (if None, set to covX) 
-        """
+    def __init__(self, F=None, G=None, covX=None, covY=None, mu0=None,
+                 cov0=None):
         self.covX, self.covY = np.atleast_2d(covX), np.atleast_2d(covY)
         self.dx, self.dy = self.covX.shape[0], self.covY.shape[0]
         self.mu0 = np.zeros(self.dx) if mu0 is None else mu0
@@ -252,72 +332,173 @@ class Kalman(object):
         assert self.mu0.shape == (self.dx,), error_msg
         assert self.cov0.shape == (self.dx, self.dx), error_msg
 
-    def filter(self, data):
-        """ Forward recursion: compute mean/variance of filter and prediction.
+    def PX0(self):
+        return dists.MvNormal(loc=self.mu0, cov=self.cov0)
 
+    def PX(self, t, xp):
+        return dists.MvNormal(loc=np.dot(xp, self.F.T), cov=self.covX)
+
+    def PY(self, t, xp, x):
+        return dists.MvNormal(loc=np.dot(x, self.G.T), cov=self.covY)
+
+    def proposal(self, t, xp, data):
+        pred = MeanAndCov(mean=np.matmul(xp, self.F.T), cov=self.covX)
+        f, _ = filter_step_asarray(self.G, self.covY, pred, data[t])
+        return dists.MvNormal(loc=f.mean, cov=f.cov)
+
+    def proposal0(self, data):
+        pred0 = MeanAndCov(mean=self.mu0, cov=self.cov0)
+        f, _ = filter_step(self.G, self.covY, pred0, data[0])
+        return dists.MvNormal(loc=f.mean, cov=f.cov)
+
+    def logeta(self, t, x, data):
+        pred = MeanAndCov(mean=np.matmul(x, self.F.T), cov=self.covX)
+        _, logpyt = filter_step_asarray(self.G, self.covY, pred, data[t+1])
+        return logpyt
+
+class MVLinearGauss_Guarniero_etal(MVLinearGauss):
+    """Special case of a MV Linear Gaussian ssm from Guarnierio et al. (2016).
+
+    .. math:: 
+        G = cov_X = cov_Y = cov_0 = I_{d_x}
+
+        F_{i, j} = \alpha^ { 1 + |i-j|}
+
+    See `MVLinearGauss` for the definition of these quantities. 
+
+    Parameters
+    ----------
+    alpha:  float (default: 0.4)
+        value of alpha
+    dx: int (must be >1; default: 2)
+        dimension of state-space 
+
+    Reference
+    ---------
+    Guarnierio et al (2016). The Iterated Auxiliary Particle Filter, 
+        arxiv:1511.06286, JASA. 
+    """
+    def __init__(self, alpha=0.4, dx=2):
+        F = np.empty((dx, dx))
+        for i in range(dx):
+            for j in range(dx):
+                F[i, j] = alpha**(1 + abs(i - j))
+        MVLinearGauss.__init__(self, F=F, G=np.eye(dx), covX=np.eye(dx),
+                               covY=np.eye(dx))
+
+class LinearGauss(MVLinearGauss):
+    r"""A basic (univariate) linear Gaussian model.
+
+        .. math::
+            X_0                 & \sim N(0, \sigma_0^2) \\
+            X_t|X_{t-1}=x_{t-1} & \sim N(\rho * X_{t-1},\sigma_X^2) \\
+            Y_t |X_t=x_t        & \sim N(x_t, \sigma_Y^2)
+
+        Note
+        ----
+        If parameter sigma0 is set to None, it is replaced by the quantity that
+        makes the state process invariant:
+        :math:`\sigma_X^2 / (1 - \rho^2)` 
+    """
+    default_params = {'sigmaY': .2, 'rho': 0.9, 'sigmaX': 1., 
+                      'sigma0': None}
+
+    def __init__(self, **kwargs):
+        ssms.StateSpaceModel.__init__(self, **kwargs)
+        if self.sigma0 is None:
+            self.sigma0 = self.sigmaX / np.sqrt(1. - self.rho**2)
+        # arguments for Kalman
+        MVLinearGauss.__init__(self, F=self.rho, G=1., covX=self.sigmaX**2,
+                               covY= self.sigmaY**2, cov0=self.sigma0**2)
+
+    def PX0(self):
+        return dists.Normal(scale=self.sigma0)
+
+    def PX(self, t, xp):
+        return dists.Normal(loc=self.rho * xp, scale=self.sigmaX)
+
+    def PY(self, t, xp, x):
+        return dists.Normal(loc=x, scale=self.sigmaY)
+
+    def proposal0(self, data):
+        sig2post = 1. / (1. / self.sigma0**2 + 1. / self.sigmaY**2)
+        mupost = sig2post * (data[0] / self.sigmaY**2)
+        return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
+
+    def proposal(self, t, xp, data):
+        sig2post = 1. / (1. / self.sigmaX**2 + 1. / self.sigmaY**2)
+        mupost = sig2post * (self.rho * xp / self.sigmaX**2
+                             + data[t] / self.sigmaY**2)
+        return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
+
+    def logeta(self, t, x, data):
+        law = dists.Normal(loc=self.rho * x,
+                           scale=np.sqrt(self.sigmaX**2 + self.sigmaY**2))
+        return law.logpdf(data[t + 1])
+
+#################################
+# Kalman filter/smoother class 
+#################################
+
+class Kalman(object):
+    """ Kalman filter/smoother. 
+
+
+    See the documentation of the module for more details.
+    """
+
+    def __init__(self, ssm=None, data=None):
+        """
         Parameters
         ----------
+        ssm: MVLinearGaussian object
+            the linear Gaussian model of interest
         data: list-like 
             the data
-
-        Returns
-        -------
-        `KalmanOutputs` object
         """
-        out = KalmanOutputs(self.dx, len(data))
-        for t, yt in enumerate(data):
-            if t == 0:
-                pred_mean, pred_cov = self.mu0, self.cov0
-            else:
-                pred_mean, pred_cov = predict_step(self.F, self.covX,
-                                                   filt_mean, filt_cov)
-            filt_mean, filt_cov, logpyt = filter_step(self.G, self.covY,
-                                                      pred_mean, pred_cov, yt)
-            out.set(t, pred_mean, pred_cov, filt_mean, filt_cov, logpyt)
-        return out
+        self.ssm = ssm
+        self.data = data
+        self.pred, self.filt, self.logpyt = [], [], []
 
-    def smoother(self, data=None, out_fwd=None):
+    @property
+    def t(self):
+        return len(self.filt)
+
+    def __next__(self):
+        try:
+            yt = self.data[self.t]
+        except IndexError:
+            raise StopIteration
+        if not self.pred:
+            self.pred += [MeanAndCov(mean=self.ssm.mu0, cov=self.ssm.cov0)]
+        else:
+            self.pred += [predict_step(self.ssm.F, self.ssm.covX, self.filt[-1])]
+        new_filt, new_logpyt = filter_step(self.ssm.G, self.ssm.covY, 
+                                           self.pred[-1], yt)
+        self.filt.append(new_filt)
+        self.logpyt.append(new_logpyt)
+
+    def next(self):
+        return self.__next__()  # Python 2 compatibility
+
+    def __iter__(self):
+        return self 
+
+    def filter(self):
+        """ Forward recursion: compute mean/variance of filter and prediction.
+        """
+        for _ in self:
+            pass
+
+    def smoother(self):
         """Backward recursion: compute mean/variance of marginal smoother.
 
-        Parameters
-        ----------
-        data: list-like
-            data (ignored if `out_fwd` is present)
-        out_fwd: KalmanOutputs object
-            output of self.filter()
-
-        Returns
-        -------
-        `KalmanOutputs` object, with extra attribute `smth`. 
+        Performs the filter step in a preliminary step if needed. 
         """
-        out = self.filter(data) if out_fwd is None else out_fwd
-        out.add_smooth_means_covs()
-        out.smth[-1] = out.filt[-1]
-        next_smth_mean, next_smth_cov = out.filt[-1]
-        for t in range(out.T - 2, -1, -1):
-            filt_mean, filt_cov = out.filt[t]
-            next_pred_mean, next_pred_cov = out.pred[t + 1]
-            smth_mean, smth_cov = smoother_step(self.F, filt_mean, filt_cov,
-                                                next_pred_mean, next_pred_cov,
-                                                next_smth_mean, next_smth_cov)
-            next_smth_mean, next_smth_cov = smth_mean, smth_cov
-            out.smth[t] = smth_mean, smth_cov
-        return out
-
-    def posterior_t(self, x, yt):
-        """Computes moments of Gaussian dist p(X_t|X_{t-1}=x,Y_t=yt)
-        for each element in an array x (of shape (N,dx))
-
-        same output as filter_step_asarray:
-            * filt_mean: an array of the same shape as x
-            * filt_cov:  a dx*dx array
-            * logpyt: an array of size N=x.xhape[0]
-
-        """
-        return filter_step_asarray(self.G, self.covY, np.matmul(x, self.F.T),
-                                   self.covX, yt)
-
-    def posterior_0(self, y0):
-        """Computes moments of Gaussian dist p(X_0|Y_0=y_0)"""
-
-        return filter_step(self.G, self.covY, self.mu0, self.cov0, y0)
+        if not self.filt:
+            self.filter()
+        self.smth = [self.filt[-1]]
+        for t, f in reversed(list(enumerate(self.filt[:-1]))):
+            self.smth += [smoother_step(self.ssm.F, f, self.pred[t + 1], 
+                                        self.smth[t + 1])]
+        self.smth.reverse()

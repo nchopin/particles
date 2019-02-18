@@ -23,9 +23,10 @@ from statsmodels.tsa.stattools import acf
 
 import particles
 from particles import distributions as dists
+from particles import kalman
 from particles import mcmc
 from particles import smc_samplers
-from particles import state_space_models as ssm 
+from particles import state_space_models as ssms 
 
 def msjd(theta):
     """Mean squared jumping distance.
@@ -43,14 +44,14 @@ dict_prior = {'varX': dists.InvGamma(a=2., b=2.),
 prior = dists.StructDist(dict_prior)
 
 # State-space model 
-class ReparamLinGauss(ssm.LinearGauss):
+class ReparamLinGauss(kalman.LinearGauss):
     def __init__(self, varX=1., varY=1., rho=0.):
         sigmaX = np.sqrt(varX)
         sigmaY = np.sqrt(varY)
         sigma0 = sigmaX
         # Note: We take X_0 ~ N(0, sigmaX^2) so that Gibbs step is tractable
-        ssm.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
-                                 sigma0=sigma0)
+        kalman.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
+                                    sigma0=sigma0)
  
 data = np.loadtxt('./simulated_linGauss_T100_varX1_varY.04_rho.9.txt')
 

@@ -22,7 +22,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 import particles
-from particles import state_space_models as ssm 
+from particles import kalman
+from particles import state_space_models
 
 # parameter values  
 sigmaX = 1.
@@ -32,15 +33,16 @@ T = 1000
 N = 200 
 
 # define ss model, simulate data
-state_space_model = ssm.LinearGauss(sigmaX=sigmaX, sigmaY=sigmaY, rho=rho)
-true_states, data = state_space_model.simulate(T)
+ssm = kalman.LinearGauss(sigmaX=sigmaX, sigmaY=sigmaY, rho=rho)
+true_states, data = ssm.simulate(T)
 
 # computes true log-likelihood
-kf = state_space_model.kalman_filter(data)
-true_loglik = np.sum(kf.logpyts)
+kf = kalman.Kalman(ssm=ssm, data=data)
+kf.filter()
+true_loglik = np.sum(kf.logpyt)
 
 # FK model 
-fk_model = ssm.GuidedPF(ssm=state_space_model, data=data)
+fk_model = state_space_models.GuidedPF(ssm=ssm, data=data)
 
 # Run SMC algorithm for different values of ESS_min
 alphas = list(np.linspace(0., .1, 11)) + list(np.linspace(0.15, 1., 18))

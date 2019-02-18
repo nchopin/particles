@@ -19,16 +19,16 @@ import numpy as np
 
 import particles
 from particles import distributions as dists
-from particles import state_space_models as ssm
+from particles import state_space_models
 
 # set up models, simulate and save data
 T = 100
 mu0 = 0.
 phi0 = 0.9
 sigma0 = .5  # true parameters
-my_ssm = ssm.DiscreteCox(mu=mu0, phi=phi0, sigma=sigma0)
-true_states, data = my_ssm.simulate(T)
-fkmod = ssm.Bootstrap(ssm=my_ssm, data=data)
+ssm = state_space_models.DiscreteCox(mu=mu0, phi=phi0, sigma=sigma0)
+true_states, data = ssm.simulate(T)
+fkmod = state_space_models.Bootstrap(ssm=ssm, data=data)
 
 # run particle filter, compute trajectories 
 N = 100

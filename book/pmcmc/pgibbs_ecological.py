@@ -20,19 +20,18 @@ import particles
 from particles import distributions as dists
 from particles import mcmc
 from particles import smc_samplers as ssp
-from particles import state_space_models as ssm 
+from particles import state_space_models as ssms 
 
 # state-space model
-class ThetaLogisticReparametrised(ssm.ThetaLogistic):
+class ThetaLogisticReparametrised(ssms.ThetaLogistic):
     default_params = {'precX': 4., 'precY': 6.25, 'tau0': 0.15, 
                           'tau1': 0.12, 'tau2': 0.1}
     def __init__(self, **kwargs):
-        ssm.ThetaLogistic.__init__(self, **kwargs)
+        ssms.ThetaLogistic.__init__(self, **kwargs)
         self.sigmaX = 1. / np.sqrt(self.precX)
         self.sigmaY = 1. / np.sqrt(self.precY)
 
 ssm_cls = ThetaLogisticReparametrised
-my_ssm = ssm_cls()
 
 # data 
 data = np.loadtxt('../../datasets/nutria.txt')

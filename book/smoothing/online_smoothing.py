@@ -31,7 +31,7 @@ import numpy as np
 
 import particles
 from particles import distributions as dists
-from particles import state_space_models as ssm
+from particles import state_space_models
 
 
 def psit(t, xp, x):
@@ -44,7 +44,7 @@ def psit(t, xp, x):
         return -0.5 / sigma0**2 + (0.5 / sigma0**4) * \
             ((x - mu0) - phi0 * (xp - mu0))**2
 
-class DiscreteCox_with_addf(ssm.DiscreteCox):
+class DiscreteCox_with_addf(state_space_models.DiscreteCox):
     """ A discrete Cox model:
     Y_t ~ Poisson(e^{X_t})
     X_t - mu = phi(X_{t-1}-mu)+U_t,   U_t ~ N(0,1)
@@ -64,9 +64,9 @@ mu0 = 0.  # true parameters
 phi0 = 0.9
 sigma0 = .5
 
-my_ssm = DiscreteCox_with_addf(mu=mu0, phi=phi0, sigma=sigma0)
-true_states, data = my_ssm.simulate(T)
-fkmod = ssm.Bootstrap(ssm=my_ssm, data=data)
+ssm = DiscreteCox_with_addf(mu=mu0, phi=phi0, sigma=sigma0)
+true_states, data = ssm.simulate(T)
+fkmod = state_space_models.Bootstrap(ssm=ssm, data=data)
 
 # plot data
 plt.figure()

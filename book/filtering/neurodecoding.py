@@ -24,9 +24,9 @@ import seaborn as sb
 import particles
 from particles import distributions as dists
 from particles import kalman 
-from particles import state_space_models as ssm 
+from particles import state_space_models
 
-class NeuralDecoding(ssm.StateSpaceModel):
+class NeuralDecoding(state_space_models.StateSpaceModel):
     """ 
     
     X_t is position (3D) plus velocity (3D); in each dimension, 
@@ -112,11 +112,12 @@ class NeuralDecoding(ssm.StateSpaceModel):
         xmax, Q = self.approx_likelihood(yt)
         G = np.eye(self.dx)
         covY = linalg.inv(Q)
-        return kalman.filter_step(G, covY, self.predmean(xp), self.SigX, xmax)
+        pred = kalman.MeanAndCov(mean=self.predmean(xp), cov=self.SigX)
+        return kalman.filter_step(G, covY, pred, xmax)
         
     def proposal(self, t, xp, data):
-        loc, cov, _ = self.approx_post(xp, data[t])
-        return dists.MvNormal(loc=loc, cov=cov)
+        filt, _ = self.approx_post(xp, data[t])
+        return dists.MvNormal(loc=filt.mean, cov=filt.cov)
         
     def proposal0(self, data):
         # TODO same treatment for X_0???
@@ -142,9 +143,10 @@ x0 = np.zeros(dx)  # TODO
 chosen_ssm = NeuralDecoding(a=a0, b=b0, x0=x0, delta=delta0, tau=tau0)
 _, data = chosen_ssm.simulate(T)
 models = OrderedDict()
-models['boot'] = ssm.Bootstrap(ssm=chosen_ssm, data=data)
-models['guided'] = ssm.GuidedPF(ssm=chosen_ssm, data=data)
-# models['apf'] = ssm.AuxiliaryPF(ssm=chosen_ssm, data=data)
+models['boot'] = state_space_models.Bootstrap(ssm=chosen_ssm, data=data)
+models['guided'] = state_space_models.GuidedPF(ssm=chosen_ssm, data=data)
+# models['apf'] = state_space_models.AuxiliaryPF(ssm=chosen_ssm, data=data)
+# Uncomment this if you want to include the APF in the comparison
 
 N = 10**4; nruns = 50
 results = particles.multiSMC(fk=models, N=N, nruns=nruns, nprocs=1,
@@ -152,11 +154,13 @@ results = particles.multiSMC(fk=models, N=N, nruns=nruns, nprocs=1,
 
 ## PLOTS
 #########
-savefigs = True
+savefigs = False
 plt.style.use('ggplot')
 
-# check Gaussian approx 
+# arbitrary time
 t0 = 9
+
+# check Gaussian approximation is accurate
 plt.figure()
 mu, Q  = chosen_ssm.approx_likelihood(data[t0])
 lG = lambda x: models['boot'].logG(t0, None, x)

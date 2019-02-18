@@ -32,7 +32,7 @@ import particles
 from particles import distributions as dists
 from particles import mcmc
 from particles import smc_samplers
-from particles import state_space_models as ssm
+from particles import state_space_models
 
 # data
 T = 200
@@ -53,15 +53,15 @@ mu0, sigma0, rho0 = -1.02, 0.178, 0.9702
 theta0 = np.array([(mu0, rho0, sigma0)],
                   dtype=[('mu', float), ('rho', float), ('sigma', float)])
 
-ssm_cls = ssm.StochVol
-ssmod = ssm_cls(mu=mu0, sigma=sigma0, rho=rho0)
+ssm_cls = state_space_models.StochVol
+ssm = ssm_cls(mu=mu0, sigma=sigma0, rho=rho0)
 
 
 # (QMC-)FFBS as a reference
 N = 3000
 tic = time.time()
-pf = particles.SMC(fk=ssm.Bootstrap(ssm=ssmod, data=data), N=N, qmc=True,
-                store_history=True)
+pf = particles.SMC(fk=state_space_models.Bootstrap(ssm=ssm, data=data), N=N, qmc=True,
+                   store_history=True)
 pf.run()
 smth_traj = pf.hist.backward_sampling_qmc(M=N)
 cpu_time_fbbs = time.time() - tic
