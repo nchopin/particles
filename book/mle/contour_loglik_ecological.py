@@ -41,8 +41,8 @@ models = [fkmod(tau1=tau1, tau2=tau2)
           for tau1, tau2 in zip(tau1s.flat, tau2s.flat)]
 
 results = particles.multiSMC(fk=models, N=10**4, qmc=True, nruns=1,
-                          nprocs=0, # multiprocessing
-                          out_func= lambda pf: pf.logLt)
+                             nprocs=0, # multiprocessing
+                             out_func= lambda pf: pf.logLt)
 ll = np.array([r['output'] for r in results])
 ll.shape = (ng, ng)
 

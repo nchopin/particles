@@ -127,10 +127,11 @@ plt.xlabel(r'$N$')
 pretty_names['FFBS_ON2'] += " and " + pretty_names['two-filter_ON2']
 for method in ['FFBS_ON2', 'FFBS_ON',
                'two-filter_ON_prop', 'two-filter_ON']:
+    ls = '-' if method=='FFBS_ON2' else '--'
     plt.plot(Ns, [np.mean(np.array([r['cpu'] for r in results
                               if r['method'] == method and r['N'] == N]))
                   for N in Ns], label=pretty_names[method],
-             linewidth=3)
+             linewidth=3, ls=ls)
 plt.ylabel('cpu time (s)')
 plt.legend(loc=2)
 if savefigs:

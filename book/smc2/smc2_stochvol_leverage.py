@@ -30,7 +30,7 @@ from particles import smc_samplers as ssp
 from particles import state_space_models 
 
 # data 
-raw_data = np.loadtxt('../datasets/GBP_vs_USD_9798.txt',
+raw_data = np.loadtxt('../../datasets/GBP_vs_USD_9798.txt',
                       skiprows=2, usecols=(3,), comments='(C)')
 data = 100. * np.diff(np.log(raw_data))
 
@@ -77,7 +77,7 @@ T = data.shape[0]
 # variance marginal likelihood vs time
 plt.figure()
 for k, c in colors.items():
-    plt.plot(np.var(np.array([r['out'].summaries.logLts 
+    plt.plot(np.var(np.array([r['output'].summaries.logLts 
                                    for r in runs if r['fk']==k]), axis=0),
              color=c, label=k)
 plt.xlabel(r'$t$')
@@ -88,9 +88,9 @@ if savefigs:
 
 # Model evidence leverage vs basic SV model
 plt.figure()
-evidence_lvg = np.mean([r['out'].summaries.logLts 
+evidence_lvg = np.mean([r['output'].summaries.logLts 
                         for r in runs if r['fk']=='smc2_qmc'], axis=0)
-evidence_sv = np.mean([r['out'].summaries.logLts 
+evidence_sv = np.mean([r['output'].summaries.logLts 
                         for r in runs if r['fk']=='smc2_sv'], axis=0)
 plt.plot(evidence_lvg - evidence_sv, 'k')
 plt.xlabel(r'$t$')
@@ -99,7 +99,7 @@ if savefigs:
     plt.savefig('%s_model_comparison.pdf' % prefix)
 
 # Sequential inference
-typical_run = [r for r in runs if r['fk']=='smc2_qmc'][0]['out']
+typical_run = [r for r in runs if r['fk']=='smc2_qmc'][0]['output']
 plt.figure()
 for i, p in enumerate(prior.laws.keys()):
     plt.subplot(2, 2, i + 1)
@@ -117,7 +117,7 @@ if savefigs:
 plt.figure()
 some_run = runs[0]
 print(some_run['fk'])
-plt.plot(some_run['out'].summaries.ESSs, 'k')
+plt.plot(some_run['output'].summaries.ESSs, 'k')
 plt.xlabel(r'$t$')
 plt.ylabel('ESS')
 if savefigs:
@@ -131,8 +131,8 @@ def cdf(x, w):
 
 include_prior = False
 
-smc2s = [r['out'] for r in runs if r['fk']=='smc2']
-smc2qmcs = [r['out'] for r in runs if r['fk']=='smc2_qmc']
+smc2s = [r['output'] for r in runs if r['fk']=='smc2']
+smc2qmcs = [r['output'] for r in runs if r['fk']=='smc2_qmc']
 
 for i, p in enumerate(['mu', 'rho', 'sigma', 'phi']):
     plt.subplot(2, 2, i + 1)

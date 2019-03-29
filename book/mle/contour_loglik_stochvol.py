@@ -37,10 +37,10 @@ mus, rhos = np.meshgrid(mu_grid, rho_grid)
 models = [fkmod(mu=mu, rho=rho, sigma=sigma)
           for mu, rho in zip(mus.flat, rhos.flat)]
 
-results = particles.multiSMC(fk=models, N=10**4, qmc=True,
-                          nprocs=0,  #  multiprocessing, yeah!
+results = particles.multiSMC(fk=models, N=10**4, qmc=True, nruns=1,
+                          nprocs=0,  #  multiprocessing!
                           out_func=lambda pf: pf.logLt)
-ll = np.array([r['out'] for r in results])
+ll = np.array([r['output'] for r in results])
 ll.shape = (ng, ng)
 
 # PLOT
