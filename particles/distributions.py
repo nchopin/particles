@@ -154,28 +154,28 @@ conjugate for the considered class, and some data. Here is a quick example::
 
 Here is a list of distributions implementing posteriors: 
 
-============    ===================
-Distribution    Corresponding model 
-============    ===================
-
+============    =================== ==================
+Distribution    Corresponding model comments
+============    =================== ==================
 Normal          N(theta, sigma^2),   sigma fixed (passed as extra argument)
 TruncNormal     same 
 Gamma           N(0, 1/theta) 
 InvGamma        N(0, theta)
 MvNormal        N(theta, Sigma)     Sigma fixed (passed as extra argument)
+============    =================== ==================
 
 
 Implementing your own distributions
 ===================================
 
 If you would like to create your own univariate probability distribution, the
-easiest way to do so is to sub-class :class:`ProbDist`, for a continuous
-distribution, or :class:`DiscreteDist`, for a discrete distribution. This will
+easiest way to do so is to sub-class ``ProbDist``, for a continuous
+distribution, or ``DiscreteDist``, for a discrete distribution. This will
 properly set class attributes `dim` (the dimension, set to one, for a
-univariate distribution), and `dtype`, so that they play nicely with StructDist
-and so on. You will also have to properly define methods `rvs`, `logpdf` and
-`ppf`. You may omit `ppf` if you do not plan to use SQMC (Sequential quasi
-Monte Carlo). 
+univariate distribution), and `dtype`, so that they play nicely with
+``StructDist`` and so on. You will also have to properly define methods `rvs`,
+`logpdf` and `ppf`. You may omit `ppf` if you do not plan to use SQMC
+(Sequential quasi Monte Carlo). 
 
 
 """

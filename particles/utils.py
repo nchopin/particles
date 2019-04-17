@@ -29,7 +29,7 @@ For each argument, you may use a dictionary instead of a list::
     results = multiplexer(f=f, z={'good': 3, 'bad': 5})
 
 In that case, the values of the dictionaries are used in the same way as above, 
-but the output reports the corresponding keys, i.e. 
+but the output reports the corresponding keys, i.e.::
 
     [ {'z': 'good', 'out': 12},  # f(0, 0, 3)
       {'z': 'bad', 'out': 28}    # f(0, 0, 5)
