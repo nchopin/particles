@@ -27,7 +27,11 @@ Turning off summary collection
 ==============================
 
 You may set option ``summaries`` of class ``SMC`` to False to avoid collecting 
-any summary. This might be useful in cases when you need to keep a large number 
+any summary::
+    
+    my_alg = particles.SMC(fk=some_fk_model, N=100, summaries=False)
+    
+This might be useful in cases when you need to keep a large number 
 of SMC objects in memory (as in SMC^2). In that case, even the default
 summaries (see below) might take too much space. 
     

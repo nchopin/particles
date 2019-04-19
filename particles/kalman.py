@@ -122,14 +122,13 @@ The module also defines low-level functions that perform a single step of the
 forward or backward step. Some of these function makes it possible to perform
 such steps *in parallel* (e.g. for N predictive means).  The table below lists
 these functions. Some of the required inputs are `MeanAndCov` objects, which
-may be defined as follows: 
+may be defined as follows::
 
     my_predictive_dist = kalman.MeanAndCov(mean=np.ones(2), cov=np.eye(2))
 
 ==============================================
 function (with signature)
 ==============================================
-
 predict_step(F, covX, filt)
 filter_step(G, covY, pred, yt)
 filter_step_asarray(G, covY, pred, yt)

@@ -10,7 +10,7 @@ This package was developed to complement the forthcoming book:
 The documentation refers sometimes to the book for some theoretical details,
 but otherwise is meant to be self-sufficient. 
 
-To get an overview of what particles can do, we strongly recommend that you
+To get an overview of what **particles** can do, we strongly recommend that you
 have a look at the notebook tutorials first (in the `overview` section).  
 
 Finally, most things are self-documented in particles with docstrings; this

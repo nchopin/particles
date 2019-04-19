@@ -3,7 +3,7 @@
 """
 This module implements off-line smoothing algorithms as methods
 of class `ParticleHistory`. Off-line smoothing amounts to approximate the
-distribution of the complete trajectory X_{0:T}, given data y_{0:T}, at some
+distribution of the complete trajectory $X_{0:T}$, given data $y_{0:T}$, at some
 fixed time horizon T. The corresponding algorithms require: 
 
     1. to run a particle filter forward in time (from time 0 to time T), 
@@ -14,7 +14,7 @@ fixed time horizon T. The corresponding algorithms require:
     trajectories backward. 
 
 In practice, to do Step 1, we initialize a SMC algorithm with option 
-``store_history`` set to ``True`` (see :mod:`core` module). Then, upon completion,
+``store_history`` set to ``True`` (see `core` module). Then, upon completion,
 the SMC object has a ``hist`` attribute, which is an instance of 
 `ParticleHistory`; then to do Step 2, we use the appropriate method. 
 Here is a quick example::
@@ -151,18 +151,18 @@ class ParticleHistory(object):
         Notes
         -----
 
-        1. if linear_cost=False, complexity is O(TMN); i.e. O(TN^2) for M=N;
+        1. if `linear_cost=False`, complexity is O(TMN); i.e. O(TN^2) for M=N;
            if =True, complexity is O(T(M+N)), i.e. O(TN) for M=N.
            This requires that model has method `upper_bound_trans(self,t)`, which
-           provides the log of a constant C_t such that p_t(x_t|x_{t-1})<=C_t
+           provides the log of a constant C_t such that p_t(x_t|x_{t-1})<=C_t.
 
         2. main output is *paths*, a list of T arrays such that
            paths[t][m] is component t of trajectory m.
 
-        3. if linear_cost=True and return_ar=True, output is tuple (paths, ar),
+        3. if `linear_cost=True` and `return_ar=True`, output is tuple (paths, ar),
            where paths is as above, and ar is the overall acceptance rate 
            (of the rejection steps that choose the ancestors); otherwise 
-           output is simply paths
+           output is simply paths.
         """
         idx = np.empty((self.T, M), dtype=int)
         idx[-1, :] = rs.multinomial(self.wgt[-1].W, M=M)
