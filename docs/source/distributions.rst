@@ -5,13 +5,31 @@
 
 .. currentmodule:: particles.distributions
 
+Summary of module
+=================
+
 .. autosummary::
-   :toctree: _autosummary
-   :hidden:
+    :toctree: _autosummary
+    :nosignatures:
 
-   MvNormal
-   IndepProd
-   StructDist
-
-
-
+    IndepProd
+    StructDist
+    ProbDist
+    DiscreteDist
+    Normal
+    Logistic
+    Laplace
+    Beta
+    Gamma
+    InvGamma
+    Uniform
+    Student
+    TruncNormal
+    Dirac
+    Poisson
+    Binomial
+    Geometric
+    LinearD
+    LogD
+    LogitD
+    MvNormal

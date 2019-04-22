@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """ 
+Non-numerical utilities (notably for parallel computation). 
+
+Overview
+========
+
 This module gathers several non-numerical utilities. The only one of direct 
 interest to the user is the `multiplexer` function, which we now describe
 briefly.  

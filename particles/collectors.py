@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
+Collecting summaries at each iteration of a SMC algorithm. 
+
 Overview
 ========
 

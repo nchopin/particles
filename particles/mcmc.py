@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
+MCMC (Markov chain Monte Carlo) and related algorithms.
+
 Overview
 ========
 
@@ -21,15 +23,17 @@ sampler::
                         adaptive=True)
     my_mcmc.run()
 
-Upon completion, object `my_mcmc` have an attribute called `chain`, which
+Upon completion, object ``my_mcmc`` have an attribute called ``chain``, which
 is a `ThetaParticles` object (see module `smc_samplers`). In particular, 
-`my_mcmc.chain` has the following attributes:
-    * `theta`: a structured array that contains the 200 simulated parameters;
-    * `lpost`: an array that contains the log-posterior density at these 200
+``my_mcmc.chain`` has the following attributes:
+    * ``theta``: a structured array that contains the 200 simulated parameters;
+    * ``lpost``: an array that contains the log-posterior density at these 200
       parameters. 
 
-See the dedicated notebook tutorial (on Bayesian inference for state-space
+See the dedicated notebook tutorial_ (on Bayesian inference for state-space
 models) for more examples and explanations. 
+
+.. _tutorial: notebooks/Bayes_estimation_ssm.ipynb
 
 """
 

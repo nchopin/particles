@@ -17,20 +17,10 @@ Summary of module
     GuidedPF
     AuxiliaryPF
     AuxiliaryBootstrap
-
-List of implemented state-space models
-======================================
-
-.. autosummary::
-    :toctree: _autosummary
-    :nosignatures: 
-
     StochVol
     StochVolLeverage
-    MVLinearGauss
-    MVLinearGauss_Guarniero_etal
-    LinearGauss
+    MVStochVol
+    BearingsOnly
     Gordon_etal
-    Tracking
     DiscreteCox
     ThetaLogistic

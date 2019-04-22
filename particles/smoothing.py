@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-"""
-This module implements off-line smoothing algorithms as methods
-of class `ParticleHistory`. Off-line smoothing amounts to approximate the
-distribution of the complete trajectory $X_{0:T}$, given data $y_{0:T}$, at some
+""" 
+This module implements off-line smoothing algorithms as methods of class
+`ParticleHistory`. Off-line smoothing amounts to approximate the distribution
+of the complete trajectory :math:`X_{0:T}`, given data :math:`y_{0:T}`, at some
 fixed time horizon T. The corresponding algorithms require: 
 
     1. to run a particle filter forward in time (from time 0 to time T), 
@@ -14,9 +14,9 @@ fixed time horizon T. The corresponding algorithms require:
     trajectories backward. 
 
 In practice, to do Step 1, we initialize a SMC algorithm with option 
-``store_history`` set to ``True`` (see `core` module). Then, upon completion,
+``store_history`` set to ``True`` (see `core` module). Upon completion,
 the SMC object has a ``hist`` attribute, which is an instance of 
-`ParticleHistory`; then to do Step 2, we use the appropriate method. 
+`ParticleHistory`; then, to do Step 2, we use the appropriate method. 
 Here is a quick example::
 
     # forward pass 
@@ -24,7 +24,8 @@ Here is a quick example::
     # generate 20 smoothing trajectories
     trajectories = pf.backward_sampling(20)  
 
-For more details, see the documentation of `ParticleHistory`. 
+For more details, see the documentation of `ParticleHistory` (and Chapter 12 of
+the book). 
 
 .. warning:: the complete history of a particle filter may take a lot of
   memory. 
@@ -90,6 +91,11 @@ class ParticleHistory(object):
 
     def save(self, X=None, w=None, A=None):
         """Save one "page" of history at a given time. 
+
+        .. note:: 
+            This method is used internally by `SMC` to store the state of the
+            particle system at each time t. In most cases, users should not
+            have to call this method directly.
         """
         self.X.append(X)
         self.wgt.append(w)
@@ -113,9 +119,9 @@ class ParticleHistory(object):
     def compute_trajectories(self):
         """Compute the N trajectories that constitute the current genealogy.
 
-        Compute and add attribute B to *self* where B is an array such that
-        B[t,n] is the index of ancestor at time t of particle X_T^n,
-        where T is the current length of history
+        Compute and add attribute ``B`` to ``self`` where ``B`` is an array
+        such that ``B[t,n]`` is the index of ancestor at time t of particle X_T^n,
+        where T is the current length of history.
         """
         self.B = np.empty((self.T, self.N), 'int')
         self.B[-1, :] = self.A[-1]
@@ -151,18 +157,19 @@ class ParticleHistory(object):
         Notes
         -----
 
-        1. if `linear_cost=False`, complexity is O(TMN); i.e. O(TN^2) for M=N;
-           if =True, complexity is O(T(M+N)), i.e. O(TN) for M=N.
-           This requires that model has method `upper_bound_trans(self,t)`, which
-           provides the log of a constant C_t such that p_t(x_t|x_{t-1})<=C_t.
+        1. if ``linear_cost=False``, complexity is O(TMN); i.e. O(TN^2) for M=N;
+           if ``linear_cost=True``, complexity is O(T(M+N)), i.e. O(TN) for M=N.
+           This requires that model has method `upper_bound_trans`, which
+           provides the log of a constant C_t such that
+           :math:`p_t(x_t|x_{t-1}) \leq C_t`. 
 
-        2. main output is *paths*, a list of T arrays such that
-           paths[t][m] is component t of trajectory m.
+        2. main output is ``paths``, a list of T arrays such that
+           ``paths[t][m]`` is component t of trajectory m.
 
-        3. if `linear_cost=True` and `return_ar=True`, output is tuple (paths, ar),
-           where paths is as above, and ar is the overall acceptance rate 
-           (of the rejection steps that choose the ancestors); otherwise 
-           output is simply paths.
+        3. if ``linear_cost=True`` and ``return_ar=True``, output is tuple
+           ``(paths, ar)``, where ``paths`` is as above, and ``ar`` is the overall 
+           acceptance rate (of the rejection steps that choose the ancestors);
+           otherwise output is simply ``paths``.
         """
         idx = np.empty((self.T, M), dtype=int)
         idx[-1, :] = rs.multinomial(self.wgt[-1].W, M=M)

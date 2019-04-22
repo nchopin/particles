@@ -20,14 +20,14 @@ the book.
 Defining a hidden Markov model
 ==============================
 
-Hidden Markov models are represented as ``HMM`` objects; ``HMM`` is a subclass
-of ``StateSpaceModels`` (from module ``state_space_models``), which assigns: 
+Hidden Markov models are represented as `HMM` objects; `HMM` is a subclass
+of `StateSpaceModel` (from module `state_space_models`), which assigns: 
 
     * A categorical distribution to X_0 (parameter `init_dist`)
     * A categorical distribution to X_t given X_{t-1} (parameter `trans_mat`)
 
-The distributions of Y_t|X_t must be defined by sub-classing HMM. For instance,
-this module defines a GaussianHMM class as follows::
+The distributions of Y_t|X_t must be defined by sub-classing `HMM`. For instance,
+this module defines a `GaussianHMM` class as follows::
     
     class GaussianHMM(HMM):
         default_params = {'mus': None, 'sigmas': None}
@@ -46,12 +46,12 @@ and e.g. sample data from this model::
 
     true_states, y = my_hmm.simulate(100) 
 
-(This works because, again, HMM is a subclass of ``StateSpaceModels``). 
+(This works because, again, `HMM` is a subclass of ``StateSpaceModels``). 
 
 Running the Baum-Welch algorithm
 ================================
 
-Class ``BaumWelch`` is instantiated as follows::
+Class `BaumWelch` is instantiated as follows::
 
     bw = BaumWelch(hmm=my_hmm, data=y)
 
@@ -61,7 +61,7 @@ To actually run the algorithm, one must invoke the appropriate methods, e.g.::
     bw.backward()  # computes the marginal smoothing probs
     bw.sample(N=30)  # generate 30 smoothing trajectories
 
-If you invoke either `backward` or `sample` directly, the forward pass will be
+If you invoke either ``backward`` or ``sample`` directly, the forward pass will be
 run first. The output of the forward and backward passes are attributes of 
 object `bw`, which are lists of K-length numpy arrays. For instance,
 `self.filt` is a list of arrays containing the filtering probabilities; see the
@@ -125,7 +125,8 @@ class HMM(ssms.StateSpaceModel):
         return dists.Categorical(p=self.trans_mat[xp, :])
 
 class GaussianHMM(HMM):
-    """Gaussian HMM: Y_t|X_t=k ~ N(mu_k, sigma_k^2)"""
+    """Gaussian HMM: :math:`Y_t|X_t=k \sim N(\mu_k, \sigma_k^2)`
+    """
     default_params = {'mus': None, 'sigmas': None}
     default_params.update(HMM.default_params)
 

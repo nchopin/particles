@@ -126,14 +126,17 @@ may be defined as follows::
 
     my_predictive_dist = kalman.MeanAndCov(mean=np.ones(2), cov=np.eye(2))
 
-==============================================
-function (with signature)
-==============================================
-predict_step(F, covX, filt)
-filter_step(G, covY, pred, yt)
-filter_step_asarray(G, covY, pred, yt)
-smoother_step(F, filt, next_pred, next_smth)
-==============================================
++----------------------------------------------+
+| Function (with signature)                    |
++==============================================+
+| predict_step(F, covX, filt)                  |
++----------------------------------------------+
+| filter_step(G, covY, pred, yt)               |
++----------------------------------------------+
+| filter_step_asarray(G, covY, pred, yt)       |
++----------------------------------------------+
+| smoother_step(F, filt, next_pred, next_smth) |
++----------------------------------------------+
 
 """
 

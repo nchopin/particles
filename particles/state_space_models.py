@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 
 r"""
+State-space models as Python objects. 
+
 Overview
 ========
-
 This module defines:  
 
     1. the `StateSpaceModel` class, which lets you define a state-space model
        as a Python object;
 
     2. `FeynmanKac` classes that automatically define the Bootstrap, guided or
-       auxililiary Feynman-Kac models associated to a given state-space model;
+       auxiliary Feynman-Kac models associated to a given state-space model;
 
     3. several standard state-space models (stochastic volatility, 
        bearings-only tracking, and so on).
@@ -19,8 +20,8 @@ The recommended import is::
 
     from particles import state_space_models as ssms
 
-For more details on state-space models and their properties, see Chapter 2 of
-the book. 
+For more details on state-space models and their properties, see Chapters 2 and
+4 of the book. 
 
 Defining a state-space model
 ============================
@@ -57,10 +58,9 @@ details:
 
     * probability distributions are defined through `ProbDist` objects, which
       are defined in module `distributions`. Most basic probability
-      distributions are defined there; the syntax is very close to the syntax
-      of the Scipy distributions; see module `distributions` for more details. 
-    * `StochVol` actually defines a **parametric** class of models; note in
-      particular that ``self.sigma`` and ``self.rho`` are **attributes** of
+      distributions are defined there;  see module `distributions` for more details. 
+    * The class above actually defines a **parametric** class of models; in
+      particular,  ``self.sigma`` and ``self.rho`` are **attributes** of
       this class that are set when we define object `my_stoch_vol_model`. 
       Default values for these parameters may be defined in a dictionary called 
       ``default_parameters``. When this dictionary is defined, any un-defined 
@@ -114,12 +114,13 @@ Voilà! You have now implemented a guided filter.
 
 Of course, the proposal distribution above does not make much sense; we use it
 to illustrate how proposals may be defined. Note in particular that it depends
-on `data`, an object that represents the complete dataset. Hence the proposal
+on ``data``, an object that represents the complete dataset. Hence the proposal
 kernel at time ``t`` may depend on y_t but also y_{t-1}, or any other
 datapoint. 
 
 For auxiliary particle filters (APF), one must in addition specify auxiliary
-functions, that is functions ::
+functions, that is the (log of) functions :math:`\eta_t` that modify the
+resampling probabilities (see Section 10.3.3 in the book):: 
 
     class StochVol_with_prop_and_aux_func(StochVol_with_prop):
         def logetat(self, t, x, data): 
@@ -135,22 +136,25 @@ show how to define an auxiliary function.
 Already implemented state-space models
 ======================================
 
-Linear Gaussian state-space models are implemented in module `kalman`;
-similarly hidden Markov models (state-space models with a finite state-space)
-are implemented in module `hmm`. This module implements a few basic state-space
-models that are often used as numerical examples: 
+This module implements a few basic state-space models that are often used as
+numerical examples: 
 
-===================     =====================================================
-Class                   Comments
-===================     =====================================================
-StochVol                Basic, univariate stochastic volatility model
-StochVolLeverage        Univariate stochastic volatility model with leverage 
-MVStochVol              Multivariate stochastic volatility model
-BearingsOnly            Bearings-only tracking
-Gordon_etal             Popular toy model often used as a benchmark
-DiscreteCox             A discrete Cox model (Y_t|X_t is Poisson)
-ThetaLogistic           Theta-logistic model from Population Ecology
-===================     =====================================================
+===================       =====================================================
+Class                     Comments
+===================       =====================================================
+`StochVol`                Basic, univariate stochastic volatility model
+`StochVolLeverage`        Univariate stochastic volatility model with leverage 
+`MVStochVol`              Multivariate stochastic volatility model
+`BearingsOnly`            Bearings-only tracking
+`Gordon_etal`             Popular toy model often used as a benchmark
+`DiscreteCox`             A discrete Cox model (Y_t|X_t is Poisson)
+`ThetaLogistic`           Theta-logistic model from Population Ecology
+===================       =====================================================
+
+.. note::
+    Linear Gaussian state-space models are implemented in module `kalman`;
+    similarly hidden Markov models (state-space models with a finite state-space)
+    are implemented in module `hmm`. 
 
 """
 

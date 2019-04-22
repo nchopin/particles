@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 
 """
+Resampling and related numerical algorithms. 
+
+Overview
+========
+
 This module implements resampling schemes, plus some basic numerical 
 functions related to weights and weighted data (ESS, weighted mean, etc). 
 The recommended import is::
 
     from particles import resampling as rs
+
+Resampling is covered in Chapter 9 of the book.
 
 Resampling schemes
 ==================
@@ -33,7 +40,7 @@ Here the list of currently implemented resampling schemes:
 * `stratified`
 * `systematic`
 * `ssp`      
-__
+ 
 Alternative ways to sample from a multinomial distribution 
 ==========================================================
 
@@ -50,6 +57,46 @@ The two functions below cover these scenarios:
 
 * `multinomial_once`
 * `MultinomialQueue` 
+
+Weights objects
+===============
+
+Objects of class `SMC`, which represent the output of a particle filter, have
+an attribute called `wgts`, which is an instance of class `Weights`.  The
+attributes of that object are: 
+
+* `lw`: the N un-normalised log-weights
+* `W`: the N normalised weights (sum equals one)
+* `ESS`: the effective sample size (1/sum(W^2))
+
+For instance::
+
+    pf = particles.SMC(fk=some_fk_model, N=100)
+    pf.run()
+    print(pf.wgts.ESS)  # The ESS of the final weights
+
+The rest of this section should be of interest only to advanced users (who wish
+for instance to subclass `SMC` in order to define new particle algorithms). 
+Basically, class `Weights` is used to automate and abstract away the computation of
+the normalised weights and their ESS. Here is a quick example:: 
+
+    from numpy import random
+
+    wgts = rs.Weights(lw=random.randn(10))  # we provide log-weights 
+    print(wgts.W)  # the normalised weights have been computed automatically
+    print(wgts.ESS)  # and so the ESS 
+    incr_lw = 3. * random.randn(10)  # incremental weights 
+    new_wgts = wgts.add(incr_lw)
+    print(new_wgts.ESS)  # the ESS of the new weights
+
+.. warning::
+
+A technical point is that `Weights` objects should be considered as immutable: in
+particular method `add` returns a new `Weights` object. Trying to modify
+directly (in place) a `Weights` object may introduce hairy bugs.
+Basically, `SMC` and the methods of `ParticleHistory` do not *copy* such objects,
+so if you modify them later, then you also modify the version that has been
+stored at a previous iteration. 
 
 Other functions related to resampling 
 =====================================
@@ -137,8 +184,29 @@ def essl(lw):
     return (w.sum())**2 / np.sum(w**2)
 
 class Weights(object):
-    """ A class to store N log-weights, compute the normalised weights, and
-    their ESS. 
+    """ A class to store N log-weights, and automatically compute normalised 
+    weights and their ESS. 
+
+    Parameters
+    ----------
+    lw: (N,) array or None 
+        log-weights (if None, object represents a set of equal weights)
+
+    Attributes
+    ----------
+    lw: (N), array
+        log-weights (un-normalised)
+    W: (N,) array
+        normalised weights
+    ESS: scalar
+        the ESS (effective sample size) of the weights
+
+    Warning
+    -------
+    Objects of this class should be considered as immutable; in particular,
+    method add returns a *new* object. Trying to modifying directly the
+    log-weights may introduce bugs. 
+
     """
 
     def __init__(self, lw=None):
@@ -149,6 +217,14 @@ class Weights(object):
             self.ESS  = 1. / np.sum(self.W ** 2)
 
     def add(self, delta):
+        """Increment weights: lw <-lw + delta. 
+
+        Parameters
+        ----------
+        delta: (N,) array
+            incremental log-weights
+
+        """
         if self.lw is None:
             return Weights(lw=delta)
         else:
@@ -157,8 +233,8 @@ class Weights(object):
 def log_sum_exp(v):
     """Log of the sum of the exp of the arguments. 
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     v: ndarray
 
     Returns
@@ -406,13 +482,13 @@ def uniform_spacings(N):
 
     Note
     ----
-    This is equivalent to:
+    This is equivalent to::
 
         from numpy import random
         u = sort(random.rand(N))
 
     but the line above has complexity O(N*log(N)), whereas the algorithm 
-    used here has complexity O(N)
+    used here has complexity O(N).
 
     """
     z = np.cumsum(-np.log(random.rand(N + 1)))

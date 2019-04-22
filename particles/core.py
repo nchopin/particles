@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
 """
+Core module. 
+
+Overview
+========
+
 This module defines the following core objects:
 
 * `FeynmanKac`: the base class for Feynman-Kac models;
@@ -73,17 +78,16 @@ attributes, such as:
     * ``cpu_time``: as the name suggests;
     * and so on. 
 
-It is also possible to run the particle filter step by step: replace the last
-line above by::
+`SMC` objects are iterators, making it possible to run the algorithm step by
+step: replace the last line above by::
 
-    pf.step() # do iteration 0 
-    pf.run(nsteps=10) # do iterations 1, ..., 10
-    pf.run() # do iterations 11, ... until completion (dataset is exhausted)
+    next(step) # do iteration 0 
+    next(step) # do iteration 1 
+    pf.run() # do iterations 2, ... until completion (dataset is exhausted)
 
 All options, minus ``model``, are optional. Perhaps the most important ones are: 
-    * ``qmc``: if set to True, a SQMC algorithm (the quasi-Monte Carlo version
-      of SMC) is run 
-    * ``resampling``: the chosen resampling scheme; see resampling module. 
+    * ``qmc``: if set to True, runs SQMC (the quasi-Monte Carlo version of SMC)
+    * ``resampling``: the chosen resampling scheme; see `resampling` module. 
     * ``store_history``: whether we should store the particles at all iterations; 
         useful in particular for smoothing, see `smoothing` module. 
 
@@ -237,11 +241,11 @@ class SMC(object):
             the N particles 
         A : (N,) ndarray (int)
            ancestor indices: A[n] = m means ancestor of X[n] has index m
-        wgts: Weigts object 
+        wgts: `Weights` object 
             An object with attributes lw (log-weights), W (normalised weights)
             and ESS (the ESS of this set of weights) that represents 
             the main (inferential) weights
-        aux: Weights object 
+        aux: `Weights` object 
             the auxiliary weights (for an auxiliary PF, see FeynmanKac)
         cpu_time : float
             CPU time of complete run (in seconds)
@@ -478,12 +482,14 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
 
     Parameters
     ----------
-    * nruns: int (default=10)
-        number of runs
-    * nprocs: int (default=1) 
-        number of processors to use (if negative, number of cores not to use)
-    * out_func: callable
-        function to transform the output of each SMC run. 
+    * nruns: int, optional
+        number of runs (default is 10)
+    * nprocs: int, optional 
+        number of processors to use; if negative, number of cores not to use.
+        Default value is 1 (no multiprocessing)
+    * out_func: callable, optional 
+        function to transform the output of each SMC run. (If not given, output
+        will be the complete SMC object). 
     * args: dict
         arguments passed to SMC class 
 

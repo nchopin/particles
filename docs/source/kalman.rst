@@ -13,3 +13,7 @@ Module summary
     :nosignatures: 
 
     Kalman
+    predict_step
+    filter_step
+    filter_step_asarray
+    smoother_step

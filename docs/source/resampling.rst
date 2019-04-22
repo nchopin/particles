@@ -17,6 +17,7 @@ Module summary
     systematic
     multinomial_once
     MultinomialQueue
+    Weights
     inverse_cdf
     uniform_spacings
     ssp

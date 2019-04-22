@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """ 
+Probability distributions as Python objects. 
+
 Overview
 ========
 
@@ -94,16 +96,15 @@ Under the hood
 ==============
 
 Probability distributions are represented as objects of classes that inherit
-from base class ``ProbDist``, and  implement the following methods: 
+from base class `ProbDist`, and  implement the following methods: 
 
 * ``logpdf(self, x)``: computes the log-pdf (probability density function) at 
   point ``x``;
-* ``rvs(self, size=None)``: simulates ``size`` random variates; (if set to
-None, number of samples is either one if all parameters are scalar, or 
-the same number as the common size of the parameters, see below);  
+* ``rvs(self, size=None)``: simulates ``size`` random variates; (if set to 
+  None, number of samples is either one if all parameters are scalar, or 
+  the same number as the common size of the parameters, see below);  
 * ``ppf(self, u)``: computes the quantile function (or Rosenblatt transform 
   for a multivariate distribution) at point ``u``. 
-    from particles import distributions as dists
 
 A quick example::
 
@@ -112,12 +113,12 @@ A quick example::
     z = some_dist.logpdf(x)  # a (30,) ndarray containing the log-pdf at x 
 
 By default, the inputs and outputs of these methods are either scalars or Numpy
-arrays (with with appropriate type and shape. In particular, passing a Numpy 
+arrays (with appropriate type and shape). In particular, passing a Numpy 
 array to a distribution parameter makes it possible to define "array
 distributions". For instance:: 
 
     some_dist = dists.Normal(loc=np.arange(1., 11.))
-    vars = some_dist.rvs(size=10)
+    x = some_dist.rvs(size=10)
 
 generates 10 Gaussian-distributed variates, with respective means 1., ..., 10.   
 This is how we manage to define "Markov kernels" in state-space models; e.g.
@@ -129,7 +130,7 @@ when defining the distribution of X_t given X_{t-1} in a state-space model::
         ### ... see module state_space_models for more details 
 
 Then, in practice, in e.g. the bootstrap filter, when we generate particles
-$X_t^n$, we call method ``PX`` and pass as an argument a numpy array of shape
+X_t^n, we call method ``PX`` and pass as an argument a numpy array of shape
 (N,) containing the N ancestors. 
 
 ..  note:: 
@@ -169,13 +170,12 @@ Implementing your own distributions
 ===================================
 
 If you would like to create your own univariate probability distribution, the
-easiest way to do so is to sub-class ``ProbDist``, for a continuous
-distribution, or ``DiscreteDist``, for a discrete distribution. This will
-properly set class attributes `dim` (the dimension, set to one, for a
-univariate distribution), and `dtype`, so that they play nicely with
-``StructDist`` and so on. You will also have to properly define methods `rvs`,
-`logpdf` and `ppf`. You may omit `ppf` if you do not plan to use SQMC
-(Sequential quasi Monte Carlo). 
+easiest way to do so is to sub-class `ProbDist`, for a continuous distribution,
+or `DiscreteDist`, for a discrete distribution. This will properly set class
+attributes ``dim`` (the dimension, set to one, for a univariate distribution),
+and ``dtype``, so that they play nicely with `StructDist` and so on. You will
+also have to properly define methods ``rvs``, ``logpdf`` and ``ppf``. You may
+omit ``ppf`` if you do not plan to use SQMC (Sequential quasi Monte Carlo). 
 
 
 """
@@ -192,7 +192,21 @@ HALFLOG2PI = 0.5 * np.log(np.pi)
 
 
 class ProbDist(object):
-    """Base class for probability distributions"""
+    """Base class for probability distributions.
+    
+    To define a probability distribution class, subclass ProbDist, and define
+    methods: 
+
+    * ``logpdf(self, x)``: the log-density at point x
+    * ``rvs(self, size=None)``: generates *size* variates from distribution 
+    * ``ppf(self, u)``: the inverse CDF function at point u
+
+    and attributes:
+    
+        * ``dim``: dimension of variates (default is 1)
+        * ``dtype``: the dtype of inputs/outputs arrays (default is 'float64')
+    
+    """
     dim = 1  # distributions are univariate by default
     dtype = 'float64'  # distributions are continuous by default
 
@@ -214,14 +228,16 @@ class ProbDist(object):
 
 
 class LocScaleDist(ProbDist):
-    """Base class for location-scale distributions"""
+    """Base class for location-scale distributions.
+    """
     def __init__(self, loc=0., scale=1.):
         self.loc = loc
         self.scale = scale
 
 
 class Normal(LocScaleDist):
-    """N(loc,scale^2) distribution"""
+    """N(loc,scale^2) distribution.
+    """
     def rvs(self, size=None):
         return random.normal(loc=self.loc, scale=self.scale, size=size)
 
@@ -241,7 +257,8 @@ class Normal(LocScaleDist):
 
 
 class Logistic(LocScaleDist):
-    """Logistic(loc,scale) distribution"""
+    """Logistic(loc,scale) distribution.
+    """
     def rvs(self, size=None):
         return random.logistic(loc=self.loc, scale=self.scale, size=size)
 
@@ -253,7 +270,8 @@ class Logistic(LocScaleDist):
 
 
 class Laplace(LocScaleDist):
-    """Laplace(loc,scale) distribution"""
+    """Laplace(loc,scale) distribution.
+    """
 
     def rvs(self, size=None):
         return random.laplace(loc=self.loc, scale=self.scale, size=size)
@@ -270,7 +288,8 @@ class Laplace(LocScaleDist):
 ################################
 
 class Beta(ProbDist):
-    """Beta(a,b) distribution"""
+    """Beta(a,b) distribution.
+    """
     def __init__(self, a=1., b=1.):
         self.a = a
         self.b = b
@@ -286,7 +305,8 @@ class Beta(ProbDist):
 
 
 class Gamma(ProbDist):
-    """Gamma(a,b) distribution, scale=1/b"""
+    """Gamma(a,b) distribution, scale=1/b.
+    """
     def __init__(self, a=1., b=1.):
         self.a = a
         self.b = b
@@ -308,7 +328,8 @@ class Gamma(ProbDist):
 
 
 class InvGamma(ProbDist):
-    """Inverse Gamma(a,b) distribution"""
+    """Inverse Gamma(a,b) distribution.
+    """
     def __init__(self, a=1., b=1.):
         self.a = a
         self.b = b
@@ -329,7 +350,8 @@ class InvGamma(ProbDist):
 
 
 class Uniform(ProbDist):
-    """Uniform([a,b]) distribution"""
+    """Uniform([a,b]) distribution.
+    """
     def __init__(self, a=0, b=1.):
         self.a = a
         self.b = b
@@ -346,7 +368,8 @@ class Uniform(ProbDist):
 
 
 class Student(ProbDist):
-    """Student distribution"""
+    """Student distribution.
+    """
     def __init__(self, df=3., loc=0., scale=1.):
         self.df = df
         self.loc = loc
@@ -363,7 +386,8 @@ class Student(ProbDist):
 
 
 class Dirac(ProbDist):
-    """Dirac mass at point loc"""
+    """Dirac mass.
+    """
     def __init__(self, loc=0.):
         self.loc = loc
 
@@ -419,12 +443,14 @@ class TruncNormal(ProbDist):
 
 
 class DiscreteDist(ProbDist):
-    """Base class for discrete probability distributions"""
+    """Base class for discrete probability distributions.
+    """
     dtype = 'int64'
 
 
 class Poisson(DiscreteDist):
-    """Poisson(rate) distribution"""
+    """Poisson(rate) distribution.
+    """
     def __init__(self, rate=1.):
         self.rate = rate
 
@@ -439,8 +465,8 @@ class Poisson(DiscreteDist):
 
 
 class Binomial(DiscreteDist):
-    """Binomial(n,p) distribution"""
-
+    """Binomial(n,p) distribution.
+    """
     def __init__(self, n=1, p=0.5):
         self.n = n
         self.p = p
@@ -456,7 +482,8 @@ class Binomial(DiscreteDist):
 
 
 class Geometric(DiscreteDist):
-    """Geometric(p) distribution"""
+    """Geometric(p) distribution.
+    """
     def __init__(self, p=0.5):
         self.p = p
 
@@ -525,7 +552,7 @@ class Categorical(DiscreteDist):
 #########################
 
 class TransformedDist(ProbDist):
-    """Base class for transformed distributions
+    """Base class for transformed distributions.
 
     A transformed distribution is the distribution of Y=f(X) for a certain 
     function f, and a certain (univariate) base distribution for X.
@@ -570,7 +597,7 @@ class TransformedDist(ProbDist):
 
 
 class LinearD(TransformedDist):
-    """Distribution of Y = a*X + b
+    """Distribution of Y = a*X + b.
 
     See TransformedDist. 
 
@@ -619,7 +646,7 @@ class LogD(TransformedDist):
 class LogitD(TransformedDist):
     """Distributions of Y=logit((X-a)/(b-a)). 
 
-    See TransformedDist.
+    See base class `TransformedDist`.
 
     Parameters
     ----------
@@ -819,7 +846,7 @@ class IndepProd(ProbDist):
 ###################################
 
 class Cond(ProbDist):
-    """Conditional distributions
+    """Conditional distributions.
 
     see StructDist
     """
