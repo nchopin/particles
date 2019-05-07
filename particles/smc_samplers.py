@@ -519,7 +519,7 @@ class FKSMCsampler(particles.FeynmanKac):
 class IBIS(FKSMCsampler):
     """FeynmanKac class for IBIS algorithm.
 
-    see base class FKSMCsampler for parameters
+    see base class `FKSMCsampler` for parameters.
     """
     mutate_only_after_resampling = True  # override default value of FKclass
 
