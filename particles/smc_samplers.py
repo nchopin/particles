@@ -380,7 +380,7 @@ class MetroParticles(ThetaParticles):
         compute_target: function 
             computes the target density for the proposed values
         mh_options: dict 
-            + 'type_prop': {'random_walk', 'independent'}
+            + 'type_prop': {'random walk', 'independent'}
               type of proposal: either Gaussian random walk, or independent Gaussian 
             + 'adaptive': bool
               If True, the covariance matrix of the random walk proposal is
@@ -474,7 +474,7 @@ class FKSMCsampler(particles.FeynmanKac):
     model: `StaticModel` object
         The static model that defines the target posterior distribution(s)
     mh_options: dict 
-        + 'type_prop': {'random_walk', 'independent'}
+        + 'type_prop': {'random walk', 'independent'}
           type of proposal: either Gaussian random walk, or independent Gaussian 
         + 'adaptive': bool
           If True, the covariance matrix of the random walk proposal is
