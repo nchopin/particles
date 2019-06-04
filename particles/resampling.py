@@ -565,6 +565,9 @@ def ssp(W, M):
     for k in range(N - 1):
         delta_i = min(xi[j], 1. - xi[i])  # increase i, decr j
         delta_j = min(xi[i], 1. - xi[j])  # the opposite
+        sum_delta = delta_i + delta_j
+        if sum_delta <= 0.:
+            break  # avoid division by zero
         pj = delta_i / (delta_i + delta_j) # prob we should inc j, dec i
         if u[k] < pj:  # swap i, j, so that we always inc i
             j, i = i, j
