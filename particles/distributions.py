@@ -188,7 +188,7 @@ import numpy.random as random
 import scipy.stats as stats
 from scipy.linalg import cholesky, solve_triangular, inv
 
-HALFLOG2PI = 0.5 * np.log(np.pi)
+HALFLOG2PI = 0.5 * np.log(2. * np.pi)
 
 
 class ProbDist(object):
