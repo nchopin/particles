@@ -189,6 +189,19 @@ def distinct_seeds(k):
     return seeds
 
 
+def seeder(func):
+    """Decorator to seed the pseudo-random generator before evaluating a
+    function.
+    """
+    @functools.wraps(func)
+    def seeded_func(**kwargs):
+        seed = kwargs.pop('seed', None)
+        if seed:
+            random.seed(seed)
+        return func(**kwargs)
+    return seeded_func
+
+
 def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     """Evaluate a function for different parameters, optionally in parallel.
 
@@ -203,7 +216,8 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
         (i.e. -1 => number of cpus on your machine minus one)
         Default is 1, which means no multiprocessing
     seeding: bool (default: True if nruns > 1, False otherwise)
-        whether we need to provide different seeds for RNGS
+        whether we need to seed the pseudo-random generator (with distinct
+        seeds) before evaluating the function
     **args:
         keyword arguments for function f.
 
@@ -214,8 +228,6 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     """
     if not callable(f):
         raise ValueError('multiplexer: function f missing, or not callable')
-    if seeding is None:
-        seeding = (nruns > 1)
     # extra arguments (meant to be arguments for f)
     fixedargs, listargs, dictargs = {}, {}, {}
     listargs['run'] = list(range(nruns))
@@ -231,8 +243,11 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     for ip in inputs:
         ip.pop('run')  # run is not an argument of f, just an id for output
     # distributing different seeds
+    if seeding is None:
+        seeding = (nruns > 1)
     if seeding:
         seeds = distinct_seeds(len(inputs))
+        f = seeder(f)
         for ip, op, s in zip(inputs, outputs, seeds):
             ip['seed'] = s
             op['seed'] = s

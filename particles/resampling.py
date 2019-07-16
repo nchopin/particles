@@ -439,7 +439,7 @@ def resampling(scheme, W, M=None):
         raise ValueError('%s: not a valid resampling scheme' % name)
 
 
-@jit
+@jit(nopython=True)
 def inverse_cdf(su, W):
     """Inverse CDF algorithm for a finite distribution. 
 
@@ -458,7 +458,7 @@ def inverse_cdf(su, W):
     j = 0
     s = W[0]
     M = su.shape[0]
-    A = np.empty(M, 'int')
+    A = np.empty(M, np.int32)
     for n in range(M):
         while su[n] > s:
             j += 1
@@ -554,7 +554,7 @@ def residual(W, M):
 
 
 @resampling_scheme
-@jit
+@jit(nopython=True)
 def ssp(W, M):
     N = W.shape[0]
     MW = M * W

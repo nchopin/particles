@@ -33,7 +33,6 @@ def hilbert_array(xint):
     return h
 
 
-@jit()
 def hilbert_sort(x):
     """Hilbert sort: sort vectors according to their Hilbert index. 
     
@@ -57,7 +56,7 @@ def hilbert_sort(x):
         return np.argsort(x, axis=0)
     xs = invlogit((x - np.mean(x, axis=0)) / np.std(x, axis=0))
     maxint = np.floor(2**(62 / d))
-    xint = np.floor(xs * maxint).astype('int')
+    xint = np.floor(xs * maxint).astype(np.int)
     return np.argsort(hilbert_array(xint))
 
 
