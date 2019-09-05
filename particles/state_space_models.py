@@ -146,7 +146,7 @@ Class                     Comments
 `StochVolLeverage`        Univariate stochastic volatility model with leverage 
 `MVStochVol`              Multivariate stochastic volatility model
 `BearingsOnly`            Bearings-only tracking
-`Gordon_etal`             Popular toy model often used as a benchmark
+`Gordon`             Popular toy model often used as a benchmark
 `DiscreteCox`             A discrete Cox model (Y_t|X_t is Poisson)
 `ThetaLogistic`           Theta-logistic model from Population Ecology
 ===================       =====================================================
@@ -533,7 +533,7 @@ class StochVolLeverage(StochVol):
                             scale=std_x * np.sqrt(1. - self.phi**2))
 
 
-class Gordon_etal(StateSpaceModel):
+class Gordon(StateSpaceModel):
     r"""Popular toy example that appeared initially in Gordon et al (1993).
 
     .. math:: 

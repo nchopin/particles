@@ -18,8 +18,7 @@ Chopin, N. and Gerber, M. (2018) Sequential quasi-Monte Carlo: Introduction for
 Non-Experts, Dimension Reduction, Application to Partly Observed Diffusion
 Processes. arXiv:1706.05305 (to be published in the MCQMC 2016 proceedings). 
 
-or the numerical section of Chapter 12 (SQMC) of the book, where this 
-violin plot is reproduced. 
+or the numerical section of Chapter 13 (SQMC) of the book. 
 
 """
 
