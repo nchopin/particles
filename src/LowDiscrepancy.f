@@ -1,3 +1,13 @@
+C =============================================================================
+C Notes from Nicolas Chopin 
+C Borrowed from CRAN package randtoolbox
+C added Cf2py directives to ease compilation through f2py
+C this version based on randtoolbox 1.30
+C (version before 1.17 had a nasty bug that produced Sobol points > 1 
+C for certain seeds 
+C =============================================================================
+
+
 C PART I:  HALTON SEQUENCE
 C PART II: SOBOL SEQUENCE
 
@@ -153,7 +163,8 @@ C     INCREASE THE COUNTER BY ONE:
 C-------------------------------------------------------------------------------   
 
 
-      SUBROUTINE HALTON_F(QN, N, DIMEN, BASE, OFFSET, INIT, TRANSFORM)
+      SUBROUTINE HALTON(QN, N, DIMEN, BASE, OFFSET, INIT, TRANSFORM)
+      
 
 C     THIS IS AN INTERFACE TO CREATE "N" POINTS IN "DIMEN" DIMENSIONS
 C     ARGUMENTS:
@@ -173,6 +184,15 @@ C       TRANSFORM - A FLAG, 0 FOR UNIFORM, 1 FOR NORMAL DISTRIBUTION
 C     >>> remove implicit type declaration <<<	  
       INTEGER I, J
       DOUBLE PRECISION HQNORM
+
+        
+Cf2py intent(out) QN
+Cf2py intent(in) N
+Cf2py intent(in) DIMEN    
+Cf2py intent(hide) BASE 
+Cf2py intent(hide) OFFSET
+Cf2py intent(in) INIT 
+Cf2py intent(in) TRANSFORM  
 
 C     IF REQUESTED, INITIALIZE THE GENERATOR:
       IF (INIT.EQ.1) THEN
@@ -394,7 +414,7 @@ C       NEXTSOBOL (DIMEN, QUASI, LL, COUNT, SV)
 C-------------------------------------------------------------------------------
 
 
-      SUBROUTINE SOBOL_F(QN, N, DIMEN, QUASI, LL, COUNT, SV,
+      SUBROUTINE SOBOL(QN, N, DIMEN, QUASI, LL, COUNT, SV,
      &   IFLAG, iSEED, INIT, TRANSFORM)
 
 C     THIS IS AN INTERFACE TO CREATE "N" POINTS IN "DIMEN" DIMENSIONS
@@ -424,6 +444,18 @@ C       TRANSFORM - FLAG, 0 FOR UNIFORM, 1 FOR NORMAL DISTRIBUTION
 C     >>> remove implicit type declaration <<<
       INTEGER I, J, IFLAG
       DOUBLE PRECISION SQNORM
+            
+Cf2py intent(out) QN
+Cf2py intent(in) N
+Cf2py intent(in) DIMEN 
+Cf2py intent(hide) QUASI 
+Cf2py intent(hide) LL
+Cf2py intent(hide) COUNT 
+Cf2py intent(hide) SV
+Cf2py intent(in) IFLAG
+Cf2py intent(in) iSEED
+Cf2py intent(in) INIT 
+Cf2py intent(in) TRANSFORM      
 
       IF (INIT.EQ.1) THEN
          CALL INITSOBOL(DIMEN, QUASI, LL, COUNT, SV, IFLAG, iSEED)  

@@ -51,17 +51,9 @@ def sobol(N, dim, scrambled=1):
     Notes 
     -----
     For scrambling, seed is set randomly. 
-
-    Fun fact: this venerable but playful piece of Fortran code occasionally
-    returns numbers above 1. (i.e. for a very small number of seeds); when this
-    happen we just start over (since the seed is randomly generated). 
     """
-    while(True):
-        seed = np.random.randint(2**32)
-        out = lowdiscrepancy.sobol(N, dim, scrambled, seed, 1, 0)
-        if (scrambled == 0) or ((out < 1.).all() and (out > 0.).all()):
-            # no need to test if scrambled==0
-            return out
+    seed = np.random.randint(2**32)
+    return lowdiscrepancy.sobol(N, dim, scrambled, seed, 1, 0)
 
 
 def halton(N, dim):
