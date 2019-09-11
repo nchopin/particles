@@ -153,8 +153,7 @@ C     INCREASE THE COUNTER BY ONE:
 C-------------------------------------------------------------------------------   
 
 
-      SUBROUTINE HALTON(QN, N, DIMEN, BASE, OFFSET, INIT, TRANSFORM)
-      
+      SUBROUTINE HALTON_F(QN, N, DIMEN, BASE, OFFSET, INIT, TRANSFORM)
 
 C     THIS IS AN INTERFACE TO CREATE "N" POINTS IN "DIMEN" DIMENSIONS
 C     ARGUMENTS:
@@ -174,15 +173,6 @@ C       TRANSFORM - A FLAG, 0 FOR UNIFORM, 1 FOR NORMAL DISTRIBUTION
 C     >>> remove implicit type declaration <<<	  
       INTEGER I, J
       DOUBLE PRECISION HQNORM
-
-        
-Cf2py intent(out) QN
-Cf2py intent(in) N
-Cf2py intent(in) DIMEN    
-Cf2py intent(hide) BASE 
-Cf2py intent(hide) OFFSET
-Cf2py intent(in) INIT 
-Cf2py intent(in) TRANSFORM  
 
 C     IF REQUESTED, INITIALIZE THE GENERATOR:
       IF (INIT.EQ.1) THEN
@@ -404,7 +394,7 @@ C       NEXTSOBOL (DIMEN, QUASI, LL, COUNT, SV)
 C-------------------------------------------------------------------------------
 
 
-      SUBROUTINE SOBOL(QN, N, DIMEN, QUASI, LL, COUNT, SV,
+      SUBROUTINE SOBOL_F(QN, N, DIMEN, QUASI, LL, COUNT, SV,
      &   IFLAG, iSEED, INIT, TRANSFORM)
 
 C     THIS IS AN INTERFACE TO CREATE "N" POINTS IN "DIMEN" DIMENSIONS
@@ -434,18 +424,6 @@ C       TRANSFORM - FLAG, 0 FOR UNIFORM, 1 FOR NORMAL DISTRIBUTION
 C     >>> remove implicit type declaration <<<
       INTEGER I, J, IFLAG
       DOUBLE PRECISION SQNORM
-            
-Cf2py intent(out) QN
-Cf2py intent(in) N
-Cf2py intent(in) DIMEN 
-Cf2py intent(hide) QUASI 
-Cf2py intent(hide) LL
-Cf2py intent(hide) COUNT 
-Cf2py intent(hide) SV
-Cf2py intent(in) IFLAG
-Cf2py intent(in) iSEED
-Cf2py intent(in) INIT 
-Cf2py intent(in) TRANSFORM      
 
       IF (INIT.EQ.1) THEN
          CALL INITSOBOL(DIMEN, QUASI, LL, COUNT, SV, IFLAG, iSEED)  
@@ -1679,7 +1657,8 @@ C     >>> remove implicit type declaration <<<
 C     CALCULATE THE NEW COMPONENTS OF QUASI,
 C     FIRST THE NUMERATORS, THEN NORMALIZED
       DO I = 1, DIMEN
-         QUASI(I) = REAL(IEOR(INT(QUASI(I)*LL), SV(I, L)))/LL
+C     >>> use a double precision number: REAL() replaced by DBLE() <<<      
+         QUASI(I) = DBLE(IEOR(INT(QUASI(I)*LL), SV(I, L)))/LL
       ENDDO
 
       COUNT = COUNT + 1
