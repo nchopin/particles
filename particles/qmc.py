@@ -13,6 +13,7 @@ the installation notes.
 """
 
 import numpy as np
+import warnings
 
 qmc_warning = """
 Module lowdiscrepancy does not seem to be installed (see INSTALL
@@ -22,7 +23,6 @@ of SMC).
 try:
     from particles import lowdiscrepancy
 except ImportError:
-    import warnings
     warnings.warn(qmc_warning)
 
 
@@ -50,10 +50,23 @@ def sobol(N, dim, scrambled=1):
 
     Notes 
     -----
-    For scrambling, seed is set randomly. 
+    One of the argument of the underlying Fortran function is the seed for the
+    random generator used for scrambling. We simply generate this seed
+    uniformly (between 0 and 2^32 - 1). There is a very small number of seeds
+    that generate points that are == 0 (This has been reported to the
+    maintainer of randtoolbox). When this happens, we generate a warning and
+    start over (i.e.  we re-generate another random seed, and compute a new
+    scrambled Sobol point set. 
     """
-    seed = np.random.randint(2**32)
-    return lowdiscrepancy.sobol(N, dim, scrambled, seed, 1, 0)
+    while(True):
+        seed = np.random.randint(2**32)
+        out = lowdiscrepancy.sobol(N, dim, scrambled, seed, 1, 0)
+        if np.all(out < 1.) and np.all(out > 0.):
+            return out
+        else:
+            warnings.warn('lowdiscrepancy.sobol(%i, %i, %i, %i, 1, 0) generated
+                          at least one point outside (0, 1)' 
+                          % (N, dim, scrambled, seed))
 
 
 def halton(N, dim):
