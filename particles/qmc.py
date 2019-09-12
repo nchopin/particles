@@ -20,6 +20,10 @@ Module lowdiscrepancy does not seem to be installed (see INSTALL
 notes). You will not be able to run SQMC (quasi-Monte Carlo version
 of SMC).
 """
+
+sobol_warning =  """
+lowdiscrepancy.sobol(%i, %i, %i, %i, 1, 0) generated points outside (0, 1)
+"""
 try:
     from particles import lowdiscrepancy
 except ImportError:
@@ -64,10 +68,7 @@ def sobol(N, dim, scrambled=1):
         if np.all(out < 1.) and np.all(out > 0.):
             return out
         else:
-            warnings.warn('lowdiscrepancy.sobol(%i, %i, %i, %i, 1, 0) generated
-                          at least one point outside (0, 1)' 
-                          % (N, dim, scrambled, seed))
-
+            warnings.warn(sobol_warning % (N, dim, scrambled, seed))
 
 def halton(N, dim):
     """ Halton sequence.
