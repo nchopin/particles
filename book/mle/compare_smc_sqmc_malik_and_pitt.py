@@ -18,6 +18,7 @@
 from __future__ import division, print_function
 
 import numpy as np
+from numpy import random
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 from scipy.optimize import fmin 
@@ -39,10 +40,12 @@ def fkmod(theta):
                          data=data)
 
 def loglik(theta, seed=None, qmc=False, N=10**4, verbose=False, interpol=False):
+    if seed is not None:
+        random.seed(seed)
     if interpol:
-        alg = MalikPitt_SMC(fk=fkmod(theta), N=N, seed=seed)
+        alg = MalikPitt_SMC(fk=fkmod(theta), N=N) 
     else:
-        alg = particles.SMC(fk=fkmod(theta), N=N, qmc=qmc, seed=seed)
+        alg = particles.SMC(fk=fkmod(theta), N=N, qmc=qmc)
     alg.run()
     out = alg.logLt
     if verbose:
