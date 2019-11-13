@@ -92,7 +92,7 @@ On-line smoothing is covered in Sections 11.1 and 11.3 in the book.
 
 The following three algorithms are implemented: 
 
-* ``online_smooth``: basic forward smoothing (carry forward full trajectories); 
+* ``naive_online_smooth``: basic forward smoothing (carry forward full trajectories); 
   cost is O(N) but performance may be poor for large t. 
 * ``ON2_online_smooth``: O(N^2) on-line smoothing. Expensive (cost is O(N^2), 
   so big increase of CPU time), but better performance. 
@@ -124,7 +124,7 @@ not outside).
 
 The two first algorithms do not require any parameter::
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100, online_smooth=True)
+    my_alg = particles.SMC(fk=some_fk_model, N=100, naive_online_smooth=True)
 
 Paris algoritm has an optional parameter ``Nparis``, which you may specify 
 as follows::
