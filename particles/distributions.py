@@ -817,7 +817,7 @@ class MvNormal(ProbDist):
 class IndepProd(ProbDist):
     """Product of independent univariate distributions. 
 
-    The inputs/outputs of IndeProd are numpy ndarrays of shape (N,d),
+    The inputs/outputs of IndeProd are numpy ndarrays of shape (N,d), or (d), 
     where d is the number of univariate distributions that are 
     passed as arguments. 
 
@@ -854,10 +854,10 @@ class IndepProd(ProbDist):
         return np.stack([d.rvs(size=size) for d in self.dists], axis=1)
 
     def logpdf(self, x):
-        return sum([d.logpdf(x[:, i]) for i, d in enumerate(self.dists)])
+        return sum([d.logpdf(x[..., i]) for i, d in enumerate(self.dists)])
 
     def ppf(self, u):
-        return np.stack([d.ppf(u[:, i]) for i, d in enumerate(self.dists)],
+        return np.stack([d.ppf(u[..., i]) for i, d in enumerate(self.dists)],
                         axis=1)
 
 
