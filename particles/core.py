@@ -330,8 +330,8 @@ class SMC(object):
 
     def generate_particles(self):
         if self.qmc:
-            # must be (N,) if du=1
             u = qmc.sobol(self.N, self.fk.du).squeeze()
+            # squeeze: must be (N,) if du=1
             self.X = self.fk.Gamma0(u)
         else:
             self.X = self.fk.M0(self.N)

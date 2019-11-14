@@ -394,8 +394,11 @@ class GuidedPF(Bootstrap):
     def Gamma(self, t, xp, u):
         return self.ssm.proposal(t, xp, self.data).ppf(u)
 
+class APFMixin():
+    def logeta(self, t, x):
+        return self.ssm.logeta(t, x, self.data)
 
-class AuxiliaryPF(GuidedPF):
+class AuxiliaryPF(GuidedPF, APFMixin):
     """Auxiliary particle filter for a given state-space model.
     
     Parameters
@@ -417,19 +420,17 @@ class AuxiliaryPF(GuidedPF):
     Argument ssm must implement methods `proposal0`, `proposal` and `logeta`.
     """
 
-    def logeta(self, t):
-        return self.ssm.logeta(t, self.data)
+    pass
 
 
-class AuxiliaryBootstrap(Bootstrap):
+class AuxiliaryBootstrap(Bootstrap, APFMixin):
     """Base class for auxiliary bootstrap particle filters
 
     This is an APF, such that the proposal kernel is set to the transition 
     kernel of the model
     """
 
-    def logeta(self, t):
-        return self.ssm.logeta(t, self.data)
+    pass
 
 
 ################################
