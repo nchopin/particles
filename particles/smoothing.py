@@ -364,7 +364,7 @@ class ParticleHistory(object):
             return est
 
 
-def smoothing_worker(method=None, N=100, seed=None, fk=None, fk_info=None,
+def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
                      add_func=None, log_gamma=None):
     """Generic worker for off-line smoothing algorithms.
 
@@ -378,8 +378,6 @@ def smoothing_worker(method=None, N=100, seed=None, fk=None, fk_info=None,
            'two-filter_ON', 'two-filter_ON_prop', 'two-filter_ON2']
     N: int
         number of particles 
-    seed: int
-        random generator seed; if None, generator is not seeded
     fk: Feynman-Kac object
         The Feynman-Kac model for the forward filter
     fk_info: Feynman-Kac object (default=None)
@@ -399,8 +397,6 @@ def smoothing_worker(method=None, N=100, seed=None, fk=None, fk_info=None,
     T = fk.T  
     if fk_info is None: 
         fk_info = fk.__class__(ssm=fk.ssm, data=fk.data[::-1])
-    if seed:
-        random.seed(seed)
     est = np.zeros(T - 1)
     if method=='FFBS_QMC':
         pf = particles.SQMC(fk=fk, N=N, store_history=True)

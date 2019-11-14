@@ -75,19 +75,16 @@ class MCMC(object):
         * `step(self, n)`: n-th step, n>=1
 
     """
-    def __init__(self, niter=10, seed=None, verbose=0):
+    def __init__(self, niter=10, verbose=0):
         """
         Parameters
         ----------
         niter: int
             number of MCMC iterations
-        seed: int (default=None)
-            pseudo-random seed (if None, generator is not seeded)
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
         """
         self.niter = niter
-        self.seed = seed
         self.verbose = verbose
 
     def step0(self):
@@ -122,8 +119,6 @@ class MCMC(object):
 
     @utils.timer
     def run(self):
-        if self.seed:
-            random.seed(self.seed)
         for n in range(self.niter):
             if n == 0:
                 self.step0()
@@ -176,7 +171,7 @@ class GenericRWHM(MCMC):
 
     must be subclassed; the subclass must provide attribute self.prior
     """
-    def __init__(self, niter=10, seed=None, verbose=0, theta0=None, 
+    def __init__(self, niter=10, verbose=0, theta0=None, 
                  adaptive=True, scale=1., rw_cov=None):
         """
         Parameters
@@ -184,8 +179,6 @@ class GenericRWHM(MCMC):
 
         niter: int
             number of MCMC iterations
-        seed: int (default=None)
-            pseudo-random seed (if None, generator is not seeded)
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
         theta0: a structured array of size=1
@@ -198,7 +191,7 @@ class GenericRWHM(MCMC):
         rw_cov: (d, d) array 
             covariance matrix of the random walk proposal (set to I_d if None)
         """
-        for k in ['niter', 'seed', 'verbose', 'theta0', 'adaptive']:
+        for k in ['niter', 'verbose', 'theta0', 'adaptive']:
             setattr(self, k, locals()[k])
         self.chain = ssp.ThetaParticles(
                         theta=np.empty(shape=niter, dtype=self.prior.dtype),
@@ -249,15 +242,13 @@ class BasicRWHM(GenericRWHM):
     """Basic random walk Hastings-Metropolis sampler.
     """
 
-    def __init__(self, niter=10, seed=None, verbose=0, theta0=None, 
+    def __init__(self, niter=10, verbose=0, theta0=None, 
                  adaptive=True, scale=1., rw_cov=None, model=None):
         """
         Parameters
         ----------
         niter: int
             number of MCMC iterations
-        seed: int (default=None)
-            pseudo-random seed (if None, generator is not seeded)
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
         theta0: structured array of lengt=1 (default=None)
@@ -278,7 +269,7 @@ class BasicRWHM(GenericRWHM):
         else:
             self.model = model
         self.prior = model.prior
-        GenericRWHM.__init__(self, niter=niter, seed=seed, verbose=verbose, 
+        GenericRWHM.__init__(self, niter=niter, verbose=verbose, 
                              theta0=theta0, adaptive=adaptive, scale=scale,
                              rw_cov=rw_cov)
 
@@ -294,7 +285,7 @@ class PMMH(GenericRWHM):
     a particle filter. 
     """
 
-    def __init__(self, niter=10, seed=None, verbose=0, ssm_cls=None,
+    def __init__(self, niter=10, verbose=0, ssm_cls=None,
                  smc_cls=particles.SMC, prior=None, data=None, smc_options=None, 
                  fk_cls=Bootstrap, Nx=100, theta0=None, adaptive=True, scale=1., 
                  rw_cov=None):
@@ -303,8 +294,6 @@ class PMMH(GenericRWHM):
         ----------
         niter: int
             number of iterations
-        seed: int (default=None)
-            PRNG seed (if None, PRNG is not seeded)
         verbose: int (default=0)
             print some info every `verbose` iterations (never if 0)
         ssm_cls: StateSpaceModel class
@@ -342,7 +331,7 @@ class PMMH(GenericRWHM):
         if smc_options is not None:
             self.smc_options.update(smc_options)
         self.Nx = Nx
-        GenericRWHM.__init__(self, niter=niter, seed=seed, verbose=verbose, 
+        GenericRWHM.__init__(self, niter=niter, verbose=verbose, 
                              theta0=theta0, adaptive=adaptive, scale=scale,
                              rw_cov=rw_cov)
 
@@ -363,7 +352,7 @@ class CSMC(particles.SMC):
     """Conditional SMC.
     """
     def __init__(self, fk=None, N=100, ESSrmin=0.5, xstar=None):
-        particles.SMC.__init__(self, fk=fk, N=N, seed=None,
+        particles.SMC.__init__(self, fk=fk, N=N, 
                             resampling="multinomial", ESSrmin=ESSrmin,
                             store_history=True, summaries=False)
         self.xstar = xstar
@@ -390,10 +379,10 @@ class GenericGibbs(MCMC):
     Abstract class. 
 
     """
-    def __init__(self, niter=10, seed=None, verbose=10, theta0=None,
+    def __init__(self, niter=10, verbose=10, theta0=None,
                  ssm_cls=None, prior=None, data=None, store_x=False): 
         for k in ['ssm_cls', 'prior', 'data', 'theta0', 'niter', 'store_x',
-                  'verbose', 'seed']:
+                  'verbose']:
             setattr(self, k, locals()[k])
         theta = np.empty(shape=niter, dtype=self.prior.dtype)
         if store_x:
@@ -432,8 +421,6 @@ class ParticleGibbs(GenericGibbs):
     ----------
     niter: int (default=10)
         number of MCMC iterations
-    seed: int (default=None)
-        pseudo-random seed (if None, generator is not seeded)
     verbose: int (default=0)
         progress report printed every (niter/verbose) iterations (never if 0)
     ssm_cls: `StateSpaceModel` subclass
@@ -467,10 +454,10 @@ class ParticleGibbs(GenericGibbs):
 
     """
 
-    def __init__(self, niter=10, seed=None, verbose=0, ssm_cls=None, 
+    def __init__(self, niter=10, verbose=0, ssm_cls=None, 
                  prior=None, data=None, theta0=None, Nx=100, fk_cls=None, 
                  regenerate_data=False, backward_step=False, store_x=False):
-        GenericGibbs.__init__(self, niter=niter, seed=seed, verbose=verbose, 
+        GenericGibbs.__init__(self, niter=niter, verbose=verbose, 
                               ssm_cls=ssm_cls, prior=prior, data=data,
                               theta0=theta0, store_x=store_x)
         self.Nx = Nx

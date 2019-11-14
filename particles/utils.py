@@ -46,21 +46,25 @@ replace by more legible labels; e.g. option ` model` of class `SMC`.
 `multiplexer` also accepts three extra keyword arguments (whose name may not
 therefore be used as keyword arguments for function f): 
 
-* ``nruns`` (default=1): evaluate f *nruns* time for each combination of arguments;
-  an entry 'run' (ranging from 0 to nruns-1) is added to the output dictionaries.
-  This is mostly useful when the output of ``f`` is random.
-* ``seeding``:  if True, generate random numbers that are all distinct, and use
-  them as input for keyword argument `seed` of function. Again, this is useful if 
-  f returns a random output, and if in addition, it does take as a kw argument 
-  a seed for the random generator. 
 * ``nprocs``: if >0, number of CPU cores to use in parallel; if <=0, number
   of cores *not* to use; in particular, ``nprocs=0`` means all CPU cores must 
   be used. 
+* ``nruns`` (default=1): evaluate f *nruns* time for each combination of arguments;
+  an entry `run` (ranging from 0 to nruns-1) is added to the output dictionaries.
+  This is mostly useful when the output of ``f`` is random.
+  * ``seeding`` (default: True if ``nruns``>1, False otherwise):  if True, seeds 
+  the pseudo-random generator before each call of function `f` with a different 
+  seed. See second warning below.
 
 .. warning :: 
-    Option `nprocs` rely on the standard library `multiprocessing`, 
+    Option ``nprocs`` rely on the standard library `multiprocessing`, 
     whose performance and behaviour seems to be OS-dependent. In particular, 
     it may not work well on Windows. 
+
+.. warning ::
+    Library `multiprocessing` generates identical workers, up to the state of
+    the random generator. Thus, as soon as more than one core is used, we
+    strongly recommend to set option ``seeding`` above to True. 
 
 .. seealso :: `multiSMC`
 
@@ -189,6 +193,19 @@ def distinct_seeds(k):
     return seeds
 
 
+def seeder(func):
+    """Decorator to seed the pseudo-random generator before evaluating a
+    function.
+    """
+    @functools.wraps(func)
+    def seeded_func(**kwargs):
+        seed = kwargs.pop('seed', None)
+        if seed:
+            random.seed(seed)
+        return func(**kwargs)
+    return seeded_func
+
+
 def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     """Evaluate a function for different parameters, optionally in parallel.
 
@@ -203,19 +220,18 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
         (i.e. -1 => number of cpus on your machine minus one)
         Default is 1, which means no multiprocessing
     seeding: bool (default: True if nruns > 1, False otherwise)
-        whether we need to provide different seeds for RNGS
+        whether to seed the pseudo-random generator (with distinct
+        seeds) before each evaluation of function f. 
     **args:
         keyword arguments for function f.
 
     Note
     ----
-    see documentation of `utils`
+    see documentation of `utils` (especially regarding ``seeding``).
 
     """
     if not callable(f):
         raise ValueError('multiplexer: function f missing, or not callable')
-    if seeding is None:
-        seeding = (nruns > 1)
     # extra arguments (meant to be arguments for f)
     fixedargs, listargs, dictargs = {}, {}, {}
     listargs['run'] = list(range(nruns))
@@ -231,10 +247,13 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     for ip in inputs:
         ip.pop('run')  # run is not an argument of f, just an id for output
     # distributing different seeds
+    if seeding is None:
+        seeding = (nruns > 1)
     if seeding:
         seeds = distinct_seeds(len(inputs))
-        for ip, op, s in zip(inputs, outputs, seeds):
-            ip['seed'] = s
-            op['seed'] = s
+        f = seeder(f)
+        for ip, op, seed in zip(inputs, outputs, seeds):
+            ip['seed'] = seed
+            op['seed'] = seed
     # the actual work happens here
     return distribute_work(f, inputs, outputs, nprocs=nprocs)

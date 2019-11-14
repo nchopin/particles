@@ -166,7 +166,7 @@ var_N, msjd_N = OrderedDict(), OrderedDict()
 for N in Nxs:
     var_N[N] = df_var_mean['output'].loc[N] 
     msjd_N[N] = msjd(algos['pmmh-%d' % N].chain.theta[burnin:]) 
-plt.plot(var_N.values(), msjd_N.values(), 'ok-')
+plt.plot(list(var_N.values()), list(msjd_N.values()), 'ok-')
 for N in [100, 200, 300, 400, 600, 1500]:
     plt.text(var_N[N], msjd_N[N] + 20, str(N))
 ideal_msjd = msjd(algos['mh'].chain.theta[burnin:])

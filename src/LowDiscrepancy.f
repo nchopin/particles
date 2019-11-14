@@ -1,3 +1,13 @@
+C =============================================================================
+C Notes from Nicolas Chopin 
+C Borrowed from CRAN package randtoolbox
+C added Cf2py directives to ease compilation through f2py
+C this version based on randtoolbox 1.30
+C (version before 1.17 had a nasty bug that produced Sobol points > 1 
+C for certain seeds 
+C =============================================================================
+
+
 C PART I:  HALTON SEQUENCE
 C PART II: SOBOL SEQUENCE
 
@@ -1679,7 +1689,8 @@ C     >>> remove implicit type declaration <<<
 C     CALCULATE THE NEW COMPONENTS OF QUASI,
 C     FIRST THE NUMERATORS, THEN NORMALIZED
       DO I = 1, DIMEN
-         QUASI(I) = REAL(IEOR(INT(QUASI(I)*LL), SV(I, L)))/LL
+C     >>> use a double precision number: REAL() replaced by DBLE() <<<      
+         QUASI(I) = DBLE(IEOR(INT(QUASI(I)*LL), SV(I, L)))/LL
       ENDDO
 
       COUNT = COUNT + 1

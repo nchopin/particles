@@ -79,10 +79,18 @@ A quick example::
 Multivariate distributions 
 ==========================
 
-The only *standard* multivariate distribution currently implemented is
-`MvNormal`, (multivariate Normal distribution). 
+Some of the univariate distributions actually have a `dim` keyword that 
+allows to define multivariate distributions::
 
-However, the module provides two ways to construct multivariate
+    d = dists.Normal(loc=np.array([3., 2.]), dim=2)
+    d.rvs(size=30)
+
+The distribution above has two independent components, with respective means 3
+and 2 (and variance 1 for both components). 
+
+The module also implements multivariate Normal distributions; see `MvNormal`. 
+
+Furthermore, the module provides two ways to construct multivariate
 distributions from a collection of univariate distributions: 
 
 * `IndepProd`: product of independent distributions. May be used to 
@@ -210,6 +218,12 @@ class ProbDist(object):
     dim = 1  # distributions are univariate by default
     dtype = 'float64'  # distributions are continuous by default
 
+    def shape(self, size):
+        if size is None:
+            return None
+        else:
+            return (size,) if self.dim == 1 else (size, self.dim)
+
     def logpdf(self, x):
         raise NotImplementedError
 
@@ -230,19 +244,22 @@ class ProbDist(object):
 class LocScaleDist(ProbDist):
     """Base class for location-scale distributions.
     """
-    def __init__(self, loc=0., scale=1.):
+    def __init__(self, loc=0., scale=1., dim=1):
         self.loc = loc
         self.scale = scale
+        self.dim = dim
 
 
 class Normal(LocScaleDist):
     """N(loc,scale^2) distribution.
     """
     def rvs(self, size=None):
-        return random.normal(loc=self.loc, scale=self.scale, size=size)
+        return random.normal(loc=self.loc, scale=self.scale,
+                             size=self.shape(size))
 
     def logpdf(self, x):
-        return stats.norm.logpdf(x, loc=self.loc, scale=self.scale)
+        l = stats.norm.logpdf(x, loc=self.loc, scale=self.scale)
+        return l if self.dim == 1 else np.sum(l, axis=1)
 
     def ppf(self, u):
         return stats.norm.ppf(u, loc=self.loc, scale=self.scale)
@@ -260,10 +277,12 @@ class Logistic(LocScaleDist):
     """Logistic(loc,scale) distribution.
     """
     def rvs(self, size=None):
-        return random.logistic(loc=self.loc, scale=self.scale, size=size)
+        return random.logistic(loc=self.loc, scale=self.scale,
+                               size=self.shape(size))
 
     def logpdf(self, x):
-        return stats.logistic.logpdf(x, loc=self.loc, scale=self.scale)
+        l = stats.logistic.logpdf(x, loc=self.loc, scale=self.scale)
+        return l if self.dim == 1 else np.sum(l, axis=1)
 
     def ppf(self, u):
         return stats.logistic.ppf(u, loc=self.loc, scale=self.scale)
@@ -274,10 +293,12 @@ class Laplace(LocScaleDist):
     """
 
     def rvs(self, size=None):
-        return random.laplace(loc=self.loc, scale=self.scale, size=size)
+        return random.laplace(loc=self.loc, scale=self.scale,
+                              size=self.shape(size))
 
     def logpdf(self, x):
-        return stats.laplace.logpdf(x, loc=self.loc, scale=self.scale)
+        l = stats.laplace.logpdf(x, loc=self.loc, scale=self.scale)
+        return l if self.dim == 1 else np.sum(l, axis=1)
 
     def ppf(self, u):
         return stats.laplace.ppf(u, loc=self.loc, scale=self.scale)
