@@ -1,10 +1,96 @@
 # -*- coding: utf-8 -*-
 
 """ 
-This module implements off-line smoothing algorithms as methods of class
-`ParticleHistory`. Off-line smoothing amounts to approximate the distribution
-of the complete trajectory :math:`X_{0:T}`, given data :math:`y_{0:T}`, at some
-fixed time horizon T. The corresponding algorithms require: 
+This module implements:
+
+    1. particle history classes,  which store the full or partial history
+    of a SMC algorithm. 
+    2. off-line smoothing algorithms as methods of these classes. 
+
+For on-line smoothing, see instead the ``collectors`` module. 
+
+Partial vs Full history, fix-lag smoothing
+==========================================
+
+A `SMC` object has a `hist` attribute, which is used to record at *certain*
+times t: 
+
+    * the N current particles $X_t^n$;
+    * their weights; 
+    * (optionally, see below), the ancestor variables $A_t^n$. 
+
+The frequency at which history is recorded depends on option ``store_history``
+of class `SMC`. Possible options are: 
+
+    * ``True``: records full history (at every time t);
+    * ``False``: no history (attribute `hist` set to ``None``); 
+    * callable ``f``: history is recorded at time t if ``f(t)`` returns True
+    * int k: records a rolling window history of length k (may be used 
+      to perform fixed-lag smoothing)
+
+This module implements different classes that correspond to the different cases: 
+    * `ParticleHistory`: full history (based on lists) 
+    * `PartialParticleHistory`: partial history (based on dictionaries) 
+    * `RollingParticleHistory`: rolling window history (based on deques)
+
+However, the classes provide a similar interface, that is: 
+
+    * ``smc.hist.X[t]`` returns the N particles at time t
+    * ``smc.hist.wgt[t]`` returns the N weights at time t (see
+    `resampling.weights`)
+    * ``smc.hist.A[t]`` returns the N ancestor variables at time t
+
+
+Partial History
+===============
+
+Here are some examples on one may record history only at certain times:
+
+    # store every other 10 iterations 
+    smc = SMC(fk=fk, N=100, store_history=lambda t: (t % 10) == 0) 
+    # store at certain times given by a list 
+    times = [10, 30, 84]
+    smc = SMC(fk=fk, N=100, store_history=lambda t: t in times) 
+
+In that case, the history does *not* record the ancestor variables (since they
+are useless in this scenario. 
+
+    smc.run()
+    smc.hist.X[10]  # OK
+    smc.hist.A[10]  # error 
+
+Rolling history
+===============
+
+To obtain a rolling window (fixed-length) history::
+
+    smc = SMC(fk=fk, N=100, store_history=10)
+    smc.run() 
+
+In that case, fields ``smc.hist.X``, ``smc.hist.wgt`` and ``smc.hist.A`` are
+deque (double-end queues, see standard module `collections`) of max length 10.
+Using negative indices:: 
+
+    smc.hist.X[-1]  # the particles at final time T
+    smc.hist.X[-2]  # the particles at time T - 1
+    # ...
+    smc.hist.X[-10] # the N particles at time T - 9
+    smc.hist.X[-11] # raises an error
+
+It is possible to perform backward sampling on a rolling history: 
+
+    trajectories = smc.hist.backward_sampling(30)
+
+in the same way as for a full history (see below). Obviously in that case the
+trajectories are restricted to time steps T-9, ..., T. 
+
+
+Full history, off-line smoothing algorithms
+===========================================
+
+Off-line smoothing amounts to approximate the distribution of the complete
+trajectory :math:`X_{0:T}`, given data :math:`y_{0:T}`, at some fixed time
+horizon T. The corresponding algorithms require: 
 
     1. to run a particle filter forward in time (from time 0 to time T), 
     and store its complete *history* (at each time t, the particles, their
@@ -34,6 +120,7 @@ the book).
 
 from __future__ import absolute_import, division, print_function
 
+from collections import deque
 import numpy as np
 from numpy import random
 from scipy import stats  # worker
@@ -44,8 +131,66 @@ from particles import hilbert
 from particles import qmc
 from particles import resampling as rs
 
+def generate_hist_obj(option, fk):
+    if option is True:
+        return ParticleHistory(fk) 
+    elif option is False:
+        return None
+    elif callable(option):
+        return PartialParticleHistory(option)
+    elif isinstance(option, int) and option >= 0:
+        return RollingParticleHistory(option)
+    else:
+        raise ValueError('store_history: invalid option')
 
-class ParticleHistory(object):
+class PartialParticleHistory(object):
+    def __init__(self, func)
+        self.is_save_time = func
+        self.X, self.wgt = {}, {}
+
+    def save(self, smc):
+        t = self.t  
+        if self.is_save_time(t):
+            self.X[t] = smc.X
+            self.wgt[t] = smc.wgt
+
+class RollingParticleHistory(object):
+    def __init__(self, length):
+        self.X = deque([], length)
+        self.A = deque([], length)
+        self.wgt = deque([], length)
+
+    @property
+    def N(self):
+        """Number of particles at each time step.
+        """
+        return self.X[0].shape[0]
+
+    @property
+    def T(self):
+        """Current length of history.
+        """
+        return len(self.X)
+
+    def save(self, smc):
+        self.X.append(smc.X)
+        self.A.append(smc.A) 
+        self.wgt.append(smc.wgt)
+
+    def compute_trajectories(self):
+        """Compute the N trajectories that constitute the current genealogy.
+
+        Compute and add attribute ``B`` to ``self`` where ``B`` is an array
+        such that ``B[t,n]`` is the index of ancestor at time t of particle X_T^n,
+        where T is the current length of history.
+        """
+        self.B = [self.A[-1].copy()]
+        for A in reversed(self.A[1:-1]):  #at time 0, A=None
+                self.B.append(A[self.B[-1]]) 
+        self.B.reverse()
+        self.B = np.array(self.B)  # TODO ndarray or list?
+
+class ParticleHistory(RollingParticleHistory):
     """Particle history. 
 
     A class to store the history of a particle algorithm, i.e.
@@ -68,38 +213,14 @@ class ParticleHistory(object):
 
     """
 
-    def __init__(self, model, N):
-        """
-        Constructor.
+    def __init__(self, fk):
+        self.X, self.A, self.wgt = [], [], []
+        self.fk = fk
 
-        Parameters
-        ----------
-        model: `FeynmanKac` object
-            Feynman-Kac model 
-        N: int
-            number of particles
-        """
-        self.A, self.X, self.wgt, self.h_orders = [], [], [], []
-        self.model = model
-        self.N = N
-
-    @property
-    def T(self):
-        """Current length of history.
-        """
-        return len(self.X)
-
-    def save(self, X=None, w=None, A=None):
-        """Save one "page" of history at a given time. 
-
-        .. note:: 
-            This method is used internally by `SMC` to store the state of the
-            particle system at each time t. In most cases, users should not
-            have to call this method directly.
-        """
-        self.X.append(X)
-        self.wgt.append(w)
-        self.A.append(A)
+    def save_h_order(self, h):
+        if not hasattr(self, 'h_orders'):
+            self.h_orders = []
+        self.h_orders.append(h)
 
     def extract_one_trajectory(self):
         """Extract a single trajectory from the particle history.
@@ -115,18 +236,6 @@ class ParticleHistory(object):
                 n = self.A[t + 1][n]
             traj.append(self.X[t][n])
         return traj[::-1]
-
-    def compute_trajectories(self):
-        """Compute the N trajectories that constitute the current genealogy.
-
-        Compute and add attribute ``B`` to ``self`` where ``B`` is an array
-        such that ``B[t,n]`` is the index of ancestor at time t of particle X_T^n,
-        where T is the current length of history.
-        """
-        self.B = np.empty((self.T, self.N), 'int')
-        self.B[-1, :] = self.A[-1]
-        for t in reversed(range(self.T - 1)):
-            self.B[t, :] = self.A[t + 1][self.B[t + 1]]
 
     def _check_h_orders(self):
         if not self.h_orders:
@@ -201,9 +310,9 @@ class ParticleHistory(object):
             while nrejected > 0:
                 nattempts += nrejected
                 nprop = gen.dequeue(nrejected)
-                lpr_acc = (self.model.logpt(t + 1, self.X[t][nprop], 
+                lpr_acc = (self.fk.logpt(t + 1, self.X[t][nprop], 
                                             who_rejected)
-                           - self.model.upper_bound_trans(t + 1))
+                           - self.fk.upper_bound_trans(t + 1))
                 newly_accepted = np.log(random.rand(nrejected)) < lpr_acc
                 still_rejected = np.logical_not(newly_accepted)
                 idx[t, where_rejected[newly_accepted]] = nprop[newly_accepted]
@@ -219,7 +328,7 @@ class ParticleHistory(object):
         """
         for m in range(M):
             for t in reversed(range(self.T - 1)):
-                lwm = (self.wgt[t].lw + self.model.logpt(t + 1, self.X[t],
+                lwm = (self.wgt[t].lw + self.fk.logpt(t + 1, self.X[t],
                                                      self.X[t + 1][idx[t + 1, m]]))
                 idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
 
@@ -245,7 +354,7 @@ class ParticleHistory(object):
         for t in reversed(range(self.T - 1)):
             idx = np.empty(M, 'int')
             for m, xn in enumerate(paths[-1]):
-                lwm = self.wgt[t].lw + self.model.logpt(t + 1, self.X[t], xn)
+                lwm = self.wgt[t].lw + self.fk.logpt(t + 1, self.X[t], xn)
                 # use ordered version here
                 cw = np.cumsum(rs.exp_and_normalise(lwm[self.h_orders[t]]))
                 idx[m] = np.searchsorted(cw, u[m, t])
@@ -260,7 +369,7 @@ class ParticleHistory(object):
 #             Don't use this! This is the *pedagogical* version of O(N) FFBS:
 #             code is simpler to understand, but quite slow, because it has loops
 #         """
-#         if not hasattr(self.model, 'upper_bound_trans'):
+#         if not hasattr(self.fk, 'upper_bound_trans'):
 #             raise ValueError('O(N) version of backward smoothing'
 #                              +'requires to specify constant upper_bound_trans(t)'
 #                              +' s.t. log p_t(x_t|x_{t-1})<upper_bound_trans(t)')
@@ -273,9 +382,9 @@ class ParticleHistory(object):
 #                 while True:
 #                     nattempts += 1
 #                     nprop = gen.dequeue(1)
-#                     lpr_acc = (self.model.logpt(t+1, self.X[t][nprop],
+#                     lpr_acc = (self.fk.logpt(t+1, self.X[t][nprop],
 #                                                 self.X[t+1][idx[t+1, m]])
-#                                -self.model.upper_bound_trans(t+1))
+#                                -self.fk.upper_bound_trans(t+1))
 #                     if np.log(random.rand()) < lpr_acc:
 #                         break
 #                 idx[t, m] = nprop
@@ -323,12 +432,12 @@ class ParticleHistory(object):
         """
         sp, sw = 0., 0.
         upb = lwinfo.max() + self.wgt[t].lw.max()
-        if hasattr(self.model, 'upper_bound_trans'):
-            upb += self.model.upper_bound_trans(t + 1)
+        if hasattr(self.fk, 'upper_bound_trans'):
+            upb += self.fk.upper_bound_trans(t + 1)
         # Loop over n, to avoid having in memory a NxN matrix
         for n in range(self.N):
             omegan = np.exp(lwinfo + self.wgt[t].lw[n] - upb
-                            + self.model.logpt(t + 1, self.X[t][n],
+                            + self.fk.logpt(t + 1, self.X[t][n],
                                                info.hist.X[ti]))
             sp += np.sum(omegan * phi(self.X[t][n], info.hist.X[ti]))
             sw += np.sum(omegan)
@@ -350,7 +459,7 @@ class ParticleHistory(object):
         else:
             W = self.wgt[t].W
         J = rs.multinomial(W)
-        log_omega = self.model.logpt(t + 1, self.X[t][J], info.hist.X[ti][I])
+        log_omega = self.fk.logpt(t + 1, self.X[t][J], info.hist.X[ti][I])
         if modif_forward is not None:
             log_omega -= modif_forward[J]
         if modif_info is not None:

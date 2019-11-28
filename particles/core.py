@@ -297,10 +297,7 @@ class SMC(object):
             self.summaries = collectors.Summaries(**sum_options)
         else:
             self.summaries = None
-        if store_history:
-            self.hist = smoothing.ParticleHistory(self.fk, self.N)
-        else:
-            self.hist = None
+        self.hist = smoothing.generate_hist_obj(store_history, fk)
 
     def __str__(self):
         return self.fk.summary_format(self)
@@ -356,8 +353,8 @@ class SMC(object):
         u = qmc.sobol(self.N, self.fk.du + 1)
         tau = np.argsort(u[:, 0])
         h_order = hilbert.hilbert_sort(self.X)
-        if self.hist is not None:
-            self.hist.h_orders.append(h_order)
+        if self.hist:
+            self.hist.save_h_order(h_order)
         self.A = h_order[rs.inverse_cdf(u[tau, 0], self.aux.W[h_order])]
         self.Xp = self.X[self.A]
         v = u[tau, 1:].squeeze()
@@ -369,7 +366,7 @@ class SMC(object):
         if self.t > 0:
             prec_log_mean_w = self.log_mean_w
         self.log_mean_w = rs.log_mean_exp(self.wgts.lw)
-        if self.t==0 or self.rs_flag:
+        if self.t == 0 or self.rs_flag:
             self.loglt = self.log_mean_w
         else:
             self.loglt = self.log_mean_w - prec_log_mean_w
@@ -379,7 +376,7 @@ class SMC(object):
         if self.summaries:
             self.summaries.collect(self)
         if self.hist:
-            self.hist.save(X=self.X, w=self.wgts, A=self.A)
+            self.hist.save(self)
 
     def __next__(self):
         """One step of a particle filter. 
