@@ -9,8 +9,8 @@ This module implements:
 
 For on-line smoothing, see instead the ``collectors`` module. 
 
-Partial vs Full history, fix-lag smoothing
-==========================================
+History classes 
+===============
 
 A `SMC` object has a `hist` attribute, which is used to record at *certain*
 times t: 
@@ -36,10 +36,9 @@ This module implements different classes that correspond to the different cases:
 However, the classes provide a similar interface, that is: 
 
     * ``smc.hist.X[t]`` returns the N particles at time t
-    * ``smc.hist.wgt[t]`` returns the N weights at time t (see
+    * ``smc.hist.wgts[t]`` returns the N weights at time t (see
     `resampling.weights`)
     * ``smc.hist.A[t]`` returns the N ancestor variables at time t
-
 
 Partial History
 ===============
@@ -58,31 +57,6 @@ are useless in this scenario.
     smc.run()
     smc.hist.X[10]  # OK
     smc.hist.A[10]  # error 
-
-Rolling history
-===============
-
-To obtain a rolling window (fixed-length) history::
-
-    smc = SMC(fk=fk, N=100, store_history=10)
-    smc.run() 
-
-In that case, fields ``smc.hist.X``, ``smc.hist.wgt`` and ``smc.hist.A`` are
-deque (double-end queues, see standard module `collections`) of max length 10.
-Using negative indices:: 
-
-    smc.hist.X[-1]  # the particles at final time T
-    smc.hist.X[-2]  # the particles at time T - 1
-    # ...
-    smc.hist.X[-10] # the N particles at time T - 9
-    smc.hist.X[-11] # raises an error
-
-It is possible to perform backward sampling on a rolling history: 
-
-    trajectories = smc.hist.backward_sampling(30)
-
-in the same way as for a full history (see below). Obviously in that case the
-trajectories are restricted to time steps T-9, ..., T. 
 
 
 Full history, off-line smoothing algorithms
@@ -110,17 +84,36 @@ Here is a quick example::
     # generate 20 smoothing trajectories
     trajectories = pf.backward_sampling(20)  
 
-For more details, see the documentation of `ParticleHistory` (and Chapter 12 of
-the book). 
+For more details, see the documentation of `ParticleHistory`, the ipython
+notebook on smoothing, and Chapter 12 of the book. 
 
 .. warning:: the complete history of a particle filter may take a lot of
   memory. 
+
+Rolling history
+===============
+
+To obtain a rolling window (fixed-length) history::
+
+    smc = SMC(fk=fk, N=100, store_history=10)
+    smc.run() 
+
+In that case, fields ``smc.hist.X``, ``smc.hist.wgts`` and ``smc.hist.A`` are
+deque (double-end queues, see standard module `collections`) of max length 10.
+Using negative indices:: 
+
+    smc.hist.X[-1]  # the particles at final time T
+    smc.hist.X[-2]  # the particles at time T - 1
+    # ...
+    smc.hist.X[-10] # the N particles at time T - 9
+    smc.hist.X[-11] # raises an error
 
 """
 
 from __future__ import absolute_import, division, print_function
 
 from collections import deque
+from itertools import islice
 import numpy as np
 from numpy import random
 from scipy import stats  # worker
@@ -144,21 +137,21 @@ def generate_hist_obj(option, fk):
         raise ValueError('store_history: invalid option')
 
 class PartialParticleHistory(object):
-    def __init__(self, func)
+    def __init__(self, func):
         self.is_save_time = func
-        self.X, self.wgt = {}, {}
+        self.X, self.wgts = {}, {}
 
     def save(self, smc):
-        t = self.t  
+        t = smc.t  
         if self.is_save_time(t):
             self.X[t] = smc.X
-            self.wgt[t] = smc.wgt
+            self.wgts[t] = smc.wgts
 
 class RollingParticleHistory(object):
     def __init__(self, length):
         self.X = deque([], length)
         self.A = deque([], length)
-        self.wgt = deque([], length)
+        self.wgts = deque([], length)
 
     @property
     def N(self):
@@ -175,20 +168,20 @@ class RollingParticleHistory(object):
     def save(self, smc):
         self.X.append(smc.X)
         self.A.append(smc.A) 
-        self.wgt.append(smc.wgt)
+        self.wgts.append(smc.wgts)
 
     def compute_trajectories(self):
         """Compute the N trajectories that constitute the current genealogy.
 
-        Compute and add attribute ``B`` to ``self`` where ``B`` is an array
-        such that ``B[t,n]`` is the index of ancestor at time t of particle X_T^n,
-        where T is the current length of history.
+        Add attribute ``B`` to ``self`` where ``B`` is an array such that
+        ``B[t, n]`` is the index of ancestor at time t of particle X_T^n, where
+        T is the current length of history.
         """
-        self.B = [self.A[-1].copy()]
-        for A in reversed(self.A[1:-1]):  #at time 0, A=None
-                self.B.append(A[self.B[-1]]) 
+        self.B = [np.arange(self.N)]
+        for A in list(self.A)[-1:0:-1]: # list in case self.A is a deque
+            self.B.append(A[self.B[-1]]) 
         self.B.reverse()
-        self.B = np.array(self.B)  # TODO ndarray or list?
+        self.B = np.array(self.B) 
 
 class ParticleHistory(RollingParticleHistory):
     """Particle history. 
@@ -205,8 +198,8 @@ class ParticleHistory(RollingParticleHistory):
     ----------
     X: list
         X[t] is the object that represents the N particles at iteration t
-    wgt: list
-        wgt[t] is a `Weights` object (see module `resampling`) that represents 
+    wgts: list
+        wgts[t] is a `Weights` object (see module `resampling`) that represents 
         the N weights at time t
     A: list
         A[t] is the vector of ancestor indices at time t
@@ -214,7 +207,7 @@ class ParticleHistory(RollingParticleHistory):
     """
 
     def __init__(self, fk):
-        self.X, self.A, self.wgt = [], [], []
+        self.X, self.A, self.wgts = [], [], []
         self.fk = fk
 
     def save_h_order(self, h):
@@ -231,7 +224,7 @@ class ParticleHistory(RollingParticleHistory):
         traj = []
         for t in reversed(range(self.T)):
             if t == self.T - 1:
-                n = rs.multinomial_once(self.wgt[-1].W)
+                n = rs.multinomial_once(self.wgts[-1].W)
             else:
                 n = self.A[t + 1][n]
             traj.append(self.X[t][n])
@@ -281,7 +274,7 @@ class ParticleHistory(RollingParticleHistory):
            otherwise output is simply ``paths``.
         """
         idx = np.empty((self.T, M), dtype=int)
-        idx[-1, :] = rs.multinomial(self.wgt[-1].W, M=M)
+        idx[-1, :] = rs.multinomial(self.wgts[-1].W, M=M)
         if linear_cost:
             ar = self._backward_sampling_ON(M, idx)
         else:
@@ -306,7 +299,7 @@ class ParticleHistory(RollingParticleHistory):
             where_rejected = np.arange(M)
             who_rejected = self.X[t + 1][idx[t + 1, :]]
             nrejected = M
-            gen = rs.MultinomialQueue(self.wgt[t].W, M=M)
+            gen = rs.MultinomialQueue(self.wgts[t].W, M=M)
             while nrejected > 0:
                 nattempts += nrejected
                 nprop = gen.dequeue(nrejected)
@@ -328,7 +321,7 @@ class ParticleHistory(RollingParticleHistory):
         """
         for m in range(M):
             for t in reversed(range(self.T - 1)):
-                lwm = (self.wgt[t].lw + self.fk.logpt(t + 1, self.X[t],
+                lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
                                                      self.X[t + 1][idx[t + 1, m]]))
                 idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
 
@@ -349,12 +342,12 @@ class ParticleHistory(RollingParticleHistory):
         # the final particles have not been sorted
         hT = hilbert.hilbert_sort(self.X[-1])
         # searchsorted to avoid having to sort in place u according to u[:,T-1]
-        idx = np.searchsorted(np.cumsum(self.wgt[-1].W[hT]), u[:, -1])
+        idx = np.searchsorted(np.cumsum(self.wgts[-1].W[hT]), u[:, -1])
         paths = [self.X[-1][hT][idx], ]
         for t in reversed(range(self.T - 1)):
             idx = np.empty(M, 'int')
             for m, xn in enumerate(paths[-1]):
-                lwm = self.wgt[t].lw + self.fk.logpt(t + 1, self.X[t], xn)
+                lwm = self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t], xn)
                 # use ordered version here
                 cw = np.cumsum(rs.exp_and_normalise(lwm[self.h_orders[t]]))
                 idx[m] = np.searchsorted(cw, u[m, t])
@@ -374,10 +367,10 @@ class ParticleHistory(RollingParticleHistory):
 #                              +'requires to specify constant upper_bound_trans(t)'
 #                              +' s.t. log p_t(x_t|x_{t-1})<upper_bound_trans(t)')
 #         idx = np.empty((self.T, M), dtype=int)
-#         idx[-1, :] = rs.multinomial(M, self.wgt[-1].W)
+#         idx[-1, :] = rs.multinomial(M, self.wgts[-1].W)
 #         nattempts = 0
 #         for t in xrange(self.T - 2, -1, -1):
-#             gen = rs.MulinomialQueue(M, self.wgt[t].W)
+#             gen = rs.MulinomialQueue(M, self.wgts[t].W)
 #             for m in xrange(M):
 #                 while True:
 #                     nattempts += 1
@@ -417,7 +410,7 @@ class ParticleHistory(RollingParticleHistory):
         if t < 0 or t >= self.T - 1:
             raise ValueError(
                 'two-filter smoothing: t must be in range 0,...,T-2')
-        lwinfo = info.hist.wgt[ti].lw - loggamma(info.hist.X[ti])
+        lwinfo = info.hist.wgts[ti].lw - loggamma(info.hist.X[ti])
         if linear_cost:
             return self._twofilter_smoothing_ON(t, ti, info, phi, lwinfo,
                                                return_ess,
@@ -431,12 +424,12 @@ class ParticleHistory(RollingParticleHistory):
         This method should not be called directly, see twofilter_smoothing.
         """
         sp, sw = 0., 0.
-        upb = lwinfo.max() + self.wgt[t].lw.max()
+        upb = lwinfo.max() + self.wgts[t].lw.max()
         if hasattr(self.fk, 'upper_bound_trans'):
             upb += self.fk.upper_bound_trans(t + 1)
         # Loop over n, to avoid having in memory a NxN matrix
         for n in range(self.N):
-            omegan = np.exp(lwinfo + self.wgt[t].lw[n] - upb
+            omegan = np.exp(lwinfo + self.wgts[t].lw[n] - upb
                             + self.fk.logpt(t + 1, self.X[t][n],
                                                info.hist.X[ti]))
             sp += np.sum(omegan * phi(self.X[t][n], info.hist.X[ti]))
@@ -454,10 +447,10 @@ class ParticleHistory(RollingParticleHistory):
         Winfo = rs.exp_and_normalise(lwinfo)
         I = rs.multinomial(Winfo)
         if modif_forward is not None:
-            lw = self.wgt[t].lw + modif_forward
+            lw = self.wgts[t].lw + modif_forward
             W = rs.exp_and_normalise(lw)
         else:
-            W = self.wgt[t].W
+            W = self.wgts[t].W
         J = rs.multinomial(W)
         log_omega = self.fk.logpt(t + 1, self.X[t][J], info.hist.X[ti][I])
         if modif_forward is not None:
