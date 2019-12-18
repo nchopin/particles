@@ -175,9 +175,9 @@ class Collector(object):
 
     To subclass `Collector`: 
         * define summary name in string `summary_name` (should not clash
-          with other summary names)
-        * implement method `fetch(self, smc)` which fetches (in object smc the 
-          summary that must be collected 
+          with other summary names);
+        * implement method `fetch(self, smc)` which fetches (in object smc) 
+          the summary that must be collected.
     """
     @property
     def summary(self):
@@ -295,3 +295,10 @@ class ParisOnlineSmoother(Collector, OnlineSmootherMixin):
     def save_for_later(self, smc):
         self.prev_X = smc.X
         self.prev_W = smc.W
+
+class FixedLagSmoother(Collector):
+    summary_name = 'fixed_lag_smooth'
+    def fetch(self, smc):
+        B = smc.hist.compute_trajectories()
+        Xs = [X[B[i, N]] for i, X in enumerate(smc.hist.X)]
+        return self.arg(smc.W, Xs)
