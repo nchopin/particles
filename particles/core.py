@@ -373,10 +373,12 @@ class SMC(object):
         self.logLt += self.loglt
         if self.verbose:
             print(self)
-        if self.summaries:
-            self.summaries.collect(self)
         if self.hist:
             self.hist.save(self)
+        # must collect summaries *after* history, because a collector (e.g. 
+        # FixedLagSmoother) may needs to access history
+        if self.summaries:
+            self.summaries.collect(self)
 
     def __next__(self):
         """One step of a particle filter. 

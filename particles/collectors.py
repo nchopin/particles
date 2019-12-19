@@ -6,9 +6,9 @@ Collecting summaries at each iteration of a SMC algorithm.
 Overview
 ========
 
-This module implements "summary collectors", that is, objects that 
-collect at every time t certain summaries of the particle system. An 
-important application is **on-line smoothing**. However, the idea is a 
+This module implements "summary collectors", that is, objects that collect at
+every time t certain summaries of the particle system.  Important applications
+are **fixed-lag smoothing** and **on-line smoothing**. However, the idea is a
 bit more general that that. Here is a simple example:: 
 
     import particles
@@ -21,9 +21,8 @@ bit more general that that. Here is a simple example::
     print(my_alg.summaries.moments)  # print a list of moments
     print(my_alg.summaries.naive_online_smooth)  # print a list of estimates
 
-Once the algorithm is run, the object `my_alg.summaries` contains the
-computed summaries, stored in lists of length T (one component for each
-iteration t). 
+Once the algorithm is run, the object `my_alg.summaries` contains the computed
+summaries, stored in lists of length T (one component for each iteration t). 
 
 Turning off summary collection
 ==============================
@@ -33,9 +32,9 @@ any summary::
     
     my_alg = particles.SMC(fk=some_fk_model, N=100, summaries=False)
     
-This might be useful in cases when you need to keep a large number 
-of SMC objects in memory (as in SMC^2). In that case, even the default
-summaries (see below) might take too much space. 
+This might be useful in cases when you need to keep a large number of SMC
+objects in memory (as in SMC^2). In that case, even the default summaries (see
+below) might take too much space. 
     
 Default summaries
 =================
@@ -79,6 +78,36 @@ override method `default_moments` of the considered FeynmanKac class::
 In that case, ``my_fk_model.summaries.moments`` is a list of weighed averages
 of the squares of the components of the particles. 
 
+
+Fixed-lag smoothing
+===================
+
+Fixed-lag smoothing means smoothing of the latest h states; that is, computing
+(at every time t) expectations of 
+
+.. math::
+    \mathbb{E}[\phi_t(X_{t-h:t}) | Y_{0:t} = y_{0:t}]
+
+for a fixed integer $h$ (at times $t \geq h$; if $t<h$, replace $h$ by $t$). 
+
+This requires keeping track of the $h$ previous states for each particle;
+this is achieved by using a rolling window history, by setting option
+``store_history`` to an int equals to $h+1$ (the length of the trajectories)::
+
+    my_alg = particles.SMC(fk=some_fk_model, N=100, fixed_lag_smooth=phi,
+                           store_history=3)  # h = 2 
+
+See module `smoothing` for more details on rolling window and other types of
+particle history. Function phi must have the same signature as for moments::
+
+    def phi(W, X):
+        return np.average(np.array(X), axis=-1, weights=W)
+
+Note however that X is a deque of length at most $h$; it behaves like a list,
+except that its length is always at most $h + 1$.  Of course this function
+could simply return its arguments ``W`` and ``X``; in that case you simply
+record the fixed-lag trajectories (and their weights) at every time $t$. 
+
 On-line smoothing 
 =================
 
@@ -88,7 +117,8 @@ expectations of the form:
 .. math::
     \mathbb{E}[\phi_t(X_{0:t}) | Y_{0:t} = y_{0:t}]
 
-On-line smoothing is covered in Sections 11.1 and 11.3 in the book.
+On-line smoothing is covered in Sections 11.1 and 11.3 in the book. Note that
+on-line smoothing is typically restricted to *additive* functions $\phi$, see below. 
 
 The following three algorithms are implemented: 
 
@@ -218,6 +248,17 @@ class MomentsCollector(Collector):
         f = smc.fk.default_moments if self.arg is None else self.arg
         return f(smc.W, smc.X)
 
+class FixedLagSmoother(Collector):
+    """Compute some function of fixed-lag trajectories; must be used in
+    conjunction with a rolling window history (store_history=k, with k an int,
+    see module smoothing). 
+    """
+    summary_name = 'fixed_lag_smooth'
+    def fetch(self, smc):
+        B = smc.hist.compute_trajectories()
+        Xs = [X[B[i, :]] for i, X in enumerate(smc.hist.X)]
+        return self.arg(smc.W, Xs)
+
 class OnlineSmootherMixin(object):
     """Mix-in for on-line smoothing algorithms. 
     """
@@ -296,9 +337,3 @@ class ParisOnlineSmoother(Collector, OnlineSmootherMixin):
         self.prev_X = smc.X
         self.prev_W = smc.W
 
-class FixedLagSmoother(Collector):
-    summary_name = 'fixed_lag_smooth'
-    def fetch(self, smc):
-        B = smc.hist.compute_trajectories()
-        Xs = [X[B[i, N]] for i, X in enumerate(smc.hist.X)]
-        return self.arg(smc.W, Xs)
