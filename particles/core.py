@@ -291,13 +291,15 @@ class SMC(object):
         self.wgts = rs.Weights()
         self.aux = None
         self.X, self.Xp, self.A = None, None, None
+        if qmc:
+            self.h_order = None
 
         # summaries computed at every t
         if summaries:
             self.summaries = collectors.Summaries(**sum_options)
         else:
             self.summaries = None
-        self.hist = smoothing.generate_hist_obj(store_history, fk)
+        self.hist = smoothing.generate_hist_obj(store_history, fk, qmc)
 
     def __str__(self):
         return self.fk.summary_format(self)
@@ -352,10 +354,8 @@ class SMC(object):
         self.rs_flag = True  # we *always* resample in SQMC
         u = qmc.sobol(self.N, self.fk.du + 1)
         tau = np.argsort(u[:, 0])
-        h_order = hilbert.hilbert_sort(self.X)
-        if self.hist:
-            self.hist.save_h_order(h_order)
-        self.A = h_order[rs.inverse_cdf(u[tau, 0], self.aux.W[h_order])]
+        self.h_order = hilbert.hilbert_sort(self.X)
+        self.A = self.h_order[rs.inverse_cdf(u[tau, 0], self.aux.W[self.h_order])]
         self.Xp = self.X[self.A]
         v = u[tau, 1:].squeeze()
         # v is (N,) if du=1, (N,d) otherwise

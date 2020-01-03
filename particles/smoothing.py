@@ -141,9 +141,9 @@ from particles import hilbert
 from particles import qmc
 from particles import resampling as rs
 
-def generate_hist_obj(option, fk):
+def generate_hist_obj(option, fk, qmc):
     if option is True:
-        return ParticleHistory(fk) 
+        return ParticleHistory(fk, qmc) 
     elif option is False:
         return None
     elif callable(option):
@@ -222,14 +222,16 @@ class ParticleHistory(RollingParticleHistory):
 
     """
 
-    def __init__(self, fk):
+    def __init__(self, fk, qmc):
         self.X, self.A, self.wgts = [], [], []
+        if qmc:
+            self.h_orders = []
         self.fk = fk
 
-    def save_h_order(self, h):
-        if not hasattr(self, 'h_orders'):
-            self.h_orders = []
-        self.h_orders.append(h)
+    def save(self, smc):
+        RollingParticleHistory.save(self, smc)
+        if hasattr(self, 'h_orders'):
+            self.h_orders.append(smc.h_order)
 
     def extract_one_trajectory(self):
         """Extract a single trajectory from the particle history.
@@ -247,7 +249,7 @@ class ParticleHistory(RollingParticleHistory):
         return traj[::-1]
 
     def _check_h_orders(self):
-        if not self.h_orders:
+        if not hasattr(self, 'h_orders'):
             raise ValueError('QMC FFBS requires particles have been Hilbert\
                              ordered during the forward pass')
 
@@ -490,7 +492,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
     """Generic worker for off-line smoothing algorithms.
 
     This worker may be used in conjunction with utils.multiplexer in order to 
-    run in parallel (and eventually compare) off-line smoothing algorithms.
+    run in parallel off-line smoothing algorithms.
     
     Parameters
     ----------

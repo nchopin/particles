@@ -20,9 +20,9 @@ This package was developed to complement the forthcoming book:
 * **SQMC** (Sequential quasi Monte Carlo);  routines for computing the Hilbert curve, 
   and generating RQMC sequences. 
 
-* **particle smoothing**: on-line smoothing, FFBS (forward filtering, backward
-  sampling), two-filter smoothing. O(N) and O(N^2) variants. 
-  FFBS for SQMC is also implemented. 
+* **particle smoothing**: fixed-lag smoothing, on-line smoothing, FFBS (forward
+  filtering, backward sampling), two-filter smoothing (O(N) and O(N^2)
+  variants).  FFBS for SQMC is also implemented. 
 
 * Exact filtering/smoothing algorithms: **Kalman** (for linear Gaussian models) 
 and **Baum-Welch** (for hidden Markov models).

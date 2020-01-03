@@ -21,7 +21,7 @@ The long version: **particles** requires the following libraries:
 In addition, it is **strongly recommended** to install the following plotting
 libraries:  
 
-* `Matplotlib <http://matplotlib.org/>`_,
+* `Matplotlib <http://matplotlib.org/>`_
 * `seaborn <https://seaborn.pydata.org/>`_
 
 Most of the examples require these libraries to plot results. 
@@ -63,7 +63,7 @@ The package is available on Github_ and may be installed using git::
     git clone https://github.com/nchopin/particles.git
     pip install --user . 
 
-Replace option --user by -e if you want to install in editable mode; in that
+Replace option `--user` by `-e` if you want to install in editable mode; in that
 way you may edit yourself the package (in the folder you chose), and then
 import the modified version. 
 
@@ -76,7 +76,7 @@ If the two methods above fail, you may try this::
 
     cd some_folder_of_your_choosing
     git clone https://github.com/nchopin/particles.git
-    python setup.py --force 
+    python setup.py install --force 
 
 This will install the package, without compiling the little bit of Fortran code 
 that is used in module `qmc`. At this stage, you may already use the package if
@@ -86,9 +86,10 @@ as follows::
 
     pip show particles  # tells you the folder where the package is installed
     cd where_particles_is_installed/particles 
-    f2py -c ../src/LowDiscrepancy.f -m lowdiscrepancy
+    f2py3 -c ../src/LowDiscrepancy.f -m lowdiscrepancy 
 
-Make sure a Fortran compiler is installed on your machine (e.g. package
-gfortran on Ubuntu). Utility `f2py` is part of Numpy; see here_.
+Replace f2py3 by f2py if you use Python 2.  Make sure a Fortran compiler is
+installed on your machine (e.g. package gfortran on Ubuntu).  Utility `f2py` is
+part of Numpy; see here_.
 
 .. _here: https://docs.scipy.org/doc/numpy/f2py/
