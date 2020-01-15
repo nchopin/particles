@@ -48,6 +48,12 @@ and e.g. sample data from this model::
 
 (This works because, again, `HMM` is a subclass of ``StateSpaceModels``). 
 
+.. warning::
+   Since `HMM` is a subclass of `StateSpaceModel`, method `PY` has the same
+   signature as in its parent class, but argument `xp` is not used. In other
+   words, you cannot specify a HMM model where $Y_t$ would depend on both 
+   $X_t$ and $X_{t-1}$ (unlike in the general case). 
+
 Running the Baum-Welch algorithm
 ================================
 
@@ -184,7 +190,7 @@ class BaumWelch(object):
         logpyt = rs.log_sum_exp(lp)
         f = np.exp(lp - logpyt)
         self.logft.append(emis)
-        self.logpyt.append(lp)
+        self.logpyt.append(logpyt)
         self.filt.append(f)
 
     def __next__(self):

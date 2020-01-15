@@ -69,7 +69,7 @@ for k in N_pow:
 plt.xlabel(r'$t$')
 plt.ylabel('gain filtering expectation')
 plt.yscale('log')
-plt.legend(loc=2)
+plt.legend(loc=1)
 if savefigs:
     plt.savefig('sqmc_Gordon_gain_vs_t.pdf') 
 

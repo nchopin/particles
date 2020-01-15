@@ -28,10 +28,10 @@ from particles import smc_samplers
 dataset = 'eeg'
 
 if dataset == 'sonar':
-    raw_data = np.loadtxt('../datasets/sonar.all-data', delimiter=',', 
+    raw_data = np.loadtxt('../../datasets/sonar.all-data', delimiter=',', 
                           converters={60: lambda x: 1 if x ==b'R' else 0})
 elif dataset == 'pima': 
-    raw_data = np.loadtxt('../datasets/pima-indians-diabetes.data',delimiter=',')
+    raw_data = np.loadtxt('../../datasets/pima-indians-diabetes.data',delimiter=',')
 elif dataset == 'eeg': 
     raw_data = np.loadtxt('../../datasets/eeg_eye_state.data', delimiter=',', skiprows=19)
 
