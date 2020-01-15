@@ -4,7 +4,8 @@
 This module implements:
 
 1. particle history classes,  which store the full or partial history
-of a SMC algorithm. 
+   of a SMC algorithm. 
+
 2. off-line smoothing algorithms as methods of these classes. 
 
 For on-line smoothing, see instead the `collectors` module. 
@@ -57,7 +58,7 @@ Here are some examples on one may record history only at certain times::
 
 Once the algorithm is run, ``smc.hist.X`` and ``smc.hist.wgts`` are
 dictionaries, the keys of which are the times where history was recorded. The
-ancestor variables are not recorded in that case. 
+ancestor variables are not recorded in that case::
 
     smc.run()
     smc.hist.X[10]  # the N particles at time 10
@@ -81,13 +82,13 @@ take as an input the complete history of a particle filter, run until time T
 Then, ``pf.hist`` is an instance of class `ParticleHistory`, which has the
 following methods:
 
-    *`backward_sampling`: implements O(N) and O(N^2) FFBS algorithms, 
+    * `backward_sampling`: implements O(N) and O(N^2) FFBS algorithms, 
       which generates smoothing trajectories from the history of the forward 
       pass;
     * `backward_sampling_qmc`: same as above, but for when the forward pass 
       was based on QMC (quasi-Monte Carlo). 
     * `two_filter_smoothing`: to estimate expectations of marginal smoothing
-    distributions (using the two-filter smoothing approach). 
+      distributions (using the two-filter smoothing approach). 
 
 For more details, see the documentation of `ParticleHistory`, the ipython
 notebook on smoothing, and Chapter 12 of the book. 
@@ -121,9 +122,9 @@ as follows::
     est = np.average(phi(smc.hist.X[-10][B[-10, :]]), weights=smc.W)
     # est is an estimate of E[ phi(X_{T-9}) | Y_{0:T}]
 
-.. note:: recall that it is possible to run `SMC` algorithms step by step, since
-they are iterators. Hence it is possible to do fixed-lag smoothing step-by-step
-as well. 
+.. note:: recall that it is possible to run `SMC` algorithms step by step,
+   since they are iterators. Hence it is possible to do fixed-lag smoothing
+   step-by-step as well. 
 
 
 """
@@ -155,6 +156,11 @@ def generate_hist_obj(option, fk, qmc):
         raise ValueError('store_history: invalid option')
 
 class PartialParticleHistory(object):
+    """Partial history. 
+
+    History that records the particle system only at certain times. 
+    See `smoothing` module doc for more details. 
+    """ 
     def __init__(self, func):
         self.is_save_time = func
         self.X, self.wgts = {}, {}
@@ -166,6 +172,12 @@ class PartialParticleHistory(object):
             self.wgts[t] = smc.wgts
 
 class RollingParticleHistory(object):
+    """Rolling window history. 
+
+    History that keeps only the k most recent particle systems. Based on
+    deques. See `smoothing` module doc for more details. 
+
+    """
     def __init__(self, length):
         self.X = deque([], length)
         self.A = deque([], length)
