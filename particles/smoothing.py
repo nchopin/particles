@@ -3,11 +3,11 @@
 """ 
 This module implements:
 
-    1. particle history classes,  which store the full or partial history
-    of a SMC algorithm. 
-    2. off-line smoothing algorithms as methods of these classes. 
+1. particle history classes,  which store the full or partial history
+of a SMC algorithm. 
+2. off-line smoothing algorithms as methods of these classes. 
 
-For on-line smoothing, see instead the ``collectors`` module. 
+For on-line smoothing, see instead the `collectors` module. 
 
 History classes 
 ===============
@@ -15,9 +15,9 @@ History classes
 A `SMC` object has a ``hist`` attribute, which is used to record at *certain*
 times t: 
 
-* the N current particles $X_t^n$;
+* the N current particles :math:`X_t^n`;
 * their weights; 
-* (optionally, see below), the ancestor variables $A_t^n$. 
+* (optionally, see below), the ancestor variables :math:`A_t^n`. 
 
 The frequency at which history is recorded depends on option ``store_history``
 of class `SMC`. Possible options are: 
@@ -29,13 +29,14 @@ of class `SMC`. Possible options are:
   to perform fixed-lag smoothing)
 
 This module implements different classes that correspond to the different cases: 
+
 * `ParticleHistory`: full history (based on lists) 
 * `PartialParticleHistory`: partial history (based on dictionaries) 
 * `RollingParticleHistory`: rolling window history (based on `deques`_)
 
-: _deques: https://docs.python.org/3/library/collections.html#collections.deque
+.. _deques: https://docs.python.org/3/library/collections.html#collections.deque
 
-However, the classes provide a similar interface. If ``smc`` is a `SMC` object,
+All these classes provide a similar interface. If ``smc`` is a `SMC` object,
 then: 
 
 * ``smc.hist.X[t]`` returns the N particles at time t
