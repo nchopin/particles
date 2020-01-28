@@ -40,6 +40,10 @@ on different CPU cores).
 Here is how you may define a parametric state-space model: 
 
 ```python
+import particles
+import particles.state_space_models as ssm
+import particles.distributions as dists
+
 class ToySSM(ssm.StateSpaceModel):
     def PX0(self):  # Distribution of X_0 
         return dists.Normal()  # X_0 ~ N(0, 1)

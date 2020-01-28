@@ -120,9 +120,10 @@ class FeynmanKac(object):
 
         * `M0(self, N)`: returns a collection of N particles generated from the 
           initial distribution M_0. 
-        * `M(self, t, xp)`: generate a collection of N particles at time t, given 
-          a collection of ancestors given by xp. 
-        * `G(self, t, xp, x)`: the weight function at time t. 
+        * `M(self, t, xp)`: generate a collection of N particles at time t,
+           generated from the chosen Markov kernel, and given N ancestors (in
+           array xp). 
+        * `logG(self, t, xp, x)`: log of potential function at time t. 
 
     To implement a SQMC algorithm (quasi-Monte Carlo version of SMC), one must 
     define methods:
