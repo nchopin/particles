@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-""" Hilbert curve and its inverse, in any dimension. 
+""" Hilbert curve and its inverse, in any dimension.
 
 """
 
@@ -15,7 +15,7 @@ def invlogit(x):
 
 @jit(nopython=True)
 def hilbert_array(xint):
-    """Compute Hilbert indices. 
+    """Compute Hilbert indices.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def hilbert_array(xint):
     Returns
     -------
     h: (N,) int numpy.ndarray
-        Hilbert indices 
+        Hilbert indices
     """
     N, d = xint.shape
     h = np.zeros(N, int64)
@@ -34,8 +34,8 @@ def hilbert_array(xint):
 
 
 def hilbert_sort(x):
-    """Hilbert sort: sort vectors according to their Hilbert index. 
-    
+    """Hilbert sort: sort vectors according to their Hilbert index.
+
     Parameters
     ----------
     x : (N,) or (N, d) float numpy.ndarray
@@ -44,12 +44,12 @@ def hilbert_sort(x):
     Returns
     -------
     A : (N,) int numpy.ndarray
-        argsort (e.g. x[A[0], :] is the vector with smallest H index). 
+        argsort (e.g. x[A[0], :] is the vector with smallest H index).
 
     Note
     ----
     The vectors in `x` are first (a) standardized; and (b) applied a logistic
-    transformation so as to lie in [0,1]^d. 
+    transformation so as to lie in [0,1]^d.
     """
     d = 1 if x.ndim == 1 else x.shape[1]
     if d == 1:

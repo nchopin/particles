@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-"""QMC and RQMC sequences. 
+"""QMC and RQMC sequences.
 
 This module is a simple wrapper for LowDiscrepancy.f, a fortran piece of code
-that implements the Sobol' and Halton sequence. (The same fortran code 
-is used the `randtoolbox 
+that implements the Sobol' and Halton sequence. (The same fortran code
+is used the `randtoolbox
 <https://cran.r-project.org/web/packages/randtoolbox/index.html>` package
 in ``R``.)
 
 To use this module, you must first compile LowDiscrepancy.f, as explained in
-the installation notes. 
+the installation notes.
 """
 
 import numpy as np
@@ -31,7 +31,7 @@ except ImportError:
 
 
 def sobol(N, dim, scrambled=1):
-    """ Sobol sequence. 
+    """ Sobol sequence.
 
     Parameters
     ----------
@@ -40,7 +40,7 @@ def sobol(N, dim, scrambled=1):
     dim: int
         dimension
     scrambled: int
-        which scrambling method to use: 
+        which scrambling method to use:
 
             + 0: no scrambling
             + 1: Owen's scrambling
@@ -49,10 +49,10 @@ def sobol(N, dim, scrambled=1):
 
     Returns
     -------
-    (N, dim) numpy array. 
+    (N, dim) numpy array.
 
 
-    Notes 
+    Notes
     -----
     One of the argument of the underlying Fortran function is the seed for the
     random generator used for scrambling. We simply generate this seed
@@ -60,7 +60,7 @@ def sobol(N, dim, scrambled=1):
     that generate points that are == 0 (This has been reported to the
     maintainer of randtoolbox). When this happens, we generate a warning and
     start over (i.e.  we re-generate another random seed, and compute a new
-    scrambled Sobol point set. 
+    scrambled Sobol point set.
     """
     while(True):
         seed = np.random.randint(2**32)
@@ -74,7 +74,7 @@ def halton(N, dim):
     """ Halton sequence.
 
     Component i of the sequence consists of a Van der Corput sequence in base b_i,
-    where b_i is the i-th prime number. 
+    where b_i is the i-th prime number.
 
     Parameters
     ----------
@@ -85,7 +85,7 @@ def halton(N, dim):
 
     Returns
     -------
-    (N, dim) numpy array. 
+    (N, dim) numpy array.
 
     """
     return lowdiscrepancy.halton(N, dim, 1, 0)

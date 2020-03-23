@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-""" 
-Probability distributions as Python objects. 
+"""
+Probability distributions as Python objects.
 
 Overview
 ========
 
-This module lets users define probability distributions as Python objects. 
+This module lets users define probability distributions as Python objects.
 
 The probability distributions defined in this module may be used:
 
@@ -14,34 +14,34 @@ The probability distributions defined in this module may be used:
   * to define a prior distribution, in order to perform parameter estimation
     (see modules `smc_samplers` and `mcmc`).
 
-Univariate distributions 
+Univariate distributions
 ========================
 
 The module defines the following classes of univariate continuous distributions:
 
 =======================================  =====================
-  class (with signature)                       comments 
-=======================================  =====================  
-Normal(loc=0., scale=1.)                 N(loc,scale^2) distribution 
-Logistic(loc=0., scale=1.)               
-Laplace(loc=0., scale=1.)                
-Beta(a=1., b=1.)                         
+  class (with signature)                       comments
+=======================================  =====================
+Normal(loc=0., scale=1.)                 N(loc,scale^2) distribution
+Logistic(loc=0., scale=1.)
+Laplace(loc=0., scale=1.)
+Beta(a=1., b=1.)
 Gamma(a=1., b=1.)                        scale = 1/b
 InvGamma(a=1., b=1.)                     Distribution of 1/X for X~Gamma(a,b)
 Uniform(a=0., b=1.)                      uniform over interval [a,b]
 Student(loc=0., scale=1., df=3)
-TruncNormal(mu=0, sigma=1., a=0., b=1.)  N(mu, sigma^2) truncated to interval [a,b] 
+TruncNormal(mu=0, sigma=1., a=0., b=1.)  N(mu, sigma^2) truncated to interval [a,b]
 Dirac(loc=0.)                            Dirac mass at point *loc*
 =======================================  =====================
 
-and the following classes of univariate discrete distributions: 
+and the following classes of univariate discrete distributions:
 
 =======================================  =====================
-  class (with signature)                       comments 
-=======================================  =====================  
-Poisson(rate=1.)                         Poisson distribution, with expectation ``rate`` 
-Binomial(n=1, p=0.5)                     
-Geometric(p=0.5)                         
+  class (with signature)                       comments
+=======================================  =====================
+Poisson(rate=1.)                         Poisson distribution, with expectation ``rate``
+Binomial(n=1, p=0.5)
+Geometric(p=0.5)
 =======================================  =====================
 
 Note that all the parameters of these distributions have default values, e.g.::
@@ -52,9 +52,9 @@ Note that all the parameters of these distributions have default values, e.g.::
 Transformed distributions
 =========================
 
-To further enrich the list of available univariate distributions, the module 
-lets you define **transformed distributions**, that is, the distribution of 
-Y=f(X), for a certain function f, and a certain base distribution for X. 
+To further enrich the list of available univariate distributions, the module
+lets you define **transformed distributions**, that is, the distribution of
+Y=f(X), for a certain function f, and a certain base distribution for X.
 
 +--------------------------------+--------------------------+
 | class name (and signature)     | description              |
@@ -72,103 +72,103 @@ A quick example::
     from particles import distributions as dists
     d = dists.LogD(dists.Gamma(a=2., b=2.))  # law of Y=log(X), X~Gamma(2, 2)
 
-.. note:: These transforms are often used to obtain random variables 
-   defined over the full real line. This is convenient in particular 
-   when implementing random walk Metropolis steps. 
+.. note:: These transforms are often used to obtain random variables
+   defined over the full real line. This is convenient in particular
+   when implementing random walk Metropolis steps.
 
-Multivariate distributions 
+Multivariate distributions
 ==========================
 
-Some of the univariate distributions actually have a `dim` keyword that 
+Some of the univariate distributions actually have a `dim` keyword that
 allows to define multivariate distributions::
 
     d = dists.Normal(loc=np.array([3., 2.]), dim=2)
     d.rvs(size=30)
 
 The distribution above has two independent components, with respective means 3
-and 2 (and variance 1 for both components). 
+and 2 (and variance 1 for both components).
 
-The module also implements multivariate Normal distributions; see `MvNormal`. 
+The module also implements multivariate Normal distributions; see `MvNormal`.
 
 Furthermore, the module provides two ways to construct multivariate
-distributions from a collection of univariate distributions: 
+distributions from a collection of univariate distributions:
 
-* `IndepProd`: product of independent distributions. May be used to 
-  define state-space models. 
+* `IndepProd`: product of independent distributions. May be used to
+  define state-space models.
 
-* `StructDist`: distributions for named variables; may be used to specify 
-  prior distributions; see modules `smc_samplers` and `mcmc` (and the 
-  corresponding tutorials). 
+* `StructDist`: distributions for named variables; may be used to specify
+  prior distributions; see modules `smc_samplers` and `mcmc` (and the
+  corresponding tutorials).
 
 Under the hood
 ==============
 
 Probability distributions are represented as objects of classes that inherit
-from base class `ProbDist`, and  implement the following methods: 
+from base class `ProbDist`, and  implement the following methods:
 
-* ``logpdf(self, x)``: computes the log-pdf (probability density function) at 
+* ``logpdf(self, x)``: computes the log-pdf (probability density function) at
   point ``x``;
-* ``rvs(self, size=None)``: simulates ``size`` random variates; (if set to 
-  None, number of samples is either one if all parameters are scalar, or 
-  the same number as the common size of the parameters, see below);  
-* ``ppf(self, u)``: computes the quantile function (or Rosenblatt transform 
-  for a multivariate distribution) at point ``u``. 
+* ``rvs(self, size=None)``: simulates ``size`` random variates; (if set to
+  None, number of samples is either one if all parameters are scalar, or
+  the same number as the common size of the parameters, see below);
+* ``ppf(self, u)``: computes the quantile function (or Rosenblatt transform
+  for a multivariate distribution) at point ``u``.
 
 A quick example::
 
     some_dist = dists.Normal(loc=2., scale=3.)
     x = some_dist.rvs(size=30)  # a (30,) ndarray containing IID N(2, 3^2) variates
-    z = some_dist.logpdf(x)  # a (30,) ndarray containing the log-pdf at x 
+    z = some_dist.logpdf(x)  # a (30,) ndarray containing the log-pdf at x
 
 By default, the inputs and outputs of these methods are either scalars or Numpy
-arrays (with appropriate type and shape). In particular, passing a Numpy 
+arrays (with appropriate type and shape). In particular, passing a Numpy
 array to a distribution parameter makes it possible to define "array
-distributions". For instance:: 
+distributions". For instance::
 
     some_dist = dists.Normal(loc=np.arange(1., 11.))
     x = some_dist.rvs(size=10)
 
-generates 10 Gaussian-distributed variates, with respective means 1., ..., 10.   
+generates 10 Gaussian-distributed variates, with respective means 1., ..., 10.
 This is how we manage to define "Markov kernels" in state-space models; e.g.
-when defining the distribution of X_t given X_{t-1} in a state-space model:: 
+when defining the distribution of X_t given X_{t-1} in a state-space model::
 
     class StochVol(ssm.StateSpaceModel):
         def PX(self, t, xp, x):
             return stats.norm(loc=xp)
-        ### ... see module state_space_models for more details 
+        ### ... see module state_space_models for more details
 
 Then, in practice, in e.g. the bootstrap filter, when we generate particles
 X_t^n, we call method ``PX`` and pass as an argument a numpy array of shape
-(N,) containing the N ancestors. 
+(N,) containing the N ancestors.
 
-..  note:: 
+..  note::
     ProbDist objects are roughly similar to the frozen distributions of package
     :package:`scipy.stats`. However, they are not equivalent. Using such a
     frozen distribution when e.g. defining a state-space model will return an
-    error. 
+    error.
 
 Posterior distributions
 =======================
 
 A few classes also implement a ``posterior`` method, which returns the posterior
 distribution that corresponds to a prior set to ``self``, a model which is
-conjugate for the considered class, and some data. Here is a quick example:: 
+conjugate for the considered class, and some data. Here is a quick example::
 
     from particles import distributions as dists
     prior = dists.InvGamma(a=.3, b=.3)
     data = random.randn(20)  # 20 points generated from N(0,1)
-    post = prior.posterior(data) 
-    # prior is conjugate wrt model X_1, ..., X_n ~ N(0, theta) 
-    print("posterior is Gamma(%f, %f)" % (post.a, post.b)) 
+    post = prior.posterior(data)
+    # prior is conjugate wrt model X_1, ..., X_n ~ N(0, theta)
+    print("posterior is Gamma(%f, %f)" % (post.a, post.b))
 
-Here is a list of distributions implementing posteriors: 
+Here is a list of distributions implementing posteriors:
 
 ============    =================== ==================
 Distribution    Corresponding model comments
 ============    =================== ==================
 Normal          N(theta, sigma^2),   sigma fixed (passed as extra argument)
-TruncNormal     same 
-Gamma           N(0, 1/theta) 
+TruncNormal     same
+Gamma           N(0, 1/theta)
 InvGamma        N(0, theta)
 MvNormal        N(theta, Sigma)     Sigma fixed (passed as extra argument)
 ============    =================== ==================
@@ -183,7 +183,7 @@ or `DiscreteDist`, for a discrete distribution. This will properly set class
 attributes ``dim`` (the dimension, set to one, for a univariate distribution),
 and ``dtype``, so that they play nicely with `StructDist` and so on. You will
 also have to properly define methods ``rvs``, ``logpdf`` and ``ppf``. You may
-omit ``ppf`` if you do not plan to use SQMC (Sequential quasi Monte Carlo). 
+omit ``ppf`` if you do not plan to use SQMC (Sequential quasi Monte Carlo).
 
 
 """
@@ -201,19 +201,19 @@ HALFLOG2PI = 0.5 * np.log(2. * np.pi)
 
 class ProbDist(object):
     """Base class for probability distributions.
-    
+
     To define a probability distribution class, subclass ProbDist, and define
-    methods: 
+    methods:
 
     * ``logpdf(self, x)``: the log-density at point x
-    * ``rvs(self, size=None)``: generates *size* variates from distribution 
+    * ``rvs(self, size=None)``: generates *size* variates from distribution
     * ``ppf(self, u)``: the inverse CDF function at point u
 
     and attributes:
-    
+
         * ``dim``: dimension of variates (default is 1)
         * ``dtype``: the dtype of inputs/outputs arrays (default is 'float64')
-    
+
     """
     dim = 1  # distributions are univariate by default
     dtype = 'float64'  # distributions are continuous by default
@@ -428,7 +428,7 @@ class Dirac(ProbDist):
 
 
 class TruncNormal(ProbDist):
-    """Normal(mu, sigma^2) truncated to [a, b] interval. 
+    """Normal(mu, sigma^2) truncated to [a, b] interval.
     """
     def __init__(self, mu=0., sigma=1., a=0., b=1.):
         self.mu = mu
@@ -519,7 +519,7 @@ class Geometric(DiscreteDist):
 
 class NegativeBinomial(DiscreteDist):
     """Negative Binomial distribution.
-    
+
     Parameters
     ----------
     n:  int, or array of ints
@@ -528,7 +528,7 @@ class NegativeBinomial(DiscreteDist):
         probability of success
 
     Note:
-        Returns the distribution of the number of successes: support is 
+        Returns the distribution of the number of successes: support is
         0, 1, ...
 
     """
@@ -565,7 +565,7 @@ class Categorical(DiscreteDist):
             N = self.p.shape[0] if size is None else size
             u = random.rand(N)
             cp = np.cumsum(self.p, axis=1)
-            return np.array([np.searchsorted(cp[i], u[i]) 
+            return np.array([np.searchsorted(cp[i], u[i])
                              for i in range(N)])
 
 #########################
@@ -575,7 +575,7 @@ class Categorical(DiscreteDist):
 class TransformedDist(ProbDist):
     """Base class for transformed distributions.
 
-    A transformed distribution is the distribution of Y=f(X) for a certain 
+    A transformed distribution is the distribution of Y=f(X) for a certain
     function f, and a certain (univariate) base distribution for X.
     Must be sub-classed; see below.
 
@@ -598,7 +598,7 @@ class TransformedDist(ProbDist):
         raise NotImplementedError(self.error_msg('f'))
 
     def finv(self, x):
-        """ Inverse of f.""" 
+        """ Inverse of f."""
         raise NotImplementedError(self.error_msg('finv'))
 
     def logJac(self, x):
@@ -620,12 +620,12 @@ class TransformedDist(ProbDist):
 class LinearD(TransformedDist):
     """Distribution of Y = a*X + b.
 
-    See TransformedDist. 
+    See TransformedDist.
 
     Parameters
     ----------
     base_dist: ProbDist
-        The distribution of X 
+        The distribution of X
 
     a, b: float (a should be != 0)
     """
@@ -640,13 +640,13 @@ class LinearD(TransformedDist):
         return (x - self.b) / self.a
 
     def logJac(self, x):
-        return -np.log(self.a) 
+        return -np.log(self.a)
 
 
 class LogD(TransformedDist):
     """Distribution of Y = log(X).
-    
-    See TransformedDist. 
+
+    See TransformedDist.
 
     Parameters
     ----------
@@ -665,7 +665,7 @@ class LogD(TransformedDist):
 
 
 class LogitD(TransformedDist):
-    """Distributions of Y=logit((X-a)/(b-a)). 
+    """Distributions of Y=logit((X-a)/(b-a)).
 
     See base class `TransformedDist`.
 
@@ -694,7 +694,7 @@ class LogitD(TransformedDist):
 
 
 ############################
-# Multivariate distributions 
+# Multivariate distributions
 ############################
 
 class MvNormal(ProbDist):
@@ -702,16 +702,16 @@ class MvNormal(ProbDist):
 
     Parameters
     ----------
-    loc: ndarray 
+    loc: ndarray
         location parameter (see below)
     scale: ndarray
         scale parameter (see below)
-    cov: (d, d) ndarray 
+    cov: (d, d) ndarray
         covariance matrix (see below)
 
     Note
     ----
-    The parametrisation used here is slightly unusual. In short, 
+    The parametrisation used here is slightly unusual. In short,
     the following line::
 
         x = dists.MvNormal(loc=m, scale=s, cov=Sigma).rvs(size=30)
@@ -720,14 +720,14 @@ class MvNormal(ProbDist):
 
         x = m + s * dists.MvNormal(cov=Sigma).rvs(size=30)
 
-    The idea is that they are many cases when we may want to pass 
-    varying means and scales (but a fixed correlation matrix).  
+    The idea is that they are many cases when we may want to pass
+    varying means and scales (but a fixed correlation matrix).
 
     dx (dimension of vectors x) is determined by matrix cov; for rvs,
-    size must be (N, ), otherwise an error is raised. 
+    size must be (N, ), otherwise an error is raised.
 
     Notes:
-    * if du<dx, fill the remaining dimensions by location 
+    * if du<dx, fill the remaining dimensions by location
         (i.e. scale should be =0.)
     * cov does not need to be a correlation matrix; more generally
     > mvnorm(loc=x, scale=s, cor=C)
@@ -769,10 +769,10 @@ class MvNormal(ProbDist):
         return - 0.5 * np.sum(z * z, axis=0) - logdet - self.dim * HALFLOG2PI
 
     def rvs(self, size=None):
-        if size is None: 
+        if size is None:
             sh = np.broadcast(self.loc, self.scale).shape
             # sh=() when both loc and scale are scalars
-            N = 1 if len(sh) == 0 else sh[0]  
+            N = 1 if len(sh) == 0 else sh[0]
         else:
             N = size
         z = stats.norm.rvs(size=(N, self.dim))
@@ -790,15 +790,15 @@ class MvNormal(ProbDist):
         else:
             z = stats.norm.ppf(u)
         return self.linear_transform(z)
-    
+
     def posterior(self, x, Sigma=None):
         """Posterior for model: X1, ..., Xn ~ N(theta, Sigma).
-        
+
         Parameters
         ----------
         x: (n, d) ndarray
-            data 
-        Sigma: (d, d) ndarray 
+            data
+        Sigma: (d, d) ndarray
             (fixed) covariance matrix in the model
         """
         n = x.shape[0]
@@ -806,7 +806,7 @@ class MvNormal(ProbDist):
         Siginv = inv(Sigma)
         Qpost = inv(self.cov) + n * Siginv
         Sigpost = inv(Qpost)
-        mupost = (np.matmul(Siginv, self.mean) + 
+        mupost = (np.matmul(Siginv, self.mean) +
                   np.matmu(Siginv, np.sum(x, axis=0)))
         return MvNormal(loc=mupost, cov=Sigpost)
 
@@ -815,27 +815,27 @@ class MvNormal(ProbDist):
 
 
 class IndepProd(ProbDist):
-    """Product of independent univariate distributions. 
+    """Product of independent univariate distributions.
 
-    The inputs/outputs of IndeProd are numpy ndarrays of shape (N,d), or (d), 
-    where d is the number of univariate distributions that are 
-    passed as arguments. 
+    The inputs/outputs of IndeProd are numpy ndarrays of shape (N,d), or (d),
+    where d is the number of univariate distributions that are
+    passed as arguments.
 
-    Parameters 
+    Parameters
     ----------
     dists: list of `ProbDist` objects
         The probability distributions of each component
 
     Example
     -------
-    To define a bivariate distribution:: 
+    To define a bivariate distribution::
 
         prior = IndepProd(Normal(scale=2.), Gamma(2., 3.))
         theta = prior.rvs(size=9)  # returns a (9, 2) ndarray
 
     Note
     ----
-    This is used mainly to define multivariate state-space models, 
+    This is used mainly to define multivariate state-space models,
     see module `state_space_models`.
 
     """
@@ -882,33 +882,33 @@ class Cond(ProbDist):
 class StructDist(ProbDist):
     """A distribution such that inputs/outputs are structured arrays.
 
-    A structured array is basically a numpy array with named fields. 
-    We use structured arrays to represent particles that are  
-    vectors of (named) parameters; see modules :mod:`smc_samplers` 
-    and :mod:`mcmc`. And we use StructDist to define prior distributions 
-    with respect to such parameters. 
+    A structured array is basically a numpy array with named fields.
+    We use structured arrays to represent particles that are
+    vectors of (named) parameters; see modules :mod:`smc_samplers`
+    and :mod:`mcmc`. And we use StructDist to define prior distributions
+    with respect to such parameters.
 
-    To specify a distribution such that parameters are independent, 
+    To specify a distribution such that parameters are independent,
     we pass a dictionary::
 
         prior = StructDist({'mu':Normal(), 'sigma':Gamma(a=1., b=1.)})
         # means mu~N(0,1), sigma~Gamma(1, 1) independently
         x = prior.rvs(size=30)  # returns a stuctured array of length 30
         print(x['sigma'])  # prints the 30 values for sigma
-        
-    We may also define a distribution using a chain rule decomposition. 
-    For this, we pass an ordered dict, since the order of components 
+
+    We may also define a distribution using a chain rule decomposition.
+    For this, we pass an ordered dict, since the order of components
     become relevant::
 
         chain_rule = OrderedDict()
         chain_rule['mu'] = Normal()
-        chain_rule['tau'] = Cond(lambda x: Normal(loc=x['mu']) 
+        chain_rule['tau'] = Cond(lambda x: Normal(loc=x['mu'])
         prior = StructDist(chain_rule)
         # means mu~N(0,1), tau|mu ~ N(mu,1)
 
-    In the third line, ``Cond`` is a ``ProbDist`` class that represents 
-    a conditional distribution; it is initialized with a function that 
-    returns for each ``x`` a distribution that may depend on fields in ``x``. 
+    In the third line, ``Cond`` is a ``ProbDist`` class that represents
+    a conditional distribution; it is initialized with a function that
+    returns for each ``x`` a distribution that may depend on fields in ``x``.
 
     Parameters
     ----------
@@ -944,4 +944,3 @@ class StructDist(ProbDist):
             cond_law = law(theta) if callable(law) else law
             l += cond_law.logpdf(theta[par])
         return l
-

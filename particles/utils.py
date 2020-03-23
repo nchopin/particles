@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-""" 
-Non-numerical utilities (notably for parallel computation). 
+"""
+Non-numerical utilities (notably for parallel computation).
 
 Overview
 ========
 
-This module gathers several non-numerical utilities. The only one of direct 
+This module gathers several non-numerical utilities. The only one of direct
 interest to the user is the `multiplexer` function, which we now describe
-briefly.  
+briefly.
 
 Say we have some function ``f``, which takes only keyword arguments::
 
@@ -27,44 +27,44 @@ which returns a list of 3*2 dictionaries of the form::
       {'x':3, 'y':4, 'z':3, 'out':16},
        ... ]
 
-In other words, `multiplexer` computes the **Cartesian product** of the inputs. 
+In other words, `multiplexer` computes the **Cartesian product** of the inputs.
 
 For each argument, you may use a dictionary instead of a list::
 
     results = multiplexer(f=f, z={'good': 3, 'bad': 5})
 
-In that case, the values of the dictionaries are used in the same way as above, 
+In that case, the values of the dictionaries are used in the same way as above,
 but the output reports the corresponding keys, i.e.::
 
     [ {'z': 'good', 'out': 12},  # f(0, 0, 3)
       {'z': 'bad', 'out': 28}    # f(0, 0, 5)
     ]
 
-This is useful when f takes as arguments complex objects that you would like to 
-replace by more legible labels; e.g. option ` model` of class `SMC`. 
+This is useful when f takes as arguments complex objects that you would like to
+replace by more legible labels; e.g. option ` model` of class `SMC`.
 
 `multiplexer` also accepts three extra keyword arguments (whose name may not
-therefore be used as keyword arguments for function f): 
+therefore be used as keyword arguments for function f):
 
 * ``nprocs``: if >0, number of CPU cores to use in parallel; if <=0, number
-  of cores *not* to use; in particular, ``nprocs=0`` means all CPU cores must 
-  be used. 
+  of cores *not* to use; in particular, ``nprocs=0`` means all CPU cores must
+  be used.
 * ``nruns`` (default=1): evaluate f *nruns* time for each combination of arguments;
   an entry `run` (ranging from 0 to nruns-1) is added to the output dictionaries.
   This is mostly useful when the output of ``f`` is random.
-  * ``seeding`` (default: True if ``nruns``>1, False otherwise):  if True, seeds 
-  the pseudo-random generator before each call of function `f` with a different 
+  * ``seeding`` (default: True if ``nruns``>1, False otherwise):  if True, seeds
+  the pseudo-random generator before each call of function `f` with a different
   seed. See second warning below.
 
-.. warning :: 
-    Option ``nprocs`` rely on the standard library `multiprocessing`, 
-    whose performance and behaviour seems to be OS-dependent. In particular, 
-    it may not work well on Windows. 
+.. warning ::
+    Option ``nprocs`` rely on the standard library `multiprocessing`,
+    whose performance and behaviour seems to be OS-dependent. In particular,
+    it may not work well on Windows.
 
 .. warning ::
     Library `multiprocessing` generates identical workers, up to the state of
     the random generator. Thus, as soon as more than one core is used, we
-    strongly recommend to set option ``seeding`` above to True. 
+    strongly recommend to set option ``seeding`` above to True.
 
 .. seealso :: `multiSMC`
 
@@ -136,8 +136,8 @@ def add_to_dict(d, obj, key='output'):
 
 def worker(qin, qout, f):
     """Worker for muliprocessing.
-    
-    A worker repeatedly picks a dict of arguments in the queue and computes 
+
+    A worker repeatedly picks a dict of arguments in the queue and computes
     f for this set of arguments, until the input queue is empty.
     """
     while not qin.empty():
@@ -211,9 +211,9 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
 
     Parameters
     ----------
-    f: function 
+    f: function
         function f to evaluate, must take only kw arguments as inputs
-    nruns: int 
+    nruns: int
         number of evaluations of f for each set of arguments
     nprocs: int
         + if <=0, set to actual number of physical processors plus nprocs
@@ -221,7 +221,7 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
         Default is 1, which means no multiprocessing
     seeding: bool (default: True if nruns > 1, False otherwise)
         whether to seed the pseudo-random generator (with distinct
-        seeds) before each evaluation of function f. 
+        seeds) before each evaluation of function f.
     **args:
         keyword arguments for function f.
 

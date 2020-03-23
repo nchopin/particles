@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Core module. 
+Core module.
 
 Overview
 ========
@@ -13,53 +13,53 @@ This module defines the following core objects:
 * `multiSMC`: a function to run a SMC algorithm several times, in
   parallel and/or with varying options.
 
-You don't need to import this module: these objects 
+You don't need to import this module: these objects
 are automatically imported when you import the package itself::
 
     import particles
     help(particles.SMC)  # should work
 
-Each of these three objects have extensive docstrings (click on the links 
+Each of these three objects have extensive docstrings (click on the links
 above if you are reading the HTML version of this file).  However, here is a
-brief summary for the first two. 
+brief summary for the first two.
 
-The FeynmanKac abstract class 
+The FeynmanKac abstract class
 =============================
 
 A Feynman-Kac model is basically a mathematical model for the operations that
-we want to perform when running a particle filter. In particular: 
+we want to perform when running a particle filter. In particular:
 
-    * The distribution *M_0(dx_0)* says how we want to simulate the particles at 
+    * The distribution *M_0(dx_0)* says how we want to simulate the particles at
       time 0.
     * the Markov kernel *M_t(x_{t-1}, dx_t)* says how we want to simulate
-      particle X_t at time t, given an ancestor X_{t-1}. 
+      particle X_t at time t, given an ancestor X_{t-1}.
     * the weighting function *G_t(x_{t-1}, x_t)* says how we want to reweight
-      at time t a particle X_t and its ancestor is X_{t-1}. 
+      at time t a particle X_t and its ancestor is X_{t-1}.
 
 For more details on Feynman-Kac models and their properties, see Chapter 5 of
-the book. 
+the book.
 
-To define a Feynman-Kac model in particles, one should, in principle: 
+To define a Feynman-Kac model in particles, one should, in principle:
 
-    (a) sub-class `FeynmanKac` (define a class that inherits from it) 
-        and define certain methods such as `M0`, `M`, `G`, see 
-        the documentation of `FeynmanKac` for more details; 
-    (b) instantiate (define an object that belongs to) that sub-class. 
+    (a) sub-class `FeynmanKac` (define a class that inherits from it)
+        and define certain methods such as `M0`, `M`, `G`, see
+        the documentation of `FeynmanKac` for more details;
+    (b) instantiate (define an object that belongs to) that sub-class.
 
 In many cases however, you do not need to do this manually:
 
     * module `state_space_models` defines classes that automatically
-      generate the bootstrap, guided or auxiliary Feynman-Kac model associated 
+      generate the bootstrap, guided or auxiliary Feynman-Kac model associated
       to a given state-space model; see the documentation of that module.
-    * Similarly, module `smc_samplers` defines classes that automatically 
+    * Similarly, module `smc_samplers` defines classes that automatically
       generates `FeynmanKac` objects for SMC tempering, IBIS and so on. Again,
-      check the documentation of that module. 
+      check the documentation of that module.
 
 That said, it is not terribly complicated to define manually a Feynman-Kac
 model, and there may be cases where this might be useful. There is even a basic
-example in the tutorials if you are interested.  
+example in the tutorials if you are interested.
 
-SMC class 
+SMC class
 =========
 
 `SMC` is the class that define SMC samplers. To get you started::
@@ -67,29 +67,29 @@ SMC class
     import particles
     ... # define a FeynmanKac object in some way, see above
     pf = particles.SMC(fk=my_fk_model, N=100)
-    pf.run() 
+    pf.run()
 
 The code above simply runs a particle filter with ``N=100`` particles for the
 chosen Feynman-Kac model. When this is done, object ``pf`` contains several
 attributes, such as:
 
     * ``X``: the current set of particles (at the final time);
-    * ``W``: their weights; 
+    * ``W``: their weights;
     * ``cpu_time``: as the name suggests;
-    * and so on. 
+    * and so on.
 
 `SMC` objects are iterators, making it possible to run the algorithm step by
 step: replace the last line above by::
 
-    next(step) # do iteration 0 
-    next(step) # do iteration 1 
+    next(step) # do iteration 0
+    next(step) # do iteration 1
     pf.run() # do iterations 2, ... until completion (dataset is exhausted)
 
-All options, minus ``model``, are optional. Perhaps the most important ones are: 
+All options, minus ``model``, are optional. Perhaps the most important ones are:
     * ``qmc``: if set to True, runs SQMC (the quasi-Monte Carlo version of SMC)
-    * ``resampling``: the chosen resampling scheme; see `resampling` module. 
-    * ``store_history``: whether we should store the particles at all iterations; 
-        useful in particular for smoothing, see `smoothing` module. 
+    * ``resampling``: the chosen resampling scheme; see `resampling` module.
+    * ``store_history``: whether we should store the particles at all iterations;
+        useful in particular for smoothing, see `smoothing` module.
 
 See the documentation of `SMC` for more details.
 
@@ -109,35 +109,35 @@ from particles import hilbert
 
 err_msg_missing_trans = """
     Feynman-Kac class %s is missing method logpt, which provides the log-pdf
-    of Markov transition X_t | X_{t-1}. This is required by most smoothing 
-    algorithms.""" 
+    of Markov transition X_t | X_{t-1}. This is required by most smoothing
+    algorithms."""
 
 class FeynmanKac(object):
     """Abstract base class for Feynman-Kac models.
 
-    To actually define a Feynman-Kac model, one must sub-class FeymanKac, 
+    To actually define a Feynman-Kac model, one must sub-class FeymanKac,
     and define at least the following methods:
 
-        * `M0(self, N)`: returns a collection of N particles generated from the 
-          initial distribution M_0. 
+        * `M0(self, N)`: returns a collection of N particles generated from the
+          initial distribution M_0.
         * `M(self, t, xp)`: generate a collection of N particles at time t,
            generated from the chosen Markov kernel, and given N ancestors (in
-           array xp). 
-        * `logG(self, t, xp, x)`: log of potential function at time t. 
+           array xp).
+        * `logG(self, t, xp, x)`: log of potential function at time t.
 
-    To implement a SQMC algorithm (quasi-Monte Carlo version of SMC), one must 
+    To implement a SQMC algorithm (quasi-Monte Carlo version of SMC), one must
     define methods:
 
-        * `Gamma0(self, u)`: deterministic function such that, if u~U([0,1]^d), 
+        * `Gamma0(self, u)`: deterministic function such that, if u~U([0,1]^d),
         then Gamma0(u) has the same distribution as X_0
         * `Gamma(self, xp, u)`: deterministic function that, if U~U([0,1]^d)
         then Gamma(xp, U) has the same distribution as kernel M_t(x_{t-1}, dx_t)
         for x_{t-1}=xp
 
-    Usually, a collection of N particles will be simply a numpy array of 
-    shape (N,) or (N,d). However, this is not a strict requirement, see 
+    Usually, a collection of N particles will be simply a numpy array of
+    shape (N,) or (N,d). However, this is not a strict requirement, see
     e.g. module `smc_samplers` and the corresponding tutorial in the on-line
-    documentation. 
+    documentation.
     """
     mutate_only_after_resampling = False
     # by default, we mutate at every time t
@@ -169,7 +169,7 @@ class FeynmanKac(object):
 
     def Gamma(self, t, xp, u):
         """Deterministic function that transform a uniform variate of dimension
-        d_x into a random variable with the same distribution as M(self, t, xp). 
+        d_x into a random variable with the same distribution as M(self, t, xp).
         """
         raise NotImplementedError(self._error_msg('Gamma'))
 
@@ -189,15 +189,15 @@ class FeynmanKac(object):
         return smc.t >= self.T
 
     def default_moments(self, W, X):
-        """ Default moments (see module ``collectors``). 
-        
-        Computes weighted mean and variance (assume X is a Numpy array). 
+        """ Default moments (see module ``collectors``).
+
+        Computes weighted mean and variance (assume X is a Numpy array).
         """
         return rs.wmean_and_var(W, X)
 
     def summary_format(self, smc):
-        return 't=%i: resample:%s, ESS (end of iter)=%.2f' % (smc.t, 
-                                                              smc.rs_flag, 
+        return 't=%i: resample:%s, ESS (end of iter)=%.2f' % (smc.t,
+                                                              smc.rs_flag,
                                                               smc.wgts.ESS)
 
 
@@ -211,7 +211,7 @@ class SMC(object):
             Feynman-Kac model which defines which distributions are
             approximated
         N: int, optional (default=100)
-            number of particles 
+            number of particles
         qmc: {True, False}
             if True use the Sequential quasi-Monte Carlo version (the two
             options resampling and ESSrmin are then ignored)
@@ -225,9 +225,9 @@ class SMC(object):
         verbose: bool, optional
             whether to print basic info at every iteration (default=False)
         summaries: bool, optional (default=True)
-            whether summaries should be collected at every time. 
+            whether summaries should be collected at every time.
         **summaries_opts: dict
-            options that determine which summaries collected at each iteration 
+            options that determine which summaries collected at each iteration
             (e.g. moments, on-line smoothing estimates); see module ``collectors``
 
         Attributes
@@ -235,15 +235,15 @@ class SMC(object):
 
         t : int
            current time step
-        X : typically a (N,) or (N, d) ndarray (but see documentation) 
-            the N particles 
+        X : typically a (N,) or (N, d) ndarray (but see documentation)
+            the N particles
         A : (N,) ndarray (int)
            ancestor indices: A[n] = m means ancestor of X[n] has index m
-        wgts: `Weights` object 
+        wgts: `Weights` object
             An object with attributes lw (log-weights), W (normalised weights)
-            and ESS (the ESS of this set of weights) that represents 
+            and ESS (the ESS of this set of weights) that represents
             the main (inferential) weights
-        aux: `Weights` object 
+        aux: `Weights` object
             the auxiliary weights (for an auxiliary PF, see FeynmanKac)
         cpu_time : float
             CPU time of complete run (in seconds)
@@ -251,12 +251,12 @@ class SMC(object):
             complete history of the particle system; see module `smoothing`
         summaries: `Summaries` object (None if option summaries is set to False)
             each summary is a list of estimates recorded at each iteration. The
-            following summaries are computed by default: 
+            following summaries are computed by default:
                 + ESSs (the ESS at each time t)
                 + rs_flags (whether resampling was performed or not at each t)
                 + logLts (estimates of the normalising constants)
-            Extra summaries may also be computed (such as moments and online 
-            smoothing estimates), see module `collectors`. 
+            Extra summaries may also be computed (such as moments and online
+            smoothing estimates), see module `collectors`.
 
         Methods
         -------
@@ -272,7 +272,7 @@ class SMC(object):
                  N=100,
                  qmc=False,
                  resampling="systematic",
-                 ESSrmin=0.5, 
+                 ESSrmin=0.5,
                  store_history=False,
                  verbose=False,
                  summaries=True,
@@ -310,7 +310,7 @@ class SMC(object):
         return self.wgts.W
 
     def reset_weights(self):
-        """Reset weights after a resampling step. 
+        """Reset weights after a resampling step.
         """
         if self.fk.isAPF:
             lw = (rs.log_mean_exp(self.logetat, W=self.W)
@@ -320,7 +320,7 @@ class SMC(object):
             self.wgts = rs.Weights()
 
     def setup_auxiliary_weights(self):
-        """Compute auxiliary weights (for APF). 
+        """Compute auxiliary weights (for APF).
         """
         if self.fk.isAPF:
             self.logetat = self.fk.logeta(self.t - 1, self.X)
@@ -376,13 +376,13 @@ class SMC(object):
             print(self)
         if self.hist:
             self.hist.save(self)
-        # must collect summaries *after* history, because a collector (e.g. 
+        # must collect summaries *after* history, because a collector (e.g.
         # FixedLagSmoother) may needs to access history
         if self.summaries:
             self.summaries.collect(self)
 
     def __next__(self):
-        """One step of a particle filter. 
+        """One step of a particle filter.
         """
         if self.fk.done(self):
             raise StopIteration
@@ -402,24 +402,24 @@ class SMC(object):
         return self.__next__()  # Python 2 compatibility
 
     def __iter__(self):
-        return self 
+        return self
 
     @utils.timer
-    def run(self): 
+    def run(self):
         """Runs particle filter until completion.
-        
+
            Note: this class implements the iterator protocol. This makes it
-           possible to run the algorithm step by step:: 
+           possible to run the algorithm step by step::
 
                pf = SMC(fk=...)
                next(pf)  # performs one step
                next(pf)  # performs one step
                for _ in range(10):
-                   next(pf)  # performs 10 steps 
+                   next(pf)  # performs 10 steps
                pf.run()  # runs the remaining steps
 
             In that case, attribute `cpu_time` records the CPU cost of the last
-            command only. 
+            command only.
         """
         for _ in self:
             pass
@@ -432,27 +432,27 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     """Run SMC algorithms in parallel, for different combinations of parameters.
 
 
-    `multiSMC` relies on the `multiplexer` utility, and obeys the same logic. 
-    A basic usage is:: 
+    `multiSMC` relies on the `multiplexer` utility, and obeys the same logic.
+    A basic usage is::
 
         results = multiSMC(fk=my_fk_model, N=100, nruns=20, nprocs=0)
 
-    This runs the same SMC algorithm 20 times, using all available CPU cores. 
-    The output, ``results``, is a list of 20 dictionaries; a given dict corresponds 
+    This runs the same SMC algorithm 20 times, using all available CPU cores.
+    The output, ``results``, is a list of 20 dictionaries; a given dict corresponds
     to a single run, and contains the following (key, value) pairs:
         + ``'run'``: a run identifier (a number between 0 and nruns-1)
         + ``'output'``: the corresponding SMC object (once method run was completed)
 
     Since a `SMC` object may take a lot of space in memory (especially when
     the option ``store_history`` is set to True), it is possible to require
-    `multiSMC` to store only some chosen summary of the SMC runs, using option 
-    `out_func`. For instance, if we only want to store the estimate 
-    of the log-likelihood of the model obtained from each particle filter:: 
+    `multiSMC` to store only some chosen summary of the SMC runs, using option
+    `out_func`. For instance, if we only want to store the estimate
+    of the log-likelihood of the model obtained from each particle filter::
 
         of = lambda pf: pf.logLt
         results = multiSMC(fk=my_fk_model, N=100, nruns=20, out_func=of)
 
-    It is also possible to vary the parameters. Say:: 
+    It is also possible to vary the parameters. Say::
 
         results = multiSMC(fk=my_fk_model, N=[100, 500, 1000])
 
@@ -460,46 +460,46 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     N=500, and 10 times for N=1000. The number 10 comes from the fact that we
     did not specify nruns, and its default value is 10. The 30 dictionaries
     obtained in results will then contain an extra (key, value) pair that will
-    give the value of N for which the run was performed. 
+    give the value of N for which the run was performed.
 
     It is possible to vary several arguments. Each time a list must be
     provided. The end result will amount to take a *cartesian product* of the
-    arguments:: 
+    arguments::
 
         results = multiSMC(fk=my_fk_model, N=[100, 1000], resampling=['multinomial',
                              'residual'], nruns=20)
 
     In that case we run our algorithm 80 times: 20 times with N=100 and
     resampling set to multinomial, 20 times with N=100 and resampling set to
-    residual and so on. 
+    residual and so on.
 
     Parameters
     ----------
     * nruns: int, optional
         number of runs (default is 10)
-    * nprocs: int, optional 
+    * nprocs: int, optional
         number of processors to use; if negative, number of cores not to use.
         Default value is 1 (no multiprocessing)
-    * out_func: callable, optional 
+    * out_func: callable, optional
         function to transform the output of each SMC run. (If not given, output
-        will be the complete SMC object). 
+        will be the complete SMC object).
     * args: dict
-        arguments passed to SMC class 
+        arguments passed to SMC class
 
     Returns
     -------
-    A list of dicts 
+    A list of dicts
 
     See also
     --------
-    `utils.multiplexer`: for more details on the syntax. 
+    `utils.multiplexer`: for more details on the syntax.
     """
     def f(**args):
-        pf = SMC(**args) 
+        pf = SMC(**args)
         pf.run()
         return out_func(pf)
 
     if out_func is None:
         out_func = lambda x: x
-    return utils.multiplexer(f=f, nruns=nruns, nprocs=nprocs, seeding=True, 
+    return utils.multiplexer(f=f, nruns=nruns, nprocs=nprocs, seeding=True,
                              **args)

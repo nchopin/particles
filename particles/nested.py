@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Nested sampling 
+"""Nested sampling
 
     EXPERIMENTAL, NOT TESTED
 """
@@ -68,26 +68,26 @@ class NestedParticles(smc.ThetaParticles):
 
 class NestedSampling(object):
     """Base class for nested sampling algorithms
-    
+
     Parameters
     ----------
     * model: a static model
     * N: int
-        number of simultaneous points 
+        number of simultaneous points
     * eps: positive number
-        the algorithm stops when relative error is < eps 
+        the algorithm stops when relative error is < eps
 
     Returns
     -------
     Upon completion (method run), the NestedSampling object has the
-    following attributes: 
+    following attributes:
         * log_weights: list
             log of the weight at each iteration:
             equal to exp(-i/N) - exp(-(i+1)/N) at iteration i
         * points: list
              list of points selected at each iteration
         * lZhats: list
-            log of estimate of normalising constant at each iteration i 
+            log of estimate of normalising constant at each iteration i
             (typically we use the last one as the practical estimate)
 
 
@@ -123,7 +123,7 @@ class NestedSampling(object):
         self.mutate(n_lowest, n_start)
 
     def stopping_time(self):
-        return np.abs(self.lZhats[-1] - self.lZhats[-2]) < self.eps 
+        return np.abs(self.lZhats[-1] - self.lZhats[-2]) < self.eps
 
     @utils.timer
     def run(self):
