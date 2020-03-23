@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
-Resampling and related numerical algorithms. 
+Resampling and related numerical algorithms.
 
 Overview
 ========
 
-This module implements resampling schemes, plus some basic numerical 
-functions related to weights and weighted data (ESS, weighted mean, etc). 
+This module implements resampling schemes, plus some basic numerical
+functions related to weights and weighted data (ESS, weighted mean, etc).
 The recommended import is::
 
     from particles import resampling as rs
@@ -18,52 +18,52 @@ Resampling schemes
 ==================
 
 All the resampling schemes are implemented as functions with the following
-signature:: 
+signature::
 
-    A = rs.scheme(W, M=None) 
+    A = rs.scheme(W, M=None)
 
-where: 
+where:
 
   * ``W`` is a vector of N normalised weights (i.e. positive and summing to
     one).
 
-  * ``M`` (int) is the number of resampled indices that must be generated; 
+  * ``M`` (int) is the number of resampled indices that must be generated;
     (optional, set to N if not provided).
 
-  * ``A`` is a ndarray containing the M resampled indices 
-    (i.e. ints in the range 0, ..., N-1). 
+  * ``A`` is a ndarray containing the M resampled indices
+    (i.e. ints in the range 0, ..., N-1).
 
-Here the list of currently implemented resampling schemes: 
+Here the list of currently implemented resampling schemes:
 
 * `multinomial`
-* `residual`    
+* `residual`
 * `stratified`
 * `systematic`
-* `ssp`      
- 
-Alternative ways to sample from a multinomial distribution 
+* `ssp`
+
+Alternative ways to sample from a multinomial distribution
 ==========================================================
 
 Function `multinomial` effectively samples M times from the multinomial
 distribution that produces output n with probability ``W[n]``.  It does so
 using an algorithm with complexity O(M+N), as explained in Section 9.4 of the
-book. However, this function is not really suited: 
+book. However, this function is not really suited:
 
-    1. if you want to draw only **once** from that distribution; 
+    1. if you want to draw only **once** from that distribution;
 
-    2. If you do not know in advance how many draws you need. 
+    2. If you do not know in advance how many draws you need.
 
-The two functions below cover these scenarios: 
+The two functions below cover these scenarios:
 
 * `multinomial_once`
-* `MultinomialQueue` 
+* `MultinomialQueue`
 
 Weights objects
 ===============
 
 Objects of class `SMC`, which represent the output of a particle filter, have
 an attribute called `wgts`, which is an instance of class `Weights`.  The
-attributes of that object are: 
+attributes of that object are:
 
 * `lw`: the N un-normalised log-weights
 * `W`: the N normalised weights (sum equals one)
@@ -76,16 +76,16 @@ For instance::
     print(pf.wgts.ESS)  # The ESS of the final weights
 
 The rest of this section should be of interest only to advanced users (who wish
-for instance to subclass `SMC` in order to define new particle algorithms). 
+for instance to subclass `SMC` in order to define new particle algorithms).
 Basically, class `Weights` is used to automate and abstract away the computation of
-the normalised weights and their ESS. Here is a quick example:: 
+the normalised weights and their ESS. Here is a quick example::
 
     from numpy import random
 
-    wgts = rs.Weights(lw=random.randn(10))  # we provide log-weights 
+    wgts = rs.Weights(lw=random.randn(10))  # we provide log-weights
     print(wgts.W)  # the normalised weights have been computed automatically
-    print(wgts.ESS)  # and so the ESS 
-    incr_lw = 3. * random.randn(10)  # incremental weights 
+    print(wgts.ESS)  # and so the ESS
+    incr_lw = 3. * random.randn(10)  # incremental weights
     new_wgts = wgts.add(incr_lw)
     print(new_wgts.ESS)  # the ESS of the new weights
 
@@ -96,13 +96,13 @@ particular method `add` returns a new `Weights` object. Trying to modify
 directly (in place) a `Weights` object may introduce hairy bugs.
 Basically, `SMC` and the methods of `ParticleHistory` do not *copy* such objects,
 so if you modify them later, then you also modify the version that has been
-stored at a previous iteration. 
+stored at a previous iteration.
 
-Other functions related to resampling 
+Other functions related to resampling
 =====================================
 
-The following basic functions are called by some resampling schemes, 
-but they might be useful in other contexts. 
+The following basic functions are called by some resampling schemes,
+but they might be useful in other contexts.
 
 * `inverse_cdf`
 * `uniform_spacings`
@@ -110,9 +110,9 @@ but they might be useful in other contexts.
 Other functions of interest
 ===========================
 
-In `particles`, importance weights and similar quantities are always computed 
-and stored on the log-scale, to avoid numerical overflow. This module also 
-contains a few basic functions to deal with log-weights: 
+In `particles`, importance weights and similar quantities are always computed
+and stored on the log-scale, to avoid numerical overflow. This module also
+contains a few basic functions to deal with log-weights:
 
 * `essl`
 * `exp_and_normalise`
@@ -146,7 +146,7 @@ def exp_and_normalise(lw):
 
     Note
     ----
-    uses the log_sum_exp trick to avoid overflow (i.e. subtract the max 
+    uses the log_sum_exp trick to avoid overflow (i.e. subtract the max
     before exponentiating)
 
     See also
@@ -165,31 +165,31 @@ def essl(lw):
     Parameters
     ----------
     lw: (N,) ndarray
-        log-weights 
+        log-weights
 
     Returns
     -------
-    float 
-        the ESS of weights w = exp(lw), i.e. the quantity  
+    float
+        the ESS of weights w = exp(lw), i.e. the quantity
         sum(w**2) / (sum(w))**2
 
-    Note 
+    Note
     ----
-    The ESS is a popular criterion to determine how *uneven* are the weights. 
+    The ESS is a popular criterion to determine how *uneven* are the weights.
     Its value is in the range [1, N], it equals N when weights are constant,
-    and 1 if all weights but one are zero. 
+    and 1 if all weights but one are zero.
 
     """
     w = np.exp(lw - lw.max())
     return (w.sum())**2 / np.sum(w**2)
 
 class Weights(object):
-    """ A class to store N log-weights, and automatically compute normalised 
-    weights and their ESS. 
+    """ A class to store N log-weights, and automatically compute normalised
+    weights and their ESS.
 
     Parameters
     ----------
-    lw: (N,) array or None 
+    lw: (N,) array or None
         log-weights (if None, object represents a set of equal weights)
 
     Attributes
@@ -205,7 +205,7 @@ class Weights(object):
     -------
     Objects of this class should be considered as immutable; in particular,
     method add returns a *new* object. Trying to modifying directly the
-    log-weights may introduce bugs. 
+    log-weights may introduce bugs.
 
     """
 
@@ -217,7 +217,7 @@ class Weights(object):
             self.ESS  = 1. / np.sum(self.W ** 2)
 
     def add(self, delta):
-        """Increment weights: lw <-lw + delta. 
+        """Increment weights: lw <-lw + delta.
 
         Parameters
         ----------
@@ -231,7 +231,7 @@ class Weights(object):
             return Weights(lw=self.lw + delta)
 
 def log_sum_exp(v):
-    """Log of the sum of the exp of the arguments. 
+    """Log of the sum of the exp of the arguments.
 
     Parameters
     ----------
@@ -239,7 +239,7 @@ def log_sum_exp(v):
 
     Returns
     -------
-    l: float 
+    l: float
         l = log(sum(exp(v)))
 
     Note
@@ -261,7 +261,7 @@ def log_sum_exp_ab(a, b):
 
     Parameters
     ----------
-    a, b: float 
+    a, b: float
 
     Returns
     -------
@@ -269,26 +269,26 @@ def log_sum_exp_ab(a, b):
         c = log(e^a + e^b)
     """
     if a > b:
-        return a + np.log(1. + np.exp(b - a))
+        return a + np.log1p(np.exp(b - a))
     else:
-        return b + np.log(1. + np.exp(a - b))
+        return b + np.log1p(np.exp(a - b))
 
 
 def log_mean_exp(v, W=None):
-    """Returns log of (weighted) mean of exp(v). 
+    """Returns log of (weighted) mean of exp(v).
 
        Parameters
        ----------
-       v: ndarray 
-           data, should be such that v.shape[0] = N 
+       v: ndarray
+           data, should be such that v.shape[0] = N
 
-       W: (N,) ndarray, optional  
+       W: (N,) ndarray, optional
             normalised weights (>=0, sum to one)
 
        Returns
        -------
-       ndarray 
-           mean (or weighted mean, if W is provided) of vector exp(v) 
+       ndarray
+           mean (or weighted mean, if W is provided) of vector exp(v)
 
        See also
        --------
@@ -309,13 +309,13 @@ def wmean_and_var(W, x):
     Parameters
     ----------
     W: (N,) ndarray
-        normalised weights (must be >=0 and sum to one). 
+        normalised weights (must be >=0 and sum to one).
     x: ndarray (such that shape[0]==N)
-        data 
+        data
 
     Returns
     -------
-    dictionary 
+    dictionary
         {'mean':weighted_means, 'var':weighted_variances}
     """
     m = np.average(x, weights=W, axis=0)
@@ -323,19 +323,19 @@ def wmean_and_var(W, x):
     v = m2 - m**2
     return {'mean': m, 'var': v}
 
-def wmean_and_var_str_array(W, x): 
+def wmean_and_var_str_array(W, x):
     """Weighted mean and variance of each component of a structured array.
 
     Parameters
     ----------
     W: (N,) ndarray
-        normalised weights (must be >=0 and sum to one). 
+        normalised weights (must be >=0 and sum to one).
     x: (N,) structured array
-        data 
+        data
 
     Returns
     -------
-    dictionary 
+    dictionary
         {'mean':weighted_means, 'var':weighted_variances}
     """
     m = np.empty(shape=x.shape[1:], dtype=x.dtype)
@@ -366,20 +366,20 @@ def wquantiles(W, x, alphas=(0.25, 0.50, 0.75)):
     x: (N,) or (N,d) ndarray
         data
     alphas: list-like of size k (default: (0.25, 0.50, 0.75))
-        probabilities (between 0. and 1.) 
+        probabilities (between 0. and 1.)
 
     Returns
     -------
-    a (k,) or (d, k) ndarray containing the alpha-quantiles 
+    a (k,) or (d, k) ndarray containing the alpha-quantiles
     """
     if len(x.shape) == 1:
         return _wquantiles(W, x, alphas=alphas)
-    elif len(x.shape) == 2: 
-        return np.array([_wquantiles(W, x[:, i], alphas=alphas) 
+    elif len(x.shape) == 2:
+        return np.array([_wquantiles(W, x[:, i], alphas=alphas)
                          for i in range(x.shape[1])])
 
 def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0,75)):
-    """quantiles for weighted data stored in a structured array. 
+    """quantiles for weighted data stored in a structured array.
 
     Parameters
     ----------
@@ -388,7 +388,7 @@ def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0,75)):
     x: (N,) structured array
         data
     alphas: list-like of size k (default: (0.25, 0.50, 0.75))
-        probabilities (between 0. and 1.) 
+        probabilities (between 0. and 1.)
 
     Returns
     -------
@@ -399,26 +399,26 @@ def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0,75)):
     return {p: wquantiles(W, x[p], alphas) for p in x.dtype.names}
 
 ###################
-# Resampling schemes 
+# Resampling schemes
 ####################
 
 rs_funcs = {}  # populated by the decorator below
 
 # generic docstring of resampling schemes; assigned by decorator below
-rs_doc = """%s resampling. 
-  
+rs_doc = """%s resampling.
+
              Parameters
              ----------
-             W: (N,) ndarray 
+             W: (N,) ndarray
                  normalized weights (>=0, sum to one)
              M: int, optional (set to N if missing)
                  number of resampled points.
- 
+
              Returns
              -------
              (M,) ndarray
                  M ancestor variables, drawn from range 0,...,N-1
-         """ 
+         """
 
 def resampling_scheme(func):
     """Decorator for resampling schemes."""
@@ -441,17 +441,17 @@ def resampling(scheme, W, M=None):
 
 @jit(nopython=True)
 def inverse_cdf(su, W):
-    """Inverse CDF algorithm for a finite distribution. 
+    """Inverse CDF algorithm for a finite distribution.
 
         Parameters
         ----------
         su: (M,) ndarray
-            M sorted uniform variates (i.e. M ordered points in [0,1]). 
-        W: (N,) ndarray 
+            M sorted uniform variates (i.e. M ordered points in [0,1]).
+        W: (N,) ndarray
             a vector of N normalized weights (>=0 and sum to one)
 
         Returns
-        ------- 
+        -------
         A: (M,) ndarray
             a vector of M indices in range 0, ..., N-1
     """
@@ -477,7 +477,7 @@ def uniform_spacings(N):
 
     Returns
     -------
-    (N,) float ndarray 
+    (N,) float ndarray
         the N ordered variates (ascending order)
 
     Note
@@ -487,7 +487,7 @@ def uniform_spacings(N):
         from numpy import random
         u = sort(random.rand(N))
 
-    but the line above has complexity O(N*log(N)), whereas the algorithm 
+    but the line above has complexity O(N*log(N)), whereas the algorithm
     used here has complexity O(N).
 
     """
@@ -505,17 +505,17 @@ def multinomial_once(W):
 
     Returns
     -------
-    int 
-        a single draw from the discrete distribution that generates n with 
-        probability W[n] 
+    int
+        a single draw from the discrete distribution that generates n with
+        probability W[n]
 
     Note
     ----
-    This is equivalent to 
+    This is equivalent to
 
        A = multinomial(W, M=1)
 
-    but it is faster. 
+    but it is faster.
     """
     return np.searchsorted(np.cumsum(W), random.rand())
 
@@ -578,15 +578,15 @@ def ssp(W, M):
         else:
             xi[j] -= delta_i
             nb_children[i] += 1
-            i = k + 2 
+            i = k + 2
     return np.arange(N).repeat(nb_children)
 
 
 class MultinomialQueue(object):
-    """On-the-fly generator for the multinomial distribution. 
+    """On-the-fly generator for the multinomial distribution.
 
        To obtain k1,k2, ... draws from the multinomial distribution with
-       weights W, do:: 
+       weights W, do::
 
            g = MulinomialQueue(M,W)
            first_set_of_draws = g.dequeue(k1)
