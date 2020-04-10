@@ -19,3 +19,4 @@ Here is a list of the modules available in ``particles``:
    smc_samplers
    mcmc
    utils
+   nested

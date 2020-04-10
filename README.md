@@ -14,7 +14,7 @@ This package was developed to complement the forthcoming book:
 
 * **particle filtering**: bootstrap filter, guided filter, APF.
 
-* possibility to define  **state-space models** using some (basic) form of 
+* possibility to define **state-space models** using some (basic) form of 
   probabilistic programming; see below for an example. 
 
 * **SQMC** (Sequential quasi Monte Carlo);  routines for computing the Hilbert curve, 
@@ -34,6 +34,8 @@ and **Baum-Welch** (for hidden Markov models).
 
 * Basic support for **parallel computation** (i.e. running multiple SMC algorithms 
 on different CPU cores). 
+
+* Basic implementation of **nested sampling** (experimental). 
 
 ## Example ##
 
