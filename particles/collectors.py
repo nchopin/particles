@@ -163,8 +163,8 @@ as follows::
 
 If option `paris` is set to True, then the default value (2) is used.
 
-Custom collectors (collectors defined by the user)
-==================================================
+User-defined collectors
+=======================
 
 You may implement your own collectors as follows::
 
@@ -180,6 +180,9 @@ Once this is done, you may use this new collector exactly as the other
 ones::
 
     pf = particles.SMC(N=30, fk=some_fk_model, toy=3)
+
+Then ``pf.summaries.toy`` will be a list of the summaries collected at each
+time by the ``fetch`` method. 
 
 """
 
