@@ -2,8 +2,8 @@
 
 """Nested sampling. 
 
-Warning: This module is much less tested than the rest of the package. Also the
-documentation does not exactly explain how nested sampling works (and this
+.. warning:: This module is much less tested than the rest of the package. Also
+the documentation does not exactly explain how nested sampling works (and this
 topic is not covered in our book). Thus, refer to e.g. the original papers of
 Skilling or Chopin and Robert (2010, Biometrika). 
 
@@ -58,8 +58,6 @@ this::
             # implement a MCMC step that replace point X[n] with the point
             # obtained by starting at X[m] and doing a certain number of steps 
             return value 
-
-
 
 """
 
@@ -129,11 +127,12 @@ class NestedSampling(object):
 
     Parameters
     ----------
-    * model: a static model
+    * model: SMCsamplers.StaticModel object 
+        a static model
     * N: int
         number of simultaneous points
     * eps: positive number
-        the algorithm stops when relative error is < eps
+        the algorithm stops when relative error is smaller than eps 
 
     Returns
     -------
@@ -149,7 +148,7 @@ class NestedSampling(object):
             (typically we use the last one as the practical estimate)
 
 
-    Note: this is the base class; an actual algorithm requires to implement
+    .. note:: this is the base class; an actual algorithm requires to implement
     the mutate method, which mutates the selected point through MCMC steps.
     """
 
@@ -204,7 +203,8 @@ class NestedSampling(object):
 
 
 class Nested_RWmoves(NestedSampling):
-    """Nested sampling with (adaptive) random walk Metropolis moves"""
+    """Nested sampling with (adaptive) random walk Metropolis moves.
+    """
     def __init__(self, nsteps=1, scale=None, **kwargs):
         NestedSampling.__init__(self, **kwargs)
         self.nsteps = nsteps
