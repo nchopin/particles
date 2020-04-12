@@ -3,9 +3,9 @@
 """Nested sampling. 
 
 .. warning:: This module is much less tested than the rest of the package. Also
-the documentation does not exactly explain how nested sampling works (and this
-topic is not covered in our book). Thus, refer to e.g. the original papers of
-Skilling or Chopin and Robert (2010, Biometrika). 
+   the documentation does not exactly explain how nested sampling works (and this
+   topic is not covered in our book). Thus, refer to e.g. the original papers of
+   Skilling or Chopin and Robert (2010, Biometrika). 
 
 Overview
 ========
@@ -13,8 +13,8 @@ Overview
 This module contains classes that implement nested sampling:
 
     * `NestedSampling`: base class;
-    * `Nested_RWmoves` : nested sampling algorithm based on random walk
-       Metropolis steps. 
+    * `Nested_RWmoves` : nested sampling algorithm based on random walk 
+      Metropolis steps. 
 
 To use the latter, you need to define first a static model, in the same way as
 in the `smc_samplers` module. For instance::
