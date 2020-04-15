@@ -82,9 +82,9 @@ import time
 def timer(method):
     @functools.wraps(method)
     def timed_method(self, **kwargs):
-        starting_time = time.clock()
+        starting_time = time.perf_counter()
         out = method(self, **kwargs)
-        self.cpu_time = time.clock() - starting_time
+        self.cpu_time = time.perf_counter() - starting_time
         return out
     return timed_method
 
@@ -159,7 +159,7 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
     if nprocs <= 0:
         nprocs += multiprocessing.cpu_count()
 
-    # no multiprocessing
+    # no multiprocessing
     if nprocs <= 1:
         return [add_to_dict(op, f(**ip), key=out_key)
                 for ip, op in zip(inputs, outputs)]
