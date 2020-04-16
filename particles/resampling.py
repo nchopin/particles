@@ -558,7 +558,7 @@ def residual(W, M):
 def ssp(W, M):
     N = W.shape[0]
     MW = M * W
-    nb_children = np.floor(MW).astype('int')
+    nb_children = np.floor(MW).astype(np.int32)
     xi = MW - nb_children
     u = random.rand(N - 1)
     i, j = 0, 1
