@@ -189,7 +189,7 @@ class FeynmanKac(object):
         return smc.t >= self.T
 
     def default_moments(self, W, X):
-        """ Default moments (see module ``collectors``).
+        """Default moments (see module ``collectors``).
 
         Computes weighted mean and variance (assume X is a Numpy array).
         """
@@ -202,68 +202,67 @@ class FeynmanKac(object):
 
 
 class SMC(object):
-    """ particle filter class, with different methods to resample, reweight, etc
-        the particle system.
+    """Metaclass for SMC algorithms. 
 
-        Parameters
-        ----------
-        fk: FeynmanKac object
-            Feynman-Kac model which defines which distributions are
-            approximated
-        N: int, optional (default=100)
-            number of particles
-        qmc: {True, False}
-            if True use the Sequential quasi-Monte Carlo version (the two
-            options resampling and ESSrmin are then ignored)
-        resampling: {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
-            the resampling scheme to be used (see `resampling` module for more
-            information; default is 'systematic')
-        ESSrmin: float in interval [0, 1], optional
-            resampling is triggered whenever ESS / N < ESSrmin (default=0.5)
-        store_history: bool (default = False)
-            whether to store the complete history; see module `smoothing`
-        verbose: bool, optional
-            whether to print basic info at every iteration (default=False)
-        summaries: bool, optional (default=True)
-            whether summaries should be collected at every time.
-        **summaries_opts: dict
-            options that determine which summaries collected at each iteration
-            (e.g. moments, on-line smoothing estimates); see module ``collectors``
+       Parameters
+       ----------
+       fk: FeynmanKac object
+           Feynman-Kac model which defines which distributions are
+           approximated
+       N: int, optional (default=100)
+           number of particles
+       qmc: bool, optional (default=False)
+           if True use the Sequential quasi-Monte Carlo version (the two
+           options resampling and ESSrmin are then ignored)
+       resampling: {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
+           the resampling scheme to be used (see `resampling` module for more
+           information; default is 'systematic')
+       ESSrmin: float in interval [0, 1], optional
+           resampling is triggered whenever ESS / N < ESSrmin (default=0.5)
+       store_history: bool, int or callable (default=False)
+           whether and when history should be saved; see module `smoothing`
+       verbose: bool, optional
+           whether to print basic info at every iteration (default=False)
+       summaries: bool, optional (default=True)
+           whether summaries should be collected at every time.
+       **summaries_opts: dict
+           options that determine which summaries collected at each iteration
+           (e.g. moments, on-line smoothing estimates); see module `collectors`.
 
-        Attributes
-        ----------
+       Attributes
+       ----------
 
-        t : int
-           current time step
-        X : typically a (N,) or (N, d) ndarray (but see documentation)
-            the N particles
-        A : (N,) ndarray (int)
-           ancestor indices: A[n] = m means ancestor of X[n] has index m
-        wgts: `Weights` object
-            An object with attributes lw (log-weights), W (normalised weights)
-            and ESS (the ESS of this set of weights) that represents
-            the main (inferential) weights
-        aux: `Weights` object
-            the auxiliary weights (for an auxiliary PF, see FeynmanKac)
-        cpu_time : float
-            CPU time of complete run (in seconds)
-        hist: `ParticleHistory` object (None if option history is set to False)
-            complete history of the particle system; see module `smoothing`
-        summaries: `Summaries` object (None if option summaries is set to False)
-            each summary is a list of estimates recorded at each iteration. The
-            following summaries are computed by default:
-                + ESSs (the ESS at each time t)
-                + rs_flags (whether resampling was performed or not at each t)
-                + logLts (estimates of the normalising constants)
-            Extra summaries may also be computed (such as moments and online
-            smoothing estimates), see module `collectors`.
+       t : int
+          current time step
+       X : typically a (N,) or (N, d) ndarray (but see documentation)
+           the N particles
+       A : (N,) ndarray (int)
+          ancestor indices: A[n] = m means ancestor of X[n] has index m
+       wgts: `Weights` object
+           An object with attributes lw (log-weights), W (normalised weights)
+           and ESS (the ESS of this set of weights) that represents
+           the main (inferential) weights
+       aux: `Weights` object
+           the auxiliary weights (for an auxiliary PF, see FeynmanKac)
+       cpu_time : float
+           CPU time of complete run (in seconds)
+       hist: `ParticleHistory` object (None if option history is set to False)
+           complete history of the particle system; see module `smoothing`
+       summaries: `Summaries` object (None if option summaries is set to False)
+           each summary is a list of estimates recorded at each iteration. The
+           following summaries are computed by default:
+               + ESSs (the ESS at each time t)
+               + rs_flags (whether resampling was performed or not at each t)
+               + logLts (estimates of the normalising constants)
+           Extra summaries may also be computed (such as moments and online
+           smoothing estimates), see module `collectors`.
 
-        Methods
-        -------
-        run():
-            run the algorithm until completion
-        step()
-            run the algorithm for one step (object self is an iterator)
+       Methods
+       -------
+       run():
+           run the algorithm until completion
+       step()
+           run the algorithm for one step (object self is an iterator)
 
     """
 
