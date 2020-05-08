@@ -42,6 +42,8 @@ and the following classes of univariate discrete distributions:
 Poisson(rate=1.)                         Poisson distribution, with expectation ``rate``
 Binomial(n=1, p=0.5)
 Geometric(p=0.5)
+Categorical(p=None)                      returns i with prob p[i]
+DiscreteUniform(lo=0, hi=2)              uniform over a, ..., b-1
 =======================================  =====================
 
 Note that all the parameters of these distributions have default values, e.g.::
@@ -567,6 +569,26 @@ class Categorical(DiscreteDist):
             cp = np.cumsum(self.p, axis=1)
             return np.array([np.searchsorted(cp[i], u[i])
                              for i in range(N)])
+
+class DiscreteUniform(DiscreteDist):
+    """Discrete uniform distribution.
+
+    Parameters
+    ----------
+    lo, hi: int
+        support is lo, lo + 1, ..., hi - 1
+
+    """
+
+    def __init__(self, lo=0, hi=2):
+        self.lo, self.hi = lo, hi
+        self.log_norm_cst = np.log(hi - lo)
+
+    def logpdf(self, x):
+        return np.where((x >= self.lo) & (x<self.hi), -self.log_norm_cst, -np.inf) 
+
+    def rvs(self, size=None):
+        return random.randint(self.lo, high=self.hi, size=size)
 
 #########################
 # distribution transforms
