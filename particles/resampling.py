@@ -323,7 +323,7 @@ def wmean_and_var(W, x):
     v = m2 - m**2
     return {'mean': m, 'var': v}
 
-def wmean_and_var_str_array(W, x): 
+def wmean_and_var_str_array(W, x):
     """Weighted mean and variance of each component of a structured array.
 
     Parameters
@@ -374,8 +374,8 @@ def wquantiles(W, x, alphas=(0.25, 0.50, 0.75)):
     """
     if len(x.shape) == 1:
         return _wquantiles(W, x, alphas=alphas)
-    elif len(x.shape) == 2: 
-        return np.array([_wquantiles(W, x[:, i], alphas=alphas) 
+    elif len(x.shape) == 2:
+        return np.array([_wquantiles(W, x[:, i], alphas=alphas)
                          for i in range(x.shape[1])])
 
 def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0,75)):
@@ -418,7 +418,7 @@ rs_doc = """%s resampling.
              -------
              (M,) ndarray
                  M ancestor variables, drawn from range 0,...,N-1
-         """ 
+         """
 
 def resampling_scheme(func):
     """Decorator for resampling schemes."""
@@ -439,32 +439,81 @@ def resampling(scheme, W, M=None):
         raise ValueError('%s: not a valid resampling scheme' % scheme)
 
 
-@jit
-def inverse_cdf(su, W):
-    """Inverse CDF algorithm for a finite distribution. 
+@jit(fastmath=True, parallel=False, nopython=True)
+def _inverse_cdf(su, W):
+    """Inverse CDF algorithm for a finite distribution.
 
         Parameters
         ----------
         su: (M,) ndarray
-            M sorted uniform variates (i.e. M ordered points in [0,1]). 
-        W: (N,) ndarray 
+            M sorted uniform variates (i.e. M ordered points in [0,1]).
+        W: (N,) ndarray
             a vector of N normalized weights (>=0 and sum to one)
 
         Returns
-        ------- 
+        -------
         A: (M,) ndarray
             a vector of M indices in range 0, ..., N-1
     """
     j = 0
     s = W[0]
     M = su.shape[0]
-    A = np.empty(M, 'int')
+    A = np.empty(M, np.int64)
     for n in range(M):
         while su[n] > s:
             j += 1
             s += W[j]
         A[n] = j
     return A
+
+
+@jit(fastmath=True, parallel=False, nopython=True)
+def _inverse_cdf_log_space(su, log_w):
+    j = 0
+    y = np.exp(log_w[0])
+
+    M = su.shape[0]
+    A = np.empty(M, np.int64)
+    for n in range(M):
+        while su[n] > y:
+            j += 1
+            y += np.exp(log_w[j])
+        A[n] = j
+    return A
+
+
+def inverse_cdf(su, W, is_log_weights=False):
+    """Inverse CDF algorithm for a finite distribution.
+
+        Parameters
+        ----------
+        su: (M,) ndarray
+            M sorted uniform variates (i.e. M ordered points in [0,1]).
+        W: (N,) ndarray
+            a vector of N normalized weights (>=0 and sum to one)
+        is_log_weights: bool
+            a flag stating if the resampling is happening in log space
+        Returns
+        -------
+        A: (M,) ndarray
+            a vector of M indices in range 0, ..., N-1
+
+        >>> np.random.seed(0)
+        >>> w = np.random.uniform(0., 1., 100)
+        >>> w = w / np.sum(w)
+        >>> logw = np.log(w)
+        >>> su = np.sort(np.random.uniform(0., 1., 100))
+        >>> indices = inverse_cdf(su, w, False)
+        >>> log_indices = inverse_cdf(su, logw, True)
+        >>> assert np.all(indices == log_indices)
+
+
+
+    """
+    if is_log_weights:
+        return _inverse_cdf_log_space(su, W)
+    else:
+        return _inverse_cdf(su, W)
 
 
 def uniform_spacings(N):
@@ -575,7 +624,7 @@ def ssp(W, M):
         else:
             xi[j] -= delta_i
             nb_children[i] += 1
-            i = k + 2 
+            i = k + 2
     return np.arange(N).repeat(nb_children)
 
 
