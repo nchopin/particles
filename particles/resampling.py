@@ -436,7 +436,7 @@ def resampling(scheme, W, M=None):
     try:
         return rs_funcs[scheme](W, M=M)
     except KeyError:
-        raise ValueError('%s: not a valid resampling scheme' % name)
+        raise ValueError('%s: not a valid resampling scheme' % scheme)
 
 
 @jit
