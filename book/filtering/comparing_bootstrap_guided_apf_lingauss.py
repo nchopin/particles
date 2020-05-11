@@ -43,7 +43,7 @@ true_filt_means = [f.mean for f in kf.filt]
 
 # Get results 
 N = 10**3
-results = particles.multiSMC(fk=models, N=N, nruns=25, moments=True)
+results = particles.multiSMC(fk=models, N=N, nruns=1000, moments=True)
 
 # PLOTS
 # =====
