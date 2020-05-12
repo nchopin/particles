@@ -316,9 +316,7 @@ class MVLinearGauss(ssms.StateSpaceModel):
         self.cov0 = self.covX if cov0 is None else np.atleast_2d(cov0)
         self.F = np.eye(self.dx) if F is None else np.atleast_2d(F)
         if G is None:
-            self.G = np.zeros((self.dy, self.xy))
-            for i in range(min(self.dx, self.dy)):
-                self.G[i, i] = 1.
+            self.G = np.eye(self.dy, self.dx)
         else:
             self.G = np.atleast_2d(G)
         self.check_shapes()
