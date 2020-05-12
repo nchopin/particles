@@ -400,7 +400,7 @@ class GenericGibbs(MCMC):
         raise NotImplementedError
 
     def step0(self):
-        th0 = self.prior.rvs() if self.theta0 is None else self.theta0
+        th0 = self.prior.rvs(size=1) if self.theta0 is None else self.theta0
         self.chain.theta[0] = th0
         self.x = self.update_states(self.chain.theta[0], None)
         if self.store_x:

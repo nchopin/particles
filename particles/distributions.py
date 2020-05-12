@@ -88,17 +88,19 @@ allows to define multivariate distributions::
     d.rvs(size=30)
 
 The distribution above has two independent components, with respective means 3
-and 2 (and variance 1 for both components).
+and 2 (and variance 1 for both components). Currently the distributions that
+implement this are the distributions parameterised by location and scale
+(Normal, Laplace, Logistic). 
 
 The module also implements multivariate Normal distributions; see `MvNormal`.
 
 Furthermore, the module provides two ways to construct multivariate
 distributions from a collection of univariate distributions:
 
-* `IndepProd`: product of independent distributions. May be used to
+* `IndepProd`: product of independent distributions; mainly used to
   define state-space models.
 
-* `StructDist`: distributions for named variables; may be used to specify
+* `StructDist`: distributions for named variables; mainly used to specify
   prior distributions; see modules `smc_samplers` and `mcmc` (and the
   corresponding tutorials).
 
@@ -253,7 +255,7 @@ class LocScaleDist(ProbDist):
 
 
 class Normal(LocScaleDist):
-    """N(loc,scale^2) distribution.
+    """N(loc, scale^2) distribution.
     """
     def rvs(self, size=None):
         return random.normal(loc=self.loc, scale=self.scale,
@@ -276,7 +278,7 @@ class Normal(LocScaleDist):
 
 
 class Logistic(LocScaleDist):
-    """Logistic(loc,scale) distribution.
+    """Logistic(loc, scale) distribution.
     """
     def rvs(self, size=None):
         return random.logistic(loc=self.loc, scale=self.scale,
@@ -599,14 +601,12 @@ class TransformedDist(ProbDist):
 
     A transformed distribution is the distribution of Y=f(X) for a certain
     function f, and a certain (univariate) base distribution for X.
-    Must be sub-classed; see below.
+    To define a particular class of transformations, sub-class this class, and
+    define methods:
 
-    Example::
-
-        dst = LogitD(Beta(3.,2.))
-
-    returns a dist object corresponding to the distribution of
-    Y=logit(X), for X~Beta(3, 2)
+        * f(self, x): function f 
+        * finv(self, x): inverse of function f
+        * logJac(self, x): log of Jacobian of the inverse of f 
 
     """
 
@@ -852,36 +852,58 @@ class IndepProd(ProbDist):
     -------
     To define a bivariate distribution::
 
-        prior = IndepProd(Normal(scale=2.), Gamma(2., 3.))
-        theta = prior.rvs(size=9)  # returns a (9, 2) ndarray
+        biv_dist = IndepProd(Normal(scale=2.), Gamma(2., 3.))
+        samples = biv_dist.rvs(size=9)  # returns a (9, 2) ndarray
 
     Note
     ----
     This is used mainly to define multivariate state-space models,
-    see module `state_space_models`.
+    see module `state_space_models`. To specify a prior distribution, you
+    should use instead `StructDist`.
 
     """
     def __init__(self, *dists):
         self.dists = dists
+        self.dim = len(dists)
         if all(d.dtype == 'int64' for d in dists):
             self.dtype = 'int64'
         else:
             self.dtype = 'float64'
 
-    @property
-    def dim(self):
-        return len(self.dists)
+    def logpdf(self, x):
+        return sum([d.logpdf(x[..., i]) for i, d in enumerate(self.dists)])
+        # ellipsis: in case x is of shape (d) instead of (N, d)
 
     def rvs(self, size=None):
         return np.stack([d.rvs(size=size) for d in self.dists], axis=1)
-
-    def logpdf(self, x):
-        return sum([d.logpdf(x[..., i]) for i, d in enumerate(self.dists)])
 
     def ppf(self, u):
         return np.stack([d.ppf(u[..., i]) for i, d in enumerate(self.dists)],
                         axis=1)
 
+class Prod(IndepProd):
+    """Product of distributions. 
+
+    Allows for conditional distributions. WORK IN PROGRESS.
+    """
+    def _cond_law(self, dist, x):
+        return dist(x) if callable(dist) else dist
+
+    def logpdf(self, x):
+        return sum([self._cond_law(d, x).logpdf(x[..., i]) 
+                    for i, d in enumerate(self.dists)])
+
+    def rvs(self, size=1): # TODO what if size=None? 
+        x = np.empty(self.shape(size))
+        for i, d in self.dists:
+            x[..., i] = self._cond_law(d, x).rvs(size=size)
+        return x
+
+    def ppf(self, u):
+        x = np.empty(u.shape)
+        for i, d in self.dists:
+            x[..., i] = self._cond_law(d, x).ppf(u[..., i])
+        return x
 
 ###################################
 # structured array distributions
@@ -891,7 +913,11 @@ class IndepProd(ProbDist):
 class Cond(ProbDist):
     """Conditional distributions.
 
-    see StructDist
+    A conditional distribution acts as a function, which takes as input the
+    current value of the samples, and returns a probability distribution. 
+
+    This is used to specify conditional distributions in `StructDist`; see the
+    documentation of that class for more details. 
     """
     def __init__(self, law, dim=1, dtype='float64'):
         self.law = law
@@ -953,6 +979,13 @@ class StructDist(ProbDist):
         self.dtype = {'names': list(self.laws.keys()), 'formats': formats}
         # list added for python 3 compatibility
 
+    def logpdf(self, theta):
+        l = 0.
+        for par, law in self.laws.items():
+            cond_law = law(theta) if callable(law) else law
+            l += cond_law.logpdf(theta[par])
+        return l
+
     def rvs(self, size=1):  # Default for size is 1, not None
         out = np.empty(size, dtype=self.dtype)
         for par, law in self.laws.items():
@@ -960,9 +993,9 @@ class StructDist(ProbDist):
             out[par] = cond_law.rvs(size=size)
         return out
 
-    def logpdf(self, theta):
-        l = 0.
+    def ppf(self, theta):
+        out = np.empty(size, dtype=self.dtype)
         for par, law in self.laws.items():
-            cond_law = law(theta) if callable(law) else law
-            l += cond_law.logpdf(theta[par])
-        return l
+            cond_law = law(out) if callable(law) else law
+            out[par] = cond_law.ppf(theta[par])
+        return out
