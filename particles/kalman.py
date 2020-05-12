@@ -142,23 +142,41 @@ may be defined as follows::
 
 from __future__ import division, print_function
 
-import collections 
+import collections
+
 import numpy as np
-from numpy.linalg import inv
+from scipy.linalg import inv, solve
 
 from particles import distributions as dists
 from particles import state_space_models as ssms
 
 error_msg = "arguments of KalmanFilter.__init__ have inconsistent shapes"
 
+
 ########################
 # Low-level functions
 ########################
 
 def dotdot(a, b, c):
-    return np.dot(np.dot(a, b), c)
+    """A faster and more memory efficient way of computing np.dot(a, np.dot(b, c))
+    """
+    return a.dot(b).dot(c)
+
+
+def _dotdotinv(a, b, c):
+    """
+    A faster and more stable way of computing dotdot(a, b, inv(c)) when c is symmetric positive (covariance matrix)
+    >>> a = np.random.randn(50, 50)
+    >>> b = np.random.randn(50, 50)
+    >>> c = np.random.randn(50, 50)
+    >>> c = np.triu(c) @ np.triu(c).T + np.eye(50) / 50
+    >>> np.testing.assert_allclose(_dotdotinv(a, b, c), dotdot(a, b, inv(c)))
+    """
+    return solve(c, a.dot(b).T, sym_pos=True, overwrite_a=True).T
+
 
 MeanAndCov = collections.namedtuple('MeanAndCov', 'mean cov')
+
 
 def predict_step(F, covX, filt):
     """Predictive step of Kalman filter.
@@ -217,7 +235,7 @@ def filter_step(G, covY, pred, yt):
                                 cov=data_pred_cov).logpdf(yt)
     # filter
     residual = yt - data_pred_mean
-    gain = dotdot(pred.cov, G.T, inv(data_pred_cov))
+    gain = _dotdotinv(pred.cov, G.T, data_pred_cov)
     filt_mean = pred.mean + np.matmul(residual, gain.T)
     filt_cov = pred.cov - dotdot(gain, G, pred.cov)
     return MeanAndCov(mean=filt_mean, cov=filt_cov), logpyt
@@ -276,7 +294,7 @@ def smoother_step(F, filt, next_pred, next_smth):
     smth: MeanAndCov object
         smoothing distribution at time t 
     """
-    J = dotdot(filt.cov, F.T, inv(next_pred.cov))
+    J = _dotdotinv(filt.cov, F.T, next_pred.cov)
     smth_cov = filt.cov + dotdot(J, next_smth.cov - next_pred.cov, J.T)
     smth_mean = filt.mean + np.matmul(next_smth.mean - next_pred.mean, J.T)
     return MeanAndCov(mean=smth_mean, cov=smth_cov)
@@ -355,8 +373,9 @@ class MVLinearGauss(ssms.StateSpaceModel):
 
     def logeta(self, t, x, data):
         pred = MeanAndCov(mean=np.matmul(x, self.F.T), cov=self.covX)
-        _, logpyt = filter_step_asarray(self.G, self.covY, pred, data[t+1])
+        _, logpyt = filter_step_asarray(self.G, self.covY, pred, data[t + 1])
         return logpyt
+
 
 class MVLinearGauss_Guarniero_etal(MVLinearGauss):
     """Special case of a MV Linear Gaussian ssm from Guarnierio et al. (2016).
@@ -380,13 +399,15 @@ class MVLinearGauss_Guarniero_etal(MVLinearGauss):
     Guarnierio et al (2016). The Iterated Auxiliary Particle Filter, 
         arxiv:1511.06286, JASA. 
     """
+
     def __init__(self, alpha=0.4, dx=2):
         F = np.empty((dx, dx))
         for i in range(dx):
             for j in range(dx):
-                F[i, j] = alpha**(1 + abs(i - j))
+                F[i, j] = alpha ** (1 + abs(i - j))
         MVLinearGauss.__init__(self, F=F, G=np.eye(dx), covX=np.eye(dx),
                                covY=np.eye(dx))
+
 
 class LinearGauss(MVLinearGauss):
     r"""A basic (univariate) linear Gaussian model.
@@ -402,16 +423,16 @@ class LinearGauss(MVLinearGauss):
         makes the state process invariant:
         :math:`\sigma_X^2 / (1 - \rho^2)` 
     """
-    default_params = {'sigmaY': .2, 'rho': 0.9, 'sigmaX': 1., 
+    default_params = {'sigmaY': .2, 'rho': 0.9, 'sigmaX': 1.,
                       'sigma0': None}
 
     def __init__(self, **kwargs):
         ssms.StateSpaceModel.__init__(self, **kwargs)
         if self.sigma0 is None:
-            self.sigma0 = self.sigmaX / np.sqrt(1. - self.rho**2)
+            self.sigma0 = self.sigmaX / np.sqrt(1. - self.rho ** 2)
         # arguments for Kalman
-        MVLinearGauss.__init__(self, F=self.rho, G=1., covX=self.sigmaX**2,
-                               covY= self.sigmaY**2, cov0=self.sigma0**2)
+        MVLinearGauss.__init__(self, F=self.rho, G=1., covX=self.sigmaX ** 2,
+                               covY=self.sigmaY ** 2, cov0=self.sigma0 ** 2)
 
     def PX0(self):
         return dists.Normal(scale=self.sigma0)
@@ -423,20 +444,21 @@ class LinearGauss(MVLinearGauss):
         return dists.Normal(loc=x, scale=self.sigmaY)
 
     def proposal0(self, data):
-        sig2post = 1. / (1. / self.sigma0**2 + 1. / self.sigmaY**2)
-        mupost = sig2post * (data[0] / self.sigmaY**2)
+        sig2post = 1. / (1. / self.sigma0 ** 2 + 1. / self.sigmaY ** 2)
+        mupost = sig2post * (data[0] / self.sigmaY ** 2)
         return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
 
     def proposal(self, t, xp, data):
-        sig2post = 1. / (1. / self.sigmaX**2 + 1. / self.sigmaY**2)
-        mupost = sig2post * (self.rho * xp / self.sigmaX**2
-                             + data[t] / self.sigmaY**2)
+        sig2post = 1. / (1. / self.sigmaX ** 2 + 1. / self.sigmaY ** 2)
+        mupost = sig2post * (self.rho * xp / self.sigmaX ** 2
+                             + data[t] / self.sigmaY ** 2)
         return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
 
     def logeta(self, t, x, data):
         law = dists.Normal(loc=self.rho * x,
-                           scale=np.sqrt(self.sigmaX**2 + self.sigmaY**2))
+                           scale=np.sqrt(self.sigmaX ** 2 + self.sigmaY ** 2))
         return law.logpdf(data[t + 1])
+
 
 #################################
 # Kalman filter/smoother class 
@@ -475,7 +497,7 @@ class Kalman(object):
             self.pred += [MeanAndCov(mean=self.ssm.mu0, cov=self.ssm.cov0)]
         else:
             self.pred += [predict_step(self.ssm.F, self.ssm.covX, self.filt[-1])]
-        new_filt, new_logpyt = filter_step(self.ssm.G, self.ssm.covY, 
+        new_filt, new_logpyt = filter_step(self.ssm.G, self.ssm.covY,
                                            self.pred[-1], yt)
         self.filt.append(new_filt)
         self.logpyt.append(new_logpyt)
@@ -484,7 +506,7 @@ class Kalman(object):
         return self.__next__()  # Python 2 compatibility
 
     def __iter__(self):
-        return self 
+        return self
 
     def filter(self):
         """ Forward recursion: compute mean/variance of filter and prediction.
@@ -501,6 +523,6 @@ class Kalman(object):
             self.filter()
         self.smth = [self.filt[-1]]
         for t, f in reversed(list(enumerate(self.filt[:-1]))):
-            self.smth += [smoother_step(self.ssm.F, f, self.pred[t + 1], 
+            self.smth += [smoother_step(self.ssm.F, f, self.pred[t + 1],
                                         self.smth[t + 1])]
         self.smth.reverse()
