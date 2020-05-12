@@ -379,7 +379,7 @@ class ParticleHistory(RollingParticleHistory):
         idx = np.searchsorted(np.cumsum(self.wgts[-1].W[hT]), u[:, -1])
         paths = [self.X[-1][hT][idx], ]
         for t in reversed(range(self.T - 1)):
-            idx = np.empty(M, 'int')
+            idx = np.empty(M, dtype=np.int64)
             for m, xn in enumerate(paths[-1]):
                 lwm = self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t], xn)
                 # use ordered version here

@@ -332,7 +332,7 @@ class ParisOnlineSmoother(Collector, OnlineSmootherMixin):
         mq = rs.MultinomialQueue(self.prev_W)
         nprop = 0
         for n in range(self.N):
-            As = np.empty(self.Nparis, 'int')
+            As = np.empty(self.Nparis, dtype=np.int64)
             for m in range(self.Nparis):
                 while True:
                     a = mq.dequeue(1)
