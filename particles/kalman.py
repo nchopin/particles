@@ -300,7 +300,7 @@ class MVLinearGauss(ssms.StateSpaceModel):
         * `mu0`:: an array of zeros (of size dx)
         * `cov0`: cov_X
         * `F`: Identity matrix of shape (dx, dx)
-        * `G`: (dx, dy) matrix such that G[i, j] = 1[i=j]
+        * `G`: (dy, dx) matrix such that G[i, j] = 1[i=j]
 
     Note
     ----
@@ -315,10 +315,7 @@ class MVLinearGauss(ssms.StateSpaceModel):
         self.mu0 = np.zeros(self.dx) if mu0 is None else mu0
         self.cov0 = self.covX if cov0 is None else np.atleast_2d(cov0)
         self.F = np.eye(self.dx) if F is None else np.atleast_2d(F)
-        if G is None:
-            self.G = np.eye(self.dy, self.dx)
-        else:
-            self.G = np.atleast_2d(G)
+        self.G = np.eye(self.dy, self.dx) if G is None else np.atleast_2d(G)
         self.check_shapes()
 
     def check_shapes(self):
