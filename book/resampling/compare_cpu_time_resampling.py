@@ -13,14 +13,15 @@
     python version 
 """
 
-from matplotlib import pyplot as plt
-import seaborn as sb
-import numpy as np
 import timeit
+
+import numpy as np
+import seaborn as sb
+from matplotlib import pyplot as plt
 
 nrep = 10
 
-Ns = [np.ceil(10**n) for n in np.linspace(2, 8, 30)]
+Ns = [np.ceil(10 ** n) for n in np.linspace(2, 8, 30)]
 
 setup = """ 
 import numpy as np
@@ -58,10 +59,10 @@ C = pure_python_inverse_cdf(rs.uniform_spacings(N), W)
 """
 
 statements['searchsorted'] = """
-D = np.searchsorted(np.cumsum(W), stats.uniform.rvs(size=M))
-""" 
+D = np.searchsorted(np.cumsum(W), rs.uniform_spacings(N))
+"""
 
-# For the record, the following two extra statements could 
+# For the record, the following two extra statements could
 # also be considered, but they are much slower 
 extra_statements = {}
 extra_statements['rv_dis'] = """ 
@@ -73,11 +74,12 @@ extra_statements['ppf'] = """
 multi = stats.rv_discrete("resampling", values=(np.arange(N), W))
 B = multi.ppf(stats.uniform.rvs(size=M))
 """
+
 results = []
 for N in Ns:
     for method, state in statements.items():
-        cputime = (1./nrep)*timeit.timeit(state, setup=setup%(N,N), number=nrep)
-        results.append({'N':N, 'method':method, 'cputime':cputime})
+        cputime = (1. / nrep) * timeit.timeit(state, setup=setup % (N, N), number=nrep)
+        results.append({'N': N, 'method': method, 'cputime': cputime})
 
 # PLOT
 # ====
@@ -87,8 +89,8 @@ sb.set_palette(sb.dark_palette("lightgray", n_colors=4, reverse=True))
 
 plt.figure()
 for method in statements.keys():
-    plt.plot(Ns, [ [r['cputime'] for r in results if r['method']==method and
-                  r['N']==N] for N in Ns], label=method)
+    plt.plot(Ns, [[r['cputime'] for r in results if r['method'] == method and
+                   r['N'] == N] for N in Ns], label=method)
 plt.xscale('log')
 plt.yscale('log')
 plt.xlabel(r'$N$')
@@ -98,4 +100,3 @@ if savefigs:
     plt.savefig('comparison_numba_searchsorted.pdf')
 
 plt.show()
-
