@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Baum-Welch filter/smoother for hidden Markov models. 
+Baum-Welch filter/smoother for hidden Markov models.
 
 Overview
 ========
@@ -10,25 +10,25 @@ Overview
 A hidden Markov model (HMM) is a state-space model with a finite state-space,
 {1, ..., K}. The Baum-Welch algorithm allows to compute (exactly) the filtering and
 smoothing distributions of such a model; i.e. the probabilities that X_t=k
-given data Y_{0:t} (filtering) or the complete data Y_{0:T} (smoothing). 
+given data Y_{0:t} (filtering) or the complete data Y_{0:T} (smoothing).
 In addition, one may sample trajectories from the complete smoothing
-distribution (the distribution of all the states, X_{0:T}, given all the data). 
+distribution (the distribution of all the states, X_{0:T}, given all the data).
 
 Hidden Markov models and the Baum-Welch algorithm are covered in Chapter 6 of
-the book. 
+the book.
 
 Defining a hidden Markov model
 ==============================
 
 Hidden Markov models are represented as `HMM` objects; `HMM` is a subclass
-of `StateSpaceModel` (from module `state_space_models`), which assigns: 
+of `StateSpaceModel` (from module `state_space_models`), which assigns:
 
     * A categorical distribution to X_0 (parameter `init_dist`)
     * A categorical distribution to X_t given X_{t-1} (parameter `trans_mat`)
 
 The distributions of Y_t|X_t must be defined by sub-classing `HMM`. For instance,
 this module defines a `GaussianHMM` class as follows::
-    
+
     class GaussianHMM(HMM):
         default_params = {'mus': None, 'sigmas': None}
         default_params.update(HMM.default_params)
@@ -44,9 +44,15 @@ One may now define a particular model in the usual way::
 
 and e.g. sample data from this model::
 
-    true_states, y = my_hmm.simulate(100) 
+    true_states, y = my_hmm.simulate(100)
 
-(This works because, again, `HMM` is a subclass of ``StateSpaceModels``). 
+(This works because, again, `HMM` is a subclass of ``StateSpaceModels``).
+
+.. warning::
+   Since `HMM` is a subclass of `StateSpaceModel`, method `PY` has the same
+   signature as in its parent class, but argument `xp` is not used. In other
+   words, you cannot specify a HMM model where $Y_t$ would depend on both
+   $X_t$ and $X_{t-1}$ (unlike in the general case).
 
 Running the Baum-Welch algorithm
 ================================
@@ -62,7 +68,7 @@ To actually run the algorithm, one must invoke the appropriate methods, e.g.::
     bw.sample(N=30)  # generate 30 smoothing trajectories
 
 If you invoke either ``backward`` or ``sample`` directly, the forward pass will be
-run first. The output of the forward and backward passes are attributes of 
+run first. The output of the forward and backward passes are attributes of
 object `bw`, which are lists of K-length numpy arrays. For instance,
 `self.filt` is a list of arrays containing the filtering probabilities; see the
 documentation of ``BaumWelch`` for more details.
@@ -88,7 +94,7 @@ wants to perform the smoothing pass at different times; in particular::
         ## save the results in bw.smth somewhere
 
 would compute all the intermediate smoothing distributions (for data $Y_0$,
-then $Y_{0:1}$, and so on). This is expensive, of course (cost is O(T^2)). 
+then $Y_{0:1}$, and so on). This is expensive, of course (cost is O(T^2)).
 """
 
 from __future__ import division, print_function
@@ -98,13 +104,13 @@ from numpy import random
 
 from particles import resampling as rs
 from particles import distributions as dists
-from particles import state_space_models as ssms 
+from particles import state_space_models as ssms
 
 class HMM(ssms.StateSpaceModel):
-    """Base class for hidden Markov models. 
+    """Base class for hidden Markov models.
 
     To define a HMM, subclass HMM and define method PY.
-    See module hmm for more information (and Chapter 6 of the book). 
+    See module hmm for more information (and Chapter 6 of the book).
     """
     default_params = {'init_dist': None, 'trans_mat': None}
     def __init__(self, **kwargs):
@@ -134,13 +140,13 @@ class GaussianHMM(HMM):
         return dists.Normal(loc=self.mus[x], scale=self.sigmas[x])
 
 class BaumWelch(object):
-    """Baum-Welch filtering/smoothing algorithm. 
+    """Baum-Welch filtering/smoothing algorithm.
 
     Parameters
     ----------
-    hmm:   HMM object 
+    hmm:   HMM object
         the hidden Markov model of interest
-    data:  list-like 
+    data:  list-like
         the data
 
     Attributes
@@ -150,7 +156,7 @@ class BaumWelch(object):
     pred: list of numpy arrays
         predictive probabilities (computed during forward pass)
     logpyt: list of scalars
-        log density of Y_t given Y_{0:t-1} 
+        log density of Y_t given Y_{0:t-1}
     smth: list of numpy arrays
         smoothing probabilities (computed during the backward pass)
 
@@ -158,9 +164,9 @@ class BaumWelch(object):
     ----
     To define a given hidden Markov model, one must subclass HMM; see
     documentation of ``HMM`` for more details. The considered HMM must be such that:
-    1. Y_t depends on X_t only (not on X_{t-1}). 
+    1. Y_t depends on X_t only (not on X_{t-1}).
     2. Markov chain {X_t} is homogeneous (i.e. X_t|X_{t-1} does not depend on
-    t). 
+    t).
     """
     def __init__(self, hmm=None, data=None):
         self.hmm = hmm
@@ -184,7 +190,7 @@ class BaumWelch(object):
         logpyt = rs.log_sum_exp(lp)
         f = np.exp(lp - logpyt)
         self.logft.append(emis)
-        self.logpyt.append(lp)
+        self.logpyt.append(logpyt)
         self.filt.append(f)
 
     def __next__(self):
@@ -199,12 +205,12 @@ class BaumWelch(object):
         return self.__next__()  # Python 2 compatibility
 
     def __iter__(self):
-        return self 
+        return self
 
     def forward(self):
-        """Forward recursion. 
+        """Forward recursion.
 
-        Upon completion, the following lists of length T are available: 
+        Upon completion, the following lists of length T are available:
         * filt: filtering probabilities
         * pred: predicting probabilities
         * logpyt: log-likelihood factor, i.e. log of p(y_t|y_{0:t-1})
@@ -213,21 +219,21 @@ class BaumWelch(object):
             pass
 
     def backward(self):
-        """Backward recursion. 
+        """Backward recursion.
 
-        Upon completion, the following list of length T is available: 
+        Upon completion, the following list of length T is available:
         * smth: marginal smoothing probabilities
 
         Note
         ----
-        Performs the forward step in case it has not been performed before. 
+        Performs the forward step in case it has not been performed before.
         """
         if not self.filt:
             self.forward()
         self.smth = [self.filt[-1]]
         log_trans = np.log(self.hmm.trans_mat)
         ctg = np.zeros(self.hmm.dim)  # cost to go (log-lik of y_{t+1:T} given x_t=k)
-        for filt, next_ft in reversed(list(zip(self.filt[:-1], 
+        for filt, next_ft in reversed(list(zip(self.filt[:-1],
                                                self.logft[1:]))):
             new_ctg = np.empty(self.hmm.dim)
             for k in range(self.hmm.dim):
@@ -242,11 +248,11 @@ class BaumWelch(object):
         self.backward()
 
     def sample(self, N=1):
-        """Sample N trajectories from the posterior. 
-        
+        """Sample N trajectories from the posterior.
+
         Note
         ----
-        Performs the forward step in case it has not been performed. 
+        Performs the forward step in case it has not been performed.
 
         """
         if not self.filt:

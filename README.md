@@ -14,15 +14,15 @@ This package was developed to complement the forthcoming book:
 
 * **particle filtering**: bootstrap filter, guided filter, APF.
 
-* possibility to define  **state-space models** using some (basic) form of 
+* possibility to define **state-space models** using some (basic) form of 
   probabilistic programming; see below for an example. 
 
 * **SQMC** (Sequential quasi Monte Carlo);  routines for computing the Hilbert curve, 
   and generating RQMC sequences. 
 
-* **particle smoothing**: on-line smoothing, FFBS (forward filtering, backward
-  sampling), two-filter smoothing. O(N) and O(N^2) variants. 
-  FFBS for SQMC is also implemented. 
+* **particle smoothing**: fixed-lag smoothing, on-line smoothing, FFBS (forward
+  filtering, backward sampling), two-filter smoothing (O(N) and O(N^2)
+  variants).  FFBS for SQMC is also implemented. 
 
 * Exact filtering/smoothing algorithms: **Kalman** (for linear Gaussian models) 
 and **Baum-Welch** (for hidden Markov models).
@@ -35,11 +35,17 @@ and **Baum-Welch** (for hidden Markov models).
 * Basic support for **parallel computation** (i.e. running multiple SMC algorithms 
 on different CPU cores). 
 
+* Basic implementation of **nested sampling** (experimental). 
+
 ## Example ##
 
 Here is how you may define a parametric state-space model: 
 
 ```python
+import particles
+import particles.state_space_models as ssm
+import particles.distributions as dists
+
 class ToySSM(ssm.StateSpaceModel):
     def PX0(self):  # Distribution of X_0 
         return dists.Normal()  # X_0 ~ N(0, 1)

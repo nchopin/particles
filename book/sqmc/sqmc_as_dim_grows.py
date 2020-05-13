@@ -18,8 +18,7 @@ Chopin, N. and Gerber, M. (2018) Sequential quasi-Monte Carlo: Introduction for
 Non-Experts, Dimension Reduction, Application to Partly Observed Diffusion
 Processes. arXiv:1706.05305 (to be published in the MCQMC 2016 proceedings). 
 
-or the numerical section of Chapter 12 (SQMC) of the book, where this 
-violin plot is reproduced. 
+or the numerical section of Chapter 13 (SQMC) of the book. 
 
 """
 
@@ -37,7 +36,7 @@ from particles import kalman
 from particles import state_space_models as ssms
 
 #parameter values 
-alpha0 = 0.4
+alpha0 = 0.3
 T = 50
 dims = range(5, 21, 5)
 
@@ -96,8 +95,9 @@ ax = sb.violinplot(x="dim", y="log10_gain", hue="fk_qmc", data=df,
 plt.xlabel('dim')
 plt.ylabel(r'gain for $E[X_t(1)|Y_{0:t}]$')
 plt.legend(loc=1)
-ylabels = ax.get_yticks().tolist()
-ax.set_yticklabels([r'$10^{%d}$'%int(i) for i in ylabels])
+plt.ylim(-4, 4)
+yt = list(range(-4, 5))
+plt.yticks(yt, [r'$10^{%d}$' % i for i in yt])
 if savefigs:
     plt.savefig('sqmc_as_dim_grows.pdf') 
 

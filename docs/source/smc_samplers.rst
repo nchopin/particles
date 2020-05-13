@@ -14,6 +14,7 @@ Module summary
     StaticModel
     ThetaParticles
     MetroParticles
+    FKSMCsampler
     IBIS
     Tempering
     AdaptiveTempering

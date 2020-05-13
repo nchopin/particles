@@ -6,32 +6,32 @@ MCMC (Markov chain Monte Carlo) and related algorithms.
 Overview
 ========
 
-This module contains various classes that implement MCMC samplers: 
+This module contains various classes that implement MCMC samplers:
     * `MCMC`: the base class for all MCMC samplers;
     * `GenericRWHM`: base class for random-walk Hastings-Metropolis;
     * `GenericGibbs`: base class for Gibbs samplers;
     * `PMMH`, `ParticleGibbs`: base classes for the PMCMC (particle MCMC
-      algorithms) with the same name. 
+      algorithms) with the same name.
 
-For instance, here is how to run 200 iterations of an adaptive random-walk 
+For instance, here is how to run 200 iterations of an adaptive random-walk
 sampler::
-    
+
     # ...
     # define some_static_model, some_prior
     # ...
-    my_mcmc = BasicRWHM(model=some_static_model, prior=some_prior, niter=200, 
+    my_mcmc = BasicRWHM(model=some_static_model, prior=some_prior, niter=200,
                         adaptive=True)
     my_mcmc.run()
 
 Upon completion, object ``my_mcmc`` have an attribute called ``chain``, which
-is a `ThetaParticles` object (see module `smc_samplers`). In particular, 
+is a `ThetaParticles` object (see module `smc_samplers`). In particular,
 ``my_mcmc.chain`` has the following attributes:
     * ``theta``: a structured array that contains the 200 simulated parameters;
     * ``lpost``: an array that contains the log-posterior density at these 200
-      parameters. 
+      parameters.
 
 See the dedicated notebook tutorial_ (on Bayesian inference for state-space
-models) for more examples and explanations. 
+models) for more examples and explanations.
 
 .. _tutorial: notebooks/Bayes_estimation_ssm.ipynb
 
@@ -55,49 +55,46 @@ def msjd(theta):
 
     Parameters
     ----------
-    theta: structured array 
-    
+    theta: structured array
+
     Returns
     -------
     float
     """
-    s = 0. 
+    s = 0.
     for p in theta.dtype.names:
         s += np.sum(np.diff(theta[p], axis=0) ** 2)
     return s
 
 
 class MCMC(object):
-    """MCMC base class. 
+    """MCMC base class.
 
     To subclass MCMC, define methods:
-        * `step0(self)`: initial step 
+        * `step0(self)`: initial step
         * `step(self, n)`: n-th step, n>=1
 
     """
-    def __init__(self, niter=10, seed=None, verbose=0):
+    def __init__(self, niter=10, verbose=0):
         """
         Parameters
         ----------
         niter: int
             number of MCMC iterations
-        seed: int (default=None)
-            pseudo-random seed (if None, generator is not seeded)
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
         """
         self.niter = niter
-        self.seed = seed
         self.verbose = verbose
 
     def step0(self):
-        raise NotImplementedError 
+        raise NotImplementedError
 
     def step(self, n):
         raise NotImplementedError
 
     def mean_sq_jump_dist(self, discard_frac=0.1):
-        """Mean squared jumping distance estimated from chain. 
+        """Mean squared jumping distance estimated from chain.
 
         Parameters
         ----------
@@ -122,8 +119,6 @@ class MCMC(object):
 
     @utils.timer
     def run(self):
-        if self.seed:
-            random.seed(self.seed)
         for n in range(self.niter):
             if n == 0:
                 self.step0()
@@ -133,14 +128,14 @@ class MCMC(object):
                 self.print_progress(n)
 
 ##################################
-# Random walk Metropolis samplers 
+# Random walk Metropolis samplers
 
 
 class VanishCovTracker(object):
     """Tracks the vanishing mean and covariance of a sequence of points.
 
     Computes running mean and covariance of points
-    t^(-alpha) * X_t 
+    t^(-alpha) * X_t
     for some alpha \in [0,1] (typically)
     """
     def __init__(self, alpha=0.6, dim=1, mu0=None, Sigma0=None):
@@ -172,11 +167,11 @@ class VanishCovTracker(object):
             self.L = self.L0
 
 class GenericRWHM(MCMC):
-    """Base class for random walk Hasting-Metropolis samplers. 
+    """Base class for random walk Hasting-Metropolis samplers.
 
     must be subclassed; the subclass must provide attribute self.prior
     """
-    def __init__(self, niter=10, seed=None, verbose=0, theta0=None, 
+    def __init__(self, niter=10, verbose=0, theta0=None,
                  adaptive=True, scale=1., rw_cov=None):
         """
         Parameters
@@ -184,8 +179,6 @@ class GenericRWHM(MCMC):
 
         niter: int
             number of MCMC iterations
-        seed: int (default=None)
-            pseudo-random seed (if None, generator is not seeded)
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
         theta0: a structured array of size=1
@@ -193,12 +186,12 @@ class GenericRWHM(MCMC):
         adaptive: True/False
             whether to use the adaptive version or not
         scale: positive scalar (default = 1.)
-            in the adaptive case, covariance of the proposal is scale^2 times 
+            in the adaptive case, covariance of the proposal is scale^2 times
             (2.38 / d) times the current estimate of the target covariance
-        rw_cov: (d, d) array 
+        rw_cov: (d, d) array
             covariance matrix of the random walk proposal (set to I_d if None)
         """
-        for k in ['niter', 'seed', 'verbose', 'theta0', 'adaptive']:
+        for k in ['niter', 'verbose', 'theta0', 'adaptive']:
             setattr(self, k, locals()[k])
         self.chain = ssp.ThetaParticles(
                         theta=np.empty(shape=niter, dtype=self.prior.dtype),
@@ -249,15 +242,13 @@ class BasicRWHM(GenericRWHM):
     """Basic random walk Hastings-Metropolis sampler.
     """
 
-    def __init__(self, niter=10, seed=None, verbose=0, theta0=None, 
+    def __init__(self, niter=10, verbose=0, theta0=None,
                  adaptive=True, scale=1., rw_cov=None, model=None):
         """
         Parameters
         ----------
         niter: int
             number of MCMC iterations
-        seed: int (default=None)
-            pseudo-random seed (if None, generator is not seeded)
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
         theta0: structured array of lengt=1 (default=None)
@@ -266,19 +257,19 @@ class BasicRWHM(GenericRWHM):
         adaptive: bool
             whether the adaptive version should be used
         scale: positive scalar (default = 1.)
-            in the adaptive case, covariance of the proposal is scale^2 times 
+            in the adaptive case, covariance of the proposal is scale^2 times
             (2.38 / d) times the current estimate of the target covariance
-        rw_cov: (d, d) array 
+        rw_cov: (d, d) array
             covariance matrix of the random walk proposal (set to I_d if None)
         model: StaticModel object
-            the model that defines the target distribution 
+            the model that defines the target distribution
         """
         if model is None:
             raise ValueError('Metropolis(MCMC): model not provided')
         else:
             self.model = model
         self.prior = model.prior
-        GenericRWHM.__init__(self, niter=niter, seed=seed, verbose=verbose, 
+        GenericRWHM.__init__(self, niter=niter, verbose=verbose,
                              theta0=theta0, adaptive=adaptive, scale=scale,
                              rw_cov=rw_cov)
 
@@ -288,48 +279,46 @@ class BasicRWHM(GenericRWHM):
 
 class PMMH(GenericRWHM):
     """Particle Marginal Metropolis Hastings.
-    
+
     PMMH is class of Metropolis samplers where the intractable likelihood of
-    the considered state-space model is replaced by an estimate obtained from 
-    a particle filter. 
+    the considered state-space model is replaced by an estimate obtained from
+    a particle filter.
     """
 
-    def __init__(self, niter=10, seed=None, verbose=0, ssm_cls=None,
-                 smc_cls=particles.SMC, prior=None, data=None, smc_options=None, 
-                 fk_cls=Bootstrap, Nx=100, theta0=None, adaptive=True, scale=1., 
+    def __init__(self, niter=10, verbose=0, ssm_cls=None,
+                 smc_cls=particles.SMC, prior=None, data=None, smc_options=None,
+                 fk_cls=Bootstrap, Nx=100, theta0=None, adaptive=True, scale=1.,
                  rw_cov=None):
         """
         Parameters
         ----------
         niter: int
             number of iterations
-        seed: int (default=None)
-            PRNG seed (if None, PRNG is not seeded)
         verbose: int (default=0)
             print some info every `verbose` iterations (never if 0)
         ssm_cls: StateSpaceModel class
             the considered parametric class of state-space models
         smc_cls: class (default: particles.SMC)
-            SMC class 
+            SMC class
         prior: StructDist
             the prior
         data: list-like
             the data
-        smc_options: dict 
+        smc_options: dict
             options to pass to class SMC
         fk_cls: (default=Bootstrap)
-            FeynmanKac class associated to the model 
+            FeynmanKac class associated to the model
         Nx: int
             number of particles (for the particle filter that evaluates the
             likelihood)
         theta0: structured array of length=1
             starting point (generated from prior if =None)
         adaptive: bool
-            whether to use the adaptive version 
+            whether to use the adaptive version
         scale: positive scalar (default = 1.)
-            in the adaptive case, covariance of the proposal is scale^2 times 
+            in the adaptive case, covariance of the proposal is scale^2 times
             (2.38 / d) times the current estimate of the target covariance
-        rw_cov: (d, d) array 
+        rw_cov: (d, d) array
             covariance matrix of the random walk proposal (set to I_d if None)
         """
         self.ssm_cls = ssm_cls
@@ -342,11 +331,11 @@ class PMMH(GenericRWHM):
         if smc_options is not None:
             self.smc_options.update(smc_options)
         self.Nx = Nx
-        GenericRWHM.__init__(self, niter=niter, seed=seed, verbose=verbose, 
+        GenericRWHM.__init__(self, niter=niter, verbose=verbose,
                              theta0=theta0, adaptive=adaptive, scale=scale,
                              rw_cov=rw_cov)
 
-    def alg_instance(self, theta): 
+    def alg_instance(self, theta):
         return self.smc_cls(fk=self.fk_cls(ssm=self.ssm_cls(**theta),
                                            data=self.data),
                             N=self.Nx, **self.smc_options)
@@ -363,7 +352,7 @@ class CSMC(particles.SMC):
     """Conditional SMC.
     """
     def __init__(self, fk=None, N=100, ESSrmin=0.5, xstar=None):
-        particles.SMC.__init__(self, fk=fk, N=N, seed=None,
+        particles.SMC.__init__(self, fk=fk, N=N,
                             resampling="multinomial", ESSrmin=ESSrmin,
                             store_history=True, summaries=False)
         self.xstar = xstar
@@ -384,16 +373,16 @@ class CSMC(particles.SMC):
 class GenericGibbs(MCMC):
     """Generic Gibbs sampler for a state-space model.
 
-    Updates sequentially X and theta; generic enough to allow for 
-    various strategies for these updates. 
+    Updates sequentially X and theta; generic enough to allow for
+    various strategies for these updates.
 
-    Abstract class. 
+    Abstract class.
 
     """
-    def __init__(self, niter=10, seed=None, verbose=10, theta0=None,
-                 ssm_cls=None, prior=None, data=None, store_x=False): 
+    def __init__(self, niter=10, verbose=10, theta0=None,
+                 ssm_cls=None, prior=None, data=None, store_x=False):
         for k in ['ssm_cls', 'prior', 'data', 'theta0', 'niter', 'store_x',
-                  'verbose', 'seed']:
+                  'verbose']:
             setattr(self, k, locals()[k])
         theta = np.empty(shape=niter, dtype=self.prior.dtype)
         if store_x:
@@ -403,8 +392,8 @@ class GenericGibbs(MCMC):
             self.chain = ssp.ThetaParticles(theta=theta)
 
     def update_states(self, theta, x):
-        # x is None means we are at iteration 0, we must generate the states 
-        # from scratch 
+        # x is None means we are at iteration 0, we must generate the states
+        # from scratch
         raise NotImplementedError
 
     def update_theta(self, theta, x):
@@ -432,14 +421,12 @@ class ParticleGibbs(GenericGibbs):
     ----------
     niter: int (default=10)
         number of MCMC iterations
-    seed: int (default=None)
-        pseudo-random seed (if None, generator is not seeded)
     verbose: int (default=0)
         progress report printed every (niter/verbose) iterations (never if 0)
     ssm_cls: `StateSpaceModel` subclass
         parametric class of state-space models
     prior: `StructDist` object
-        prior distribution 
+        prior distribution
     data: list-like
         data
     theta0: structured array
@@ -447,11 +434,11 @@ class ParticleGibbs(GenericGibbs):
     Nx: int
         number of x-particles (in the CSMC step)
     fk_cls: FeynmanKac class (default=None)
-        which Feynman-Kac model to use (if None, set to ssm.Bootstrap, however, 
+        which Feynman-Kac model to use (if None, set to ssm.Bootstrap, however,
         one may use instead e.g. ssm.GuidedPF)
     regenerate_data: bool (default=False)
         re-generate the data at each step; in the case the algorithm samples
-        from the *prior*; useful to check if the algorithm is correct (i.e. 
+        from the *prior*; useful to check if the algorithm is correct (i.e.
         if the update_theta method leaves invariant the conditional
         distributions of theta given x and y)
     backward_step: bool (default=False)
@@ -462,25 +449,25 @@ class ParticleGibbs(GenericGibbs):
 
     Note
     ----
-    To subclass `ParticleGibbs`, define method `update_theta`, which samples 
+    To subclass `ParticleGibbs`, define method `update_theta`, which samples
     theta given a state trajectory x.
 
     """
 
-    def __init__(self, niter=10, seed=None, verbose=0, ssm_cls=None, 
-                 prior=None, data=None, theta0=None, Nx=100, fk_cls=None, 
+    def __init__(self, niter=10, verbose=0, ssm_cls=None,
+                 prior=None, data=None, theta0=None, Nx=100, fk_cls=None,
                  regenerate_data=False, backward_step=False, store_x=False):
-        GenericGibbs.__init__(self, niter=niter, seed=seed, verbose=verbose, 
+        GenericGibbs.__init__(self, niter=niter, verbose=verbose,
                               ssm_cls=ssm_cls, prior=prior, data=data,
                               theta0=theta0, store_x=store_x)
         self.Nx = Nx
         self.fk_cls = Bootstrap if fk_cls is None else fk_cls
-        self.regenerate_data = regenerate_data 
+        self.regenerate_data = regenerate_data
         self.backward_step = backward_step
 
     def fk_mod(self, theta):
         ssm = self.ssm_cls(**ssp.rec_to_dict(theta))
-        return self.fk_cls(ssm=ssm, data=self.data) 
+        return self.fk_cls(ssm=ssm, data=self.data)
 
     def update_states(self, theta, x):
         fk = self.fk_mod(theta)
@@ -495,4 +482,4 @@ class ParticleGibbs(GenericGibbs):
             new_x = cpf.hist.extract_one_trajectory()
         if self.regenerate_data:
             self.data = fk.ssm.simulate_given_x(new_x)
-        return new_x 
+        return new_x

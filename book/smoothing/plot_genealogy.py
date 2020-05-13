@@ -34,7 +34,7 @@ fkmod = state_space_models.Bootstrap(ssm=ssm, data=data)
 N = 100
 pf = particles.SMC(fk=fkmod, N=N, store_history=True)
 pf.run()
-pf.hist.compute_trajectories()
+Bs = pf.hist.compute_trajectories()
 
 # PLOT
 # ====
@@ -45,7 +45,7 @@ savefigs = False
 plt.figure()
 plt.xlabel('t')
 for n in range(N):
-    plt.plot(pf.hist.B[:, n], 'k')
+    plt.plot(Bs[:, n], 'k')
 if savefigs:
     plt.savefig('genealogy.pdf')
 
