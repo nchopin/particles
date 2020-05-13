@@ -172,7 +172,7 @@ def _dotdotinv(a, b, c):
     >>> c = np.triu(c) @ np.triu(c).T + np.eye(50) / 50
     >>> np.testing.assert_allclose(_dotdotinv(a, b, c), dotdot(a, b, inv(c)))
     """
-    return solve(c, a.dot(b).T, sym_pos=True, overwrite_a=True).T
+    return solve(c, a.dot(b).T, sym_pos=True, overwrite_b=True).T
 
 
 MeanAndCov = collections.namedtuple('MeanAndCov', 'mean cov')
