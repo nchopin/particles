@@ -214,7 +214,7 @@ class Weights(object):
         if lw is not None:
             self.lw[np.isnan(self.lw)] = - np.inf
             self.W = exp_and_normalise(lw)
-            self.ESS  = 1. / np.sum(self.W ** 2)
+            self.ESS = 1. / np.sum(self.W ** 2)
 
     def add(self, delta):
         """Increment weights: lw <-lw + delta.
@@ -436,7 +436,7 @@ def resampling(scheme, W, M=None):
     try:
         return rs_funcs[scheme](W, M=M)
     except KeyError:
-        raise ValueError('%s: not a valid resampling scheme' % name)
+        raise ValueError('%s: not a valid resampling scheme' % scheme)
 
 
 @jit(nopython=True)
@@ -458,7 +458,7 @@ def inverse_cdf(su, W):
     j = 0
     s = W[0]
     M = su.shape[0]
-    A = np.empty(M, np.int32)
+    A = np.empty(M, dtype=np.int64)
     for n in range(M):
         while su[n] > s:
             j += 1
@@ -540,9 +540,9 @@ def systematic(W, M):
 @resampling_scheme
 def residual(W, M):
     N = W.shape[0]
-    A = np.empty(M, 'int')
+    A = np.empty(M, dtype=np.int64)
     MW = M * W
-    intpart = np.floor(MW).astype('int')
+    intpart = np.floor(MW).astype(np.int64)
     sip = np.sum(intpart)
     res = MW - intpart
     sres = M - sip
@@ -558,7 +558,7 @@ def residual(W, M):
 def ssp(W, M):
     N = W.shape[0]
     MW = M * W
-    nb_children = np.floor(MW).astype(np.int32)
+    nb_children = np.floor(MW).astype(np.int64)
     xi = MW - nb_children
     u = random.rand(N - 1)
     i, j = 0, 1
@@ -618,7 +618,7 @@ class MultinomialQueue(object):
             out = self.A[self.j:(self.j + k)]
             self.j += k
         elif k <= self.M:
-            out = np.empty(k, 'int')
+            out = np.empty(k, dtype=np.int64)
             nextra = self.j + k - self.M
             out[:(k - nextra)] = self.A[self.j:]
             self.enqueue()

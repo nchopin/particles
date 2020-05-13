@@ -124,6 +124,16 @@ for i, p in enumerate(dict_prior.keys()):
     plt.xlabel('iter')
     plt.ylabel(p)
 
+# just the MCMC trace of sigmaY^2 for the "biased" algorithm
+plt.figure()
+alg = algos['pmmh']
+th = alg.chain.theta['varY']
+plt.plot(th, 'k')
+plt.xlabel('iter')
+plt.ylabel(r'$\sigma_Y^2$')
+if savefigs:
+    plt.savefig('pmmh_lingauss_biased_trace_sigmaY2.pdf')
+
 # ACFs (of MCMC algorithms)
 nlags = 300
 plt.figure()

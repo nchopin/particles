@@ -6,7 +6,6 @@
 
 import numpy as np
 from numba import jit
-from numba.types import int64
 
 
 def invlogit(x):
@@ -27,7 +26,7 @@ def hilbert_array(xint):
         Hilbert indices
     """
     N, d = xint.shape
-    h = np.zeros(N, int64)
+    h = np.zeros(N, dtype=np.int64)
     for n in range(N):
         h[n] = Hilbert_to_int(xint[n, :])
     return h
@@ -75,7 +74,7 @@ def int_to_Hilbert(i, nD=2):  # Default is the 2D Hilbert walk.
     nChunks = len(index_chunks)
     mask = 2 ** nD - 1
     start, end = initial_start_end(nChunks, nD)
-    coord_chunks = np.zeros(nChunks, int64)
+    coord_chunks = np.zeros(nChunks, dtype=np.int64)
     for j in range(nChunks):
         i = index_chunks[j]
         coord_chunks[j] = gray_encode_travel(start, end, mask, i)
@@ -90,7 +89,7 @@ def Hilbert_to_int(coords):
     nChunks = len(coord_chunks)
     mask = 2 ** nD - 1
     start, end = initial_start_end(nChunks, nD)
-    index_chunks = np.zeros(nChunks, int64)
+    index_chunks = np.zeros(nChunks, dtype=np.int64)
     for j in range(nChunks):
         i = gray_decode_travel(start, end, mask, coord_chunks[j])
         index_chunks[j] = i
@@ -129,7 +128,7 @@ def unpack_index(i, nD):
         nChunks = 1
 
     # nChunks = max(1, int(ceil(log(i + 1, p))))  # of digits
-    chunks = np.zeros(nChunks, dtype=int64)
+    chunks = np.zeros(nChunks, dtype=np.int64)
     for j in range(nChunks - 1, -1, -1):
         chunks[j] = i % p
         i /= p
@@ -179,8 +178,7 @@ def pack_coords(chunks, nD):
 def transpose_bits(srcs, nDests):
     srcs = srcs.copy()  # Make a copy we can modify safely.
     nSrcs = srcs.shape[0]
-    dests = np.zeros((nDests,), dtype=int64)
-    #dests = np.zeros(nDests, dtype='int')
+    dests = np.zeros((nDests,), dtype=np.int64)
     # Break srcs down least-significant bit first, shifting down:
     for j in range(nDests - 1, -1, -1):
         # Put dests together most-significant first, shifting up:
