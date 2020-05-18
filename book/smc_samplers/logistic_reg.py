@@ -12,20 +12,18 @@ for a logistic regression model.
 See below for how to select the dataset. 
 """
 
-from scipy import stats
 import numpy as np
 from numpy import random
 from matplotlib import pyplot as plt
 import seaborn as sb
-# import statsmodels.api as sm
 
 import particles
-from particles import resampling as rs
 from particles import distributions as dists
+from particles import resampling as rs
 from particles import smc_samplers
 
 # raw data
-dataset = 'eeg'
+dataset = 'eeg'  # choose between: sonar, pima, eeg
 
 if dataset == 'sonar':
     raw_data = np.loadtxt('../../datasets/sonar.all-data', delimiter=',', 
@@ -59,7 +57,7 @@ class LogisticRegression(smc_samplers.StaticModel):
 
 # algorithms 
 N =  10 ** 3
-Ms = [5, 10, 15]
+Ms = [5, 10, 15]  # you may want to adapt this to the dataset
 ESSrmin = 0.5
 nruns = 16
 results = [] 
@@ -110,9 +108,7 @@ for M in Ms:
 
 # plots
 #######
-
 savefigs = False  # do you want to save figures as pdfs
-
 plt.style.use('ggplot')
 pal = sb.dark_palette('white', n_colors=3)
 
@@ -122,29 +118,41 @@ pal = sb.dark_palette('white', n_colors=3)
 # plt.hist(diff_est)
 # plt.xlabel('norm constant: ratio estimate minus path sampling estimate')
 
+# Behaviour of ESS for a typical ISIS run (Figure 17.1) 
+typ_run = [r for r in results if r['type']=='ibis' and r['M'] == max(Ms) ][0]
+typ_ess = typ_run.summaries.ESSs
+typ_rs_times = np.nonzero(typ_run.summaries.rs_flags)
+fig, ax = plt.subplots()
+ax[0].plot(typ_ess, 'k')
+ax[0].set(xlabel=r'$t$', ylabel='ESS')
+ax[1].plot(typ_ess, 'ko-')
+ax[1].set(xlabel=r'$t$', ylabel='duration between successive rs')
+if savefigs:
+    plt.savefig(dataset + 'typical_ess_ibis.pdf')
 
+# Box-plots estimate versus number of MCMC steps: marginal likelihood
 plt.figure()
 sb.boxplot(x=[r['M'] for r in results],
            y=[r['out'].logLts[-1] for r in results], 
            hue=[r['type'] for r in results],
            palette=pal)
-plt.xlabel('nb MCMC steps')
+plt.xlabel('number MCMC steps')
 plt.ylabel('marginal likelihood')
 if savefigs:
     plt.savefig(dataset + 'boxplots_marglik_vs_M.pdf')
 
-
+# Box-plots estimate versus number of MCMC steps: post expectation 1st pred
 plt.figure()
 sb.boxplot(x=[r['M'] for r in results],
            y=[r['out'].moments[-1]['mean']['beta'][1] for r in results],
            hue=[r['type'] for r in results], 
            palette=pal)
-plt.xlabel('nb MCMC steps')
+plt.xlabel('number MCMC steps')
 plt.ylabel('posterior expectation first predictor')
 if savefigs:
     plt.savefig(dataset + 'boxplots_postexp1_vs_M.pdf')
 
-
+# variance times M, as a function of M (variance vs CPU trade-off)
 plt.figure()
 cols = {'ibis': 'gray', 'tempering':'black'}
 for i in range(p):
@@ -162,8 +170,8 @@ for i in range(p):
         else:
             plt.plot(Ms, adj_var, color=cols[alg_type], alpha=.8)
 plt.legend()
-plt.xlabel('nb MCMC steps')
-plt.ylabel(r'variance times nb MCMC steps')
+plt.xlabel('number MCMC steps')
+plt.ylabel(r'variance times number MCMC steps')
 if savefigs:
     plt.savefig(dataset + 'postexp_var_vs_M.pdf')
 

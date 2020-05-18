@@ -42,7 +42,7 @@ from particles import distributions as dists
 from particles import state_space_models as ssms
 
 # data 
-data = np.loadtxt('thaldata.csv', delimiter=',')
+data = np.loadtxt('../../datasets/thaldata.csv', delimiter=',')
 T = len(data)
 
 # state space model

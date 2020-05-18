@@ -253,6 +253,11 @@ class LocScaleDist(ProbDist):
         self.scale = scale
         self.dim = dim
 
+    def logpdf(self, x):
+        l = self._logpdf_unfolded(self, x)
+        return l if self.dim == 1 else np.sum(l, axis=-1)
+        # axis=-1 in case x.shape=(d) instead of (N, d)
+
 
 class Normal(LocScaleDist):
     """N(loc, scale^2) distribution.
@@ -261,9 +266,8 @@ class Normal(LocScaleDist):
         return random.normal(loc=self.loc, scale=self.scale,
                              size=self.shape(size))
 
-    def logpdf(self, x):
-        l = stats.norm.logpdf(x, loc=self.loc, scale=self.scale)
-        return l if self.dim == 1 else np.sum(l, axis=1)
+    def _logpdf_unfolded(self, x):
+        return stats.norm.logpdf(x, loc=self.loc, scale=self.scale)
 
     def ppf(self, u):
         return stats.norm.ppf(u, loc=self.loc, scale=self.scale)
@@ -284,9 +288,8 @@ class Logistic(LocScaleDist):
         return random.logistic(loc=self.loc, scale=self.scale,
                                size=self.shape(size))
 
-    def logpdf(self, x):
-        l = stats.logistic.logpdf(x, loc=self.loc, scale=self.scale)
-        return l if self.dim == 1 else np.sum(l, axis=1)
+    def _logpdf_unfolded(self, x):
+        return stats.logistic.logpdf(x, loc=self.loc, scale=self.scale)
 
     def ppf(self, u):
         return stats.logistic.ppf(u, loc=self.loc, scale=self.scale)
@@ -300,9 +303,8 @@ class Laplace(LocScaleDist):
         return random.laplace(loc=self.loc, scale=self.scale,
                               size=self.shape(size))
 
-    def logpdf(self, x):
-        l = stats.laplace.logpdf(x, loc=self.loc, scale=self.scale)
-        return l if self.dim == 1 else np.sum(l, axis=1)
+    def _logpdf_unfolded(self, x):
+        return stats.laplace.logpdf(x, loc=self.loc, scale=self.scale)
 
     def ppf(self, u):
         return stats.laplace.ppf(u, loc=self.loc, scale=self.scale)
