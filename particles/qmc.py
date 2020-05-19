@@ -29,6 +29,8 @@ try:
 except ImportError:
     warnings.warn(qmc_warning)
 
+max_int_32 = np.iinfo(np.int32).max
+
 
 def sobol(N, dim, scrambled=1):
     """ Sobol sequence.
@@ -62,8 +64,8 @@ def sobol(N, dim, scrambled=1):
     start over (i.e.  we re-generate another random seed, and compute a new
     scrambled Sobol point set.
     """
-    while(True):
-        seed = np.random.randint(2**32)
+    while True:
+        seed = np.random.randint(max_int_32)
         out = lowdiscrepancy.sobol(N, dim, scrambled, seed, 1, 0)
         if np.all(out < 1.) and np.all(out > 0.):
             return out

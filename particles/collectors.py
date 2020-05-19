@@ -188,13 +188,18 @@ time by the ``fetch`` method.
 
 from __future__ import division, print_function
 
+from numpy import random
+import numpy as np
+
 from particles import resampling as rs
+
 
 class Summaries(object):
     """Class to store and update summaries.
 
     Attribute ``summaries`` of ``SMC`` objects is an instance of this class.
     """
+
     def __init__(self, **sum_options):
         # Python magic at its finest
         col_classes = {cls.summary_name: cls
@@ -214,6 +219,7 @@ class Summaries(object):
         for s in self._collectors:
             s.collect(smc)
 
+
 class Collector(object):
     """Base class for collectors.
 
@@ -223,6 +229,7 @@ class Collector(object):
         * implement method `fetch(self, smc)` which fetches (in object smc)
           the summary that must be collected.
     """
+
     @property
     def summary(self):
         return getattr(self, self.summary_name)
@@ -238,29 +245,38 @@ class Collector(object):
     def collect(self, smc):
         self.summary.append(self.fetch(smc))
 
+
 class ESSCollector(Collector):
     summary_name = 'ESSs'
+
     def fetch(self, smc):
         return smc.wgts.ESS
 
+
 class LogLikCollector(Collector):
     summary_name = 'logLts'
+
     def fetch(self, smc):
         return smc.logLt
 
+
 class RSFlagsCollector(Collector):
     summary_name = 'rs_flags'
+
     def fetch(self, smc):
         return smc.rs_flag
+
 
 class MomentsCollector(Collector):
     """Collect the moments (weighted mean and variance) of the particles, or
     some other moment (as specified by function func).
     """
     summary_name = 'moments'
+
     def fetch(self, smc):
         f = smc.fk.default_moments if self.arg is None else self.arg
         return f(smc.W, smc.X)
+
 
 class FixedLagSmoother(Collector):
     """Compute some function of fixed-lag trajectories; must be used in
@@ -268,14 +284,17 @@ class FixedLagSmoother(Collector):
     see module smoothing).
     """
     summary_name = 'fixed_lag_smooth'
+
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
         Xs = [X[B[i, :]] for i, X in enumerate(smc.hist.X)]
         return self.arg(smc.W, Xs)
 
+
 class OnlineSmootherMixin(object):
     """Mix-in for on-line smoothing algorithms.
     """
+
     def fetch(self, smc):
         if smc.t == 0:
             self.Phi = smc.fk.add_func(0, None, smc.X)
@@ -296,11 +315,13 @@ class OnlineSmootherMixin(object):
         """
         pass
 
+
 class NaiveOnLineSmoother(Collector, OnlineSmootherMixin):
     summary_name = 'naive_online_smooth'
 
     def update(self, smc):
         self.Phi = self.Phi[smc.A] + smc.fk.add_func(smc.t, smc.Xp, smc.X)
+
 
 class ON2OnlineSmoother(Collector, OnlineSmootherMixin):
     summary_name = 'ON2_online_smooth'
@@ -318,6 +339,7 @@ class ON2OnlineSmoother(Collector, OnlineSmootherMixin):
     def save_for_later(self, smc):
         self.prev_X = smc.X
         self.prev_logw = smc.wgts.lw
+
 
 class ParisOnlineSmoother(Collector, OnlineSmootherMixin):
     summary_name = 'paris'
@@ -338,11 +360,11 @@ class ParisOnlineSmoother(Collector, OnlineSmootherMixin):
                     a = mq.dequeue(1)
                     nprop += 1
                     lp = (smc.fk.logpt(smc.t, self.prev_X[a], smc.X[n])
-                            - smc.fk.upper_bound_log_pt(t))
+                          - smc.fk.upper_bound_log_pt(smc.t))
                     if np.log(random.rand()) < lp:
                         break
                 As[m] = a
-            mod_Phi = (self.prev_Phi[As]
+            mod_Phi = (prev_Phi[As]
                        + smc.fk.add_func(smc.t, self.prev_X[As], smc.X[n]))
             self.Phi[n] = np.average(mod_Phi, axis=0)
         self.nprop.append(nprop)

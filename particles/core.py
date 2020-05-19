@@ -97,20 +97,22 @@ See the documentation of `SMC` for more details.
 
 from __future__ import division, print_function
 
-import numpy as np
-import numpy.random as random
+from functools import wraps
 
-from particles import utils
-from particles import resampling as rs
+import numpy as np
+
 from particles import collectors
-from particles import smoothing
-from particles import qmc
 from particles import hilbert
+from particles import qmc
+from particles import resampling as rs
+from particles import smoothing
+from particles import utils
 
 err_msg_missing_trans = """
     Feynman-Kac class %s is missing method logpt, which provides the log-pdf
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
+
 
 class FeynmanKac(object):
     """Abstract base class for Feynman-Kac models.
@@ -140,6 +142,7 @@ class FeynmanKac(object):
     documentation.
     """
     mutate_only_after_resampling = False
+
     # by default, we mutate at every time t
 
     def __init__(self, T):
@@ -286,7 +289,7 @@ class SMC(object):
 
         # initialisation
         self.t = 0
-        self.rs_flag = False # no resampling at time 0, by construction
+        self.rs_flag = False  # no resampling at time 0, by construction
         self.logLt = 0.
         self.wgts = rs.Weights()
         self.aux = None
@@ -358,7 +361,7 @@ class SMC(object):
         self.A = self.h_order[rs.inverse_cdf(u[tau, 0], self.aux.W[self.h_order])]
         self.Xp = self.X[self.A]
         v = u[tau, 1:].squeeze()
-        # v is (N,) if du=1, (N,d) otherwise
+        #  v is (N,) if du=1, (N,d) otherwise
         self.X = self.fk.Gamma(self.t, self.Xp, v)
         self.reset_weights()
 
@@ -398,7 +401,7 @@ class SMC(object):
         self.t += 1
 
     def next(self):
-        return self.__next__()  # Python 2 compatibility
+        return self.__next__()  #  Python 2 compatibility
 
     def __iter__(self):
         return self
@@ -424,8 +427,24 @@ class SMC(object):
             pass
 
 
-
 ####################################################
+
+
+class _pickleable_f(object):
+
+    def __init__(self, fun):
+        self.fun = fun
+
+    def __call__(self, **kwargs):
+        pf = SMC(**kwargs)
+        pf.run()
+        return self.fun(pf)
+
+
+@_pickleable_f
+def _identity(x):
+    return x
+
 
 def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     """Run SMC algorithms in parallel, for different combinations of parameters.
@@ -493,12 +512,10 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     --------
     `utils.multiplexer`: for more details on the syntax.
     """
-    def f(**args):
-        pf = SMC(**args)
-        pf.run()
-        return out_func(pf)
+
 
     if out_func is None:
-        out_func = lambda x: x
-    return utils.multiplexer(f=f, nruns=nruns, nprocs=nprocs, seeding=True,
+        return utils.multiplexer(f=_identity, nruns=nruns, nprocs=nprocs, seeding=True,
+                                 **args)
+    return utils.multiplexer(f=_pickleable_f(out_func), nruns=nruns, nprocs=nprocs, seeding=True,
                              **args)

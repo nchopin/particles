@@ -72,12 +72,16 @@ therefore be used as keyword arguments for function f):
 
 from __future__ import division, print_function
 
-import copy
 import functools
 import itertools
 import multiprocessing
-from numpy import random
 import time
+
+import numpy as np
+from numpy import random
+
+MAX_INT_32 = np.iinfo(np.int32).max
+
 
 def timer(method):
     @functools.wraps(method)
@@ -86,7 +90,9 @@ def timer(method):
         out = method(self, **kwargs)
         self.cpu_time = time.perf_counter() - starting_time
         return out
+
     return timed_method
+
 
 def cartesian_lists(d):
     """
@@ -186,24 +192,22 @@ def distinct_seeds(k):
     seeds = []
     for _ in range(k):
         while True:
-            s = random.randint(2**32 - 1)
+            s = random.randint(MAX_INT_32)
             if s not in seeds:
                 break
         seeds.append(s)
     return seeds
 
 
-def seeder(func):
-    """Decorator to seed the pseudo-random generator before evaluating a
-    function.
-    """
-    @functools.wraps(func)
-    def seeded_func(**kwargs):
+class seeder(object):
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self, **kwargs):
         seed = kwargs.pop('seed', None)
         if seed:
             random.seed(seed)
-        return func(**kwargs)
-    return seeded_func
+        return self.func(**kwargs)
 
 
 def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
