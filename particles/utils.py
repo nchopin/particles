@@ -80,7 +80,7 @@ import time
 import numpy as np
 from numpy import random
 
-max_int_32 = np.iinfo(np.int32).max
+MAX_INT_32 = np.iinfo(np.int32).max
 
 
 def timer(method):
@@ -192,7 +192,7 @@ def distinct_seeds(k):
     seeds = []
     for _ in range(k):
         while True:
-            s = random.randint(max_int_32)
+            s = random.randint(MAX_INT_32)
             if s not in seeds:
                 break
         seeds.append(s)
