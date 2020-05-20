@@ -12,9 +12,9 @@ for a logistic regression model.
 See below for how to select the dataset. 
 """
 
+from matplotlib import pyplot as plt
 import numpy as np
 from numpy import random
-from matplotlib import pyplot as plt
 import seaborn as sb
 
 import particles
@@ -53,7 +53,7 @@ class LogisticRegression(smc_samplers.StaticModel):
     def logpyt(self, theta, t):
         # log-likelihood factor t, for given theta
         lin = np.matmul(theta['beta'], data[t, :])
-        return - np.log(1. + np.exp(-lin))
+        return - np.log1p(np.exp(-lin))
 
 # algorithms 
 N =  10 ** 3
@@ -128,7 +128,18 @@ ax[0].set(xlabel=r'$t$', ylabel='ESS')
 ax[1].plot(typ_ess, 'ko-')
 ax[1].set(xlabel=r'$t$', ylabel='duration between successive rs')
 if savefigs:
-    plt.savefig(dataset + 'typical_ess_ibis.pdf')
+    plt.savefig(dataset + '_typical_ess_ibis.pdf')
+
+# nr evals vs M for both algorithms
+plt.figure()
+sb.boxplot(x=[r['M'] for r in results],
+           y=[r['n_eval'] for r in results], 
+           hue=[r['type'] for r in results],
+           palette=pal)
+plt.xlabel('number MCMC steps')
+plt.ylabel('number likelihood evaluations')
+if savefigs:
+    plt.savefig(dataset + '_boxplots_nevals_vs_M.pdf')
 
 # Box-plots estimate versus number of MCMC steps: marginal likelihood
 plt.figure()
@@ -139,7 +150,7 @@ sb.boxplot(x=[r['M'] for r in results],
 plt.xlabel('number MCMC steps')
 plt.ylabel('marginal likelihood')
 if savefigs:
-    plt.savefig(dataset + 'boxplots_marglik_vs_M.pdf')
+    plt.savefig(dataset + '_boxplots_marglik_vs_M.pdf')
 
 # Box-plots estimate versus number of MCMC steps: post expectation 1st pred
 plt.figure()
@@ -150,7 +161,7 @@ sb.boxplot(x=[r['M'] for r in results],
 plt.xlabel('number MCMC steps')
 plt.ylabel('posterior expectation first predictor')
 if savefigs:
-    plt.savefig(dataset + 'boxplots_postexp1_vs_M.pdf')
+    plt.savefig(dataset + '_boxplots_postexp1_vs_M.pdf')
 
 # variance times M, as a function of M (variance vs CPU trade-off)
 plt.figure()
@@ -173,6 +184,6 @@ plt.legend()
 plt.xlabel('number MCMC steps')
 plt.ylabel(r'variance times number MCMC steps')
 if savefigs:
-    plt.savefig(dataset + 'postexp_var_vs_M.pdf')
+    plt.savefig(dataset + '_postexp_var_vs_M.pdf')
 
 

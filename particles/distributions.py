@@ -81,18 +81,8 @@ A quick example::
 Multivariate distributions
 ==========================
 
-Some of the univariate distributions actually have a `dim` keyword that
-allows to define multivariate distributions::
-
-    d = dists.Normal(loc=np.array([3., 2.]), dim=2)
-    d.rvs(size=30)
-
-The distribution above has two independent components, with respective means 3
-and 2 (and variance 1 for both components). Currently the distributions that
-implement this are the distributions parameterised by location and scale
-(Normal, Laplace, Logistic). 
-
-The module also implements multivariate Normal distributions; see `MvNormal`.
+The module implements one multivariate distribution class, for Gaussian 
+distributions; see `MvNormal`.
 
 Furthermore, the module provides two ways to construct multivariate
 distributions from a collection of univariate distributions:
@@ -248,15 +238,9 @@ class ProbDist(object):
 class LocScaleDist(ProbDist):
     """Base class for location-scale distributions.
     """
-    def __init__(self, loc=0., scale=1., dim=1):
+    def __init__(self, loc=0., scale=1.):
         self.loc = loc
         self.scale = scale
-        self.dim = dim
-
-    def logpdf(self, x):
-        l = self._logpdf_unfolded(self, x)
-        return l if self.dim == 1 else np.sum(l, axis=-1)
-        # axis=-1 in case x.shape=(d) instead of (N, d)
 
 
 class Normal(LocScaleDist):
@@ -266,7 +250,7 @@ class Normal(LocScaleDist):
         return random.normal(loc=self.loc, scale=self.scale,
                              size=self.shape(size))
 
-    def _logpdf_unfolded(self, x):
+    def logpdf(self, x):
         return stats.norm.logpdf(x, loc=self.loc, scale=self.scale)
 
     def ppf(self, u):
@@ -288,7 +272,7 @@ class Logistic(LocScaleDist):
         return random.logistic(loc=self.loc, scale=self.scale,
                                size=self.shape(size))
 
-    def _logpdf_unfolded(self, x):
+    def logpdf(self, x):
         return stats.logistic.logpdf(x, loc=self.loc, scale=self.scale)
 
     def ppf(self, u):
@@ -303,7 +287,7 @@ class Laplace(LocScaleDist):
         return random.laplace(loc=self.loc, scale=self.scale,
                               size=self.shape(size))
 
-    def _logpdf_unfolded(self, x):
+    def logpdf(self, x):
         return stats.laplace.logpdf(x, loc=self.loc, scale=self.scale)
 
     def ppf(self, u):
@@ -883,29 +867,17 @@ class IndepProd(ProbDist):
         return np.stack([d.ppf(u[..., i]) for i, d in enumerate(self.dists)],
                         axis=1)
 
-class Prod(IndepProd):
-    """Product of distributions. 
+def IID(law, k):
+    """Joint distribution of k iid (independent and identically distributed) variables. 
 
-    Allows for conditional distributions. WORK IN PROGRESS.
+    Parameters
+    ----------
+    law:  ProbDist object
+        the univariate distribution of each component
+    k: int (>= 2)
+        number of components
     """
-    def _cond_law(self, dist, x):
-        return dist(x) if callable(dist) else dist
-
-    def logpdf(self, x):
-        return sum([self._cond_law(d, x).logpdf(x[..., i]) 
-                    for i, d in enumerate(self.dists)])
-
-    def rvs(self, size=1): # TODO what if size=None? 
-        x = np.empty(self.shape(size))
-        for i, d in self.dists:
-            x[..., i] = self._cond_law(d, x).rvs(size=size)
-        return x
-
-    def ppf(self, u):
-        x = np.empty(u.shape)
-        for i, d in self.dists:
-            x[..., i] = self._cond_law(d, x).ppf(u[..., i])
-        return x
+    return IndepProd(*[law for _ in range(k)])
 
 ###################################
 # structured array distributions
