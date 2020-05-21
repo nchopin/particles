@@ -53,7 +53,7 @@ class LogisticRegression(smc_samplers.StaticModel):
     def logpyt(self, theta, t):
         # log-likelihood factor t, for given theta
         lin = np.matmul(theta['beta'], data[t, :])
-        return - np.log1p(np.exp(-lin))
+        return - np.logaddexp(0., -lin)
 
 # algorithms 
 N =  10 ** 3
@@ -120,12 +120,12 @@ pal = sb.dark_palette('white', n_colors=3)
 
 # Behaviour of ESS for a typical ISIS run (Figure 17.1) 
 typ_run = [r for r in results if r['type']=='ibis' and r['M'] == max(Ms) ][0]
-typ_ess = typ_run.summaries.ESSs
-typ_rs_times = np.nonzero(typ_run.summaries.rs_flags)
-fig, ax = plt.subplots()
+typ_ess = typ_run['out'].ESSs
+typ_rs_times = np.nonzero(typ_run['out'].rs_flags)[0]
+fig, ax = plt.subplots(1, 2)
 ax[0].plot(typ_ess, 'k')
 ax[0].set(xlabel=r'$t$', ylabel='ESS')
-ax[1].plot(typ_ess, 'ko-')
+ax[1].plot(typ_rs_times[:-1], np.diff(typ_rs_times), 'ko-')
 ax[1].set(xlabel=r'$t$', ylabel='duration between successive rs')
 if savefigs:
     plt.savefig(dataset + '_typical_ess_ibis.pdf')

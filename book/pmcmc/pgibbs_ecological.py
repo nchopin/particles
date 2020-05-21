@@ -111,7 +111,7 @@ class PGibbs(mcmc.ParticleGibbs):
         return new_theta
 
 algos = OrderedDict()
-niter = 10 # TODO 10**5
+niter = 10 ** 5
 burnin = int(niter / 10)
 for name, opt in zip(['pg-back', 'pg'], [True, False]):
     algos[name] = PGibbs(ssm_cls=ssm_cls, data=data, prior=prior, Nx=50, 
