@@ -111,7 +111,7 @@ class PGibbs(mcmc.ParticleGibbs):
         return new_theta
 
 algos = OrderedDict()
-niter = 10 ** 5
+niter = 10 # TODO 10**5
 burnin = int(niter / 10)
 for name, opt in zip(['pg-back', 'pg'], [True, False]):
     algos[name] = PGibbs(ssm_cls=ssm_cls, data=data, prior=prior, Nx=50, 
@@ -143,12 +143,14 @@ def update_rate(x):
 savefigs = False  # toggle to True to save figures as pdfs 
 plt.style.use('ggplot')
 colors = {'pg-back': 'black', 'pg': 'gray'}
+linestyles = {'pg-back': '-', 'pg': '--'}
 
 # Update rates of PG samplers
 plt.figure()
 for alg_name, alg in algos.items():
     plt.plot(update_rate(alg.chain.x[burnin:]), label=alg_name, linewidth=2, 
-             color=colors[alg_name], alpha=0.9)
+             color=colors[alg_name], linestyle=linestyles[alg_name])
+    # TODO removed alpha=0.9
 plt.axis([0, data.shape[0], 0., 1.0])
 plt.xlabel('t')
 plt.ylabel('update rate')
@@ -202,7 +204,8 @@ for i, p in enumerate(list(dict_prior.keys()) + ['x_0']):
     for alg_name, alg in algos.items():
         th = alg.chain.x[:, 0] if p=='x_0' else alg.chain.theta[p]
         acf_th = acf(th[burnin:], nlags=nlags, fft=True)
-        plt.plot(acf_th, label=alg_name, color=colors[alg_name])
+        plt.plot(acf_th, label=alg_name, color=colors[alg_name],
+                linestyle=linestyles[alg_name])
     plt.axis([0, nlags, -0.03, 1.])
     plt.xlabel('lag')
     plt.ylabel(p)
