@@ -208,7 +208,7 @@ for i in range(T - 1):
 Cinv = M / (sigma0**2)
 
 algos['marginal'] = Marginal(ssm_cls=ssm_cls, data=data, prior=prior,
-                             theta0=theta0, niter=10**1, store_x=True, #TODO
+                             theta0=theta0, niter=10**6, store_x=True,
                              verbose=10, delta=1., Cinv=Cinv)
 
 for alg_name, alg in algos.items():
