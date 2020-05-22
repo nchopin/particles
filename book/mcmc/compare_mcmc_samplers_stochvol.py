@@ -58,7 +58,7 @@ ssm = ssm_cls(mu=mu0, sigma=sigma0, rho=rho0)
 
 
 # (QMC-)FFBS as a reference
-N = 3 # TODO 3000
+N = 3000 
 tic = time.time()
 pf = particles.SMC(fk=state_space_models.Bootstrap(ssm=ssm, data=data), N=N, qmc=True,
                    store_history=True)
