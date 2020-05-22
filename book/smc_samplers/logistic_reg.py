@@ -26,12 +26,20 @@ from particles import smc_samplers
 dataset = 'eeg'  # choose between: sonar, pima, eeg
 
 if dataset == 'sonar':
+    N = 10 ** 4
+    Ms = [10, 20, 30, 40, 50, 60]
     raw_data = np.loadtxt('../../datasets/sonar.all-data', delimiter=',', 
                           converters={60: lambda x: 1 if x ==b'R' else 0})
 elif dataset == 'pima': 
-    raw_data = np.loadtxt('../../datasets/pima-indians-diabetes.data',delimiter=',')
+    N = 10 ** 3
+    Ms = [1, 3, 5]
+    raw_data = np.loadtxt('../../datasets/pima-indians-diabetes.data',
+                          delimiter=',')
 elif dataset == 'eeg': 
-    raw_data = np.loadtxt('../../datasets/eeg_eye_state.data', delimiter=',', skiprows=19)
+    N = 10 ** 3
+    Ms = [1, 3, 5, 7, 10, 15, 20]
+    raw_data = np.loadtxt('../../datasets/eeg_eye_state.data', 
+                          delimiter=',', skiprows=19)
 
 T, p = raw_data.shape
 data = np.empty((T, p))
@@ -39,7 +47,7 @@ response = 2 * raw_data[:, -1] - 1  # 0/1 -> -1/1
 preds = raw_data[:, :-1]
 
 # normalise predictors (mean=0, sd=0.5)
-data[:, 0] = 1. #intercept
+data[:, 0] = 1. # intercept
 data[:, 1:] = 0.5 * (preds - np.mean(preds, axis=0)) / np.std(preds, axis=0)
 
 # flip signs according to response 
@@ -56,8 +64,7 @@ class LogisticRegression(smc_samplers.StaticModel):
         return - np.logaddexp(0., -lin)
 
 # algorithms 
-N =  10 ** 3
-Ms = [5, 10, 15]  # you may want to adapt this to the dataset
+# N and values of M set above according to dataset
 ESSrmin = 0.5
 nruns = 16
 results = [] 
@@ -110,7 +117,7 @@ for M in Ms:
 #######
 savefigs = False  # do you want to save figures as pdfs
 plt.style.use('ggplot')
-pal = sb.dark_palette('white', n_colors=3)
+pal = sb.dark_palette('white', n_colors=2) 
 
 # plt.figure()
 # diff_est = [(r['out'].logLt - r['path_sampling'])
@@ -118,17 +125,26 @@ pal = sb.dark_palette('white', n_colors=3)
 # plt.hist(diff_est)
 # plt.xlabel('norm constant: ratio estimate minus path sampling estimate')
 
-# Behaviour of ESS for a typical ISIS run (Figure 17.1) 
-typ_run = [r for r in results if r['type']=='ibis' and r['M'] == max(Ms) ][0]
+# Behaviour for a typical ISIS run (Figure 17.1) 
+typMS = {'eeg': 5, 'pima': 3, 'sonar': 50}
+typM = typMS[dataset]
+typ_run = [r for r in results if r['type']=='ibis' and r['M'] == typM][0]
 typ_ess = typ_run['out'].ESSs
 typ_rs_times = np.nonzero(typ_run['out'].rs_flags)[0]
-fig, ax = plt.subplots(1, 2)
-ax[0].plot(typ_ess, 'k')
-ax[0].set(xlabel=r'$t$', ylabel='ESS')
-ax[1].plot(typ_rs_times[:-1], np.diff(typ_rs_times), 'ko-')
-ax[1].set(xlabel=r'$t$', ylabel='duration between successive rs')
+
+# typical ESS (left panel of Fig 17.1) 
+fig, ax = plt.subplots()
+ax.plot(typ_ess, 'k')
+ax.set(xlabel=r'$t$', ylabel='ESS')
 if savefigs:
     plt.savefig(dataset + '_typical_ess_ibis.pdf')
+
+# typical evolution of resampling times (right panel of Figure 17.1)
+fig, ax = plt.subplots()
+ax.plot(typ_rs_times[:-1], np.diff(typ_rs_times), 'ko-')
+ax.set(xlabel=r'$t$', ylabel='duration between successive rs')
+if savefigs:
+    plt.savefig(dataset + '_typical_rs_times.pdf')
 
 # nr evals vs M for both algorithms
 plt.figure()
@@ -185,5 +201,4 @@ plt.xlabel('number MCMC steps')
 plt.ylabel(r'variance times number MCMC steps')
 if savefigs:
     plt.savefig(dataset + '_postexp_var_vs_M.pdf')
-
 

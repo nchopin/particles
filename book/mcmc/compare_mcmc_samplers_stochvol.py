@@ -58,7 +58,7 @@ ssm = ssm_cls(mu=mu0, sigma=sigma0, rho=rho0)
 
 
 # (QMC-)FFBS as a reference
-N = 3000
+N = 3 # TODO 3000
 tic = time.time()
 pf = particles.SMC(fk=state_space_models.Bootstrap(ssm=ssm, data=data), N=N, qmc=True,
                    store_history=True)
@@ -129,10 +129,10 @@ class Gibbs_SV(SVmixin, mcmc.GenericGibbs):
 
 class Marginal(mcmc.GenericGibbs):
 
-    def __init__(self, niter=10, seed=None, verbose=0, theta0=None,
+    def __init__(self, niter=10, verbose=0, theta0=None,
                  ssm_cls=None, prior=None, data=None, store_x=False,
                  delta=0.3, Cinv=None):
-        mcmc.GenericGibbs.__init__(self, niter=niter, seed=seed,
+        mcmc.GenericGibbs.__init__(self, niter=niter, 
                                    verbose=verbose, theta0=theta0,
                                    ssm_cls=ssm_cls, prior=prior, data=data,
                                    store_x=store_x)
@@ -208,7 +208,7 @@ for i in range(T - 1):
 Cinv = M / (sigma0**2)
 
 algos['marginal'] = Marginal(ssm_cls=ssm_cls, data=data, prior=prior,
-                             theta0=theta0, niter=10**6, store_x=True,
+                             theta0=theta0, niter=10**1, store_x=True, #TODO
                              verbose=10, delta=1., Cinv=Cinv)
 
 for alg_name, alg in algos.items():
@@ -248,13 +248,15 @@ if savefigs:
 plt.figure()
 nlags = 160
 cols = {'Gibbs': 'gray', 'marginal': 'black'}
+lss = {'Gibbs': '--', 'marginal': '-'}
 for t in [0, 49, 99, 149, 199]:
     for alg_name, alg in algos.items():
         if isinstance(alg, mcmc.MCMC):
             burnin = int(alg.niter / 10)
             acf_x = acf(alg.chain.x[burnin:, t], nlags=nlags, fft=True)
             lbl = '_' if t > 0 else alg_name  # set label only once
-            plt.plot(acf_x, label=lbl, color=cols[alg_name])
+            plt.plot(acf_x, label=lbl, color=cols[alg_name],
+                     linestyle=lss[alg_name], linewidth=2)
 plt.axis([0, nlags, -0.03, 1.])
 plt.xlabel('lag')
 plt.ylabel('ACF')
