@@ -137,7 +137,8 @@ if __name__ == '__main__':
         plt.plot(Ns, [np.mean(np.array([r['cpu'] for r in results
                                         if r['method'] == method and r['N'] == N]))
                       for N in Ns], 
-                 label=pretty_names[method], linewidth=3, linestyle=ls)
+                 label=pretty_names[method], linewidth=3,
+                 linestyle=lsts[method])
     plt.ylabel('cpu time (s)')
     plt.legend(loc=2)
     if savefigs:
