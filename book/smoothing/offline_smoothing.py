@@ -81,7 +81,8 @@ if __name__ == '__main__':
     # FK model for information filter: same model with data in reverse
     fk_info = ssms.Bootstrap(ssm=my_ssm, data=data[::-1])
 
-    Ns = [200, 800, 3200, 12800]
+    nruns = 100  # run each algo 100 times
+    Ns = [50, 200, 800, 3200, 12800]
     methods = ['FFBS_ON', 'FFBS_ON2', 'two-filter_ON',
                'two-filter_ON_prop', 'two-filter_ON2']
 
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     log_gamma_func = partial(log_gamma, mu=mu0, phi=phi0, sigma=sigma0)
     results = utils.multiplexer(f=smoothing_worker, method=methods, N=Ns,
                                 fk=fkmod, fk_info=fk_info, add_func=add_func,
-                                log_gamma=log_gamma_func, nprocs=0, nruns=10)
+                                log_gamma=log_gamma_func, nprocs=0, nruns=nruns)
 
     # Plots
     # =====
@@ -99,22 +100,24 @@ if __name__ == '__main__':
     sb.set_palette(palette)
     rc('text', usetex=True)  # latex
 
+    pretty_names = {}
     ON = r'$\mathcal{O}(N)$'
     ON2 = r'$\mathcal{O}(N^2)$'
-    pretty_names = {}
-    pretty_names['FFBS_ON'] = ON + r' FFBS'
     pretty_names['FFBS_ON2'] = ON2 + r' FFBS'
-    pretty_names['two-filter_ON'] = ON + r' two-filter, basic proposal'
+    pretty_names['FFBS_ON'] = 'FFBS-reject'
     pretty_names['two-filter_ON2'] = ON2 + r' two-filter'
+    pretty_names['two-filter_ON'] = ON + r' two-filter, basic proposal'
     pretty_names['two-filter_ON_prop'] = ON + r' two-filter, better proposal'
 
     # box-plot of est. errors vs N and method (Figure 11.4)
     plt.figure()
     plt.xlabel(r'$N$')
     plt.ylabel('smoothing estimate')
-    sb.boxplot(y=[np.mean(r['est']) for r in results],
-               x=[r['N'] for r in results],
-               hue=[pretty_names[r['method']] for r in results],
+    # remove FFBS_ON, since estimate has the same distribution as for FFBS ON2
+    res_nofon = [r for r in results if r['method'] != 'FFBS_ON']
+    sb.boxplot(y=[np.mean(r['est']) for r in res_nofon],
+               x=[r['N'] for r in res_nofon],
+               hue=[pretty_names[r['method']] for r in res_nofon],
                palette=palette,
                flierprops={'marker': 'o',
                            'markersize': 4,
