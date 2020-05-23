@@ -70,7 +70,7 @@ ll_qmc  = [loglik([mu, rho, sigma], qmc=True) for sigma in sigmas]
 
 # PLOT
 # ====
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 
 plt.figure()
 plt.style.use('seaborn-dark')

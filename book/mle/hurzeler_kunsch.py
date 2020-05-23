@@ -79,7 +79,7 @@ plt.xlabel('sigma')
 plt.ylabel('ESS')
 plt.legend(loc=2)
 
-savefigs = False  # change this if you want to save the plot as a PDF
+savefigs = True  # False if you don't want to save plots as pdfs
 if savefigs:
     plt.savefig('hurzeler_kunsch.pdf')
 

@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
     # Plots
     # =====
-    savefigs = False  # change this to save figs as PDFs
-    plt.rc('text', usetex=True) #to force tex rendering 
+    savefigs = True  # False if you don't want to save plots as pdfs
+    plt.rc('text', usetex=True)  # to force tex rendering 
     plt.style.use('ggplot')
 
     plt.figure()

@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     # Plots
     # =====
-    savefigs = True  #  toggle this to save the plots as PDFs
+    savefigs = True  # False if you don't want to save plots as pdfs
     plt.style.use('ggplot')
     colors = {'ON2': 'gray', 'naive': 'black'}
 

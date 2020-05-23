@@ -223,7 +223,7 @@ print('Acceptance rate of marginal sampler: %f' % ar)
 
 # PLOTS
 # =====
-savefigs = False  # change this to save figs as PDFs
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 
 # compare marginals of states

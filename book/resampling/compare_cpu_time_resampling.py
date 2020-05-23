@@ -86,7 +86,7 @@ for N in Ns:
 
 # PLOT
 # ====
-savefigs = False  # change this to save the plots as PDFs 
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 sb.set_palette(sb.dark_palette("lightgray", n_colors=4, reverse=True))
 

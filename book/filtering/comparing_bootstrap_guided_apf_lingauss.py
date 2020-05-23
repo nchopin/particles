@@ -48,7 +48,7 @@ results = particles.multiSMC(fk=models, N=N, nruns=1000, moments=True)
 # PLOTS
 # =====
 plt.style.use('ggplot')
-savefigs = False  # whether you want to save figs as pdfs 
+savefigs = True  # False if you don't want to save plots as pdfs
 
 # black and white 
 sb.set_palette(sb.dark_palette("lightgray", n_colors=len(models), 

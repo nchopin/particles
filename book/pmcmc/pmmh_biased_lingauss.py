@@ -82,7 +82,7 @@ for alg_name, alg in algos.items():
 # Plots
 #######
 plt.style.use('ggplot')
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 
 # compare marginals of varY
 plt.figure()

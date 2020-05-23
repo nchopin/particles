@@ -115,7 +115,7 @@ for M in Ms:
 
 # plots
 #######
-savefigs = False  # do you want to save figures as pdfs
+savefigs = True  # do you want to save figures as pdfs
 plt.style.use('ggplot')
 pal = sb.dark_palette('white', n_colors=2) 
 

@@ -68,7 +68,7 @@ runs = particles.multiSMC(fk=fks, N=N, moments=qtiles, verbose=True,
 import warnings
 warnings.filterwarnings("ignore")  # disable silly matplotlib warnings
 
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 colors = {'smc2': 'gray', 'smc2_qmc': 'black'}
 prefix = 'smc2_sv_lvg_N%i' % N

@@ -52,7 +52,7 @@ for i in range(ntrials):
 
 # PLOTS
 # =====
-savefigs = False
+savefigs = True
 plt.style.use('ggplot')
 sb.set_palette(sb.dark_palette("lightgray", n_colors=4, reverse=True))
 

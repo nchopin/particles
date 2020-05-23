@@ -48,7 +48,7 @@ ll.shape = (ng, ng)
 
 # PLOT
 # ====
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('default')
 plt.rc('text', usetex=True)
 

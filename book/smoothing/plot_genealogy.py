@@ -40,7 +40,7 @@ Bs = pf.hist.compute_trajectories()
 # ====
 # sb.set_palette("dark")
 plt.style.use('ggplot')
-savefigs = False 
+savefigs = True  # False if you don't want to save plots as pdfs
 
 plt.figure()
 plt.xlabel('t')

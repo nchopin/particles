@@ -180,7 +180,7 @@ save_results({'rhos_ga': rhos_ga, 'sig2s_ga': sig2s_ga})
 # PLOTS
 #######
 plt.style.use('ggplot')
-savefigs = True
+savefigs = True  # False if you don't want to save plots as pdfs
 
 # contour plots 
 rho_mg, sig2_mg = np.meshgrid(rhos, sig2s)

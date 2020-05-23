@@ -144,7 +144,7 @@ def update_rate(x):
 
 # PLOTS
 # =====
-savefigs = False  # toggle to True to save figures as pdfs 
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 colors = {'pg-back': 'black', 'pg': 'gray'}
 linestyles = {'pg-back': '-', 'pg': '--'}

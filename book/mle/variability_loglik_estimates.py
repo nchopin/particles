@@ -44,7 +44,7 @@ plt.plot(data)
 plt.title('data')
 plt.xlabel('t')
 
-savefigs = False  # change this if you want to save the plots as PDFs
+savefigs = True  # False if you don't want to save plots as pdfs
 
 # N fixed, log-error as a function of t
 # =====================================
