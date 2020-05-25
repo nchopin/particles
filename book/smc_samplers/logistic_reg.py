@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
-Numerical experiment of Chapter 17 (SMC samplers). 
+Numerical experiment of Chapter 17 (SMC samplers).
 
-Compare IBIS and SMC tempering for approximating: 
+Compare IBIS and SMC tempering for approximating:
     * the normalising constant (marginal likelihood)
-    * the posterior expectation of the p coefficients 
-for a logistic regression model. 
+    * the posterior expectation of the p coefficients
+for a logistic regression model.
 
-See below for how to select the dataset. 
+See below for how to select the data-set.
 """
 
 from matplotlib import pyplot as plt
@@ -24,21 +24,28 @@ from particles import smc_samplers
 
 # raw data
 dataset = 'eeg'  # choose between: sonar, pima, eeg
+# for each dataset, fix
+# N: number of particles
+# Ms = list of Ms (nr MCMC steps)
+# typM: value of M used for plots on "typical" run
 
 if dataset == 'sonar':
     N = 10 ** 4
     Ms = [10, 20, 30, 40, 50, 60]
-    raw_data = np.loadtxt('../../datasets/sonar.all-data', delimiter=',', 
+    typM = 50
+    raw_data = np.loadtxt('../../datasets/sonar.all-data', delimiter=',',
                           converters={60: lambda x: 1 if x ==b'R' else 0})
-elif dataset == 'pima': 
+elif dataset == 'pima':
     N = 10 ** 3
     Ms = [1, 3, 5]
+    typM = 3
     raw_data = np.loadtxt('../../datasets/pima-indians-diabetes.data',
                           delimiter=',')
-elif dataset == 'eeg': 
+elif dataset == 'eeg':
     N = 10 ** 3
     Ms = [1, 3, 5, 7, 10, 15, 20]
-    raw_data = np.loadtxt('../../datasets/eeg_eye_state.data', 
+    typM = 5
+    raw_data = np.loadtxt('../../datasets/eeg_eye_state.data',
                           delimiter=',', skiprows=19)
 
 T, p = raw_data.shape
@@ -50,11 +57,11 @@ preds = raw_data[:, :-1]
 data[:, 0] = 1. # intercept
 data[:, 1:] = 0.5 * (preds - np.mean(preds, axis=0)) / np.std(preds, axis=0)
 
-# flip signs according to response 
+# flip signs according to response
 data *= response[:, np.newaxis]
 
 # prior & model
-prior = dists.StructDist({'beta':dists.MvNormal(scale=5., 
+prior = dists.StructDist({'beta':dists.MvNormal(scale=5.,
                                                   cov=np.eye(p))})
 
 class LogisticRegression(smc_samplers.StaticModel):
@@ -63,28 +70,28 @@ class LogisticRegression(smc_samplers.StaticModel):
         lin = np.matmul(theta['beta'], data[t, :])
         return - np.logaddexp(0., -lin)
 
-# algorithms 
+# algorithms
 # N and values of M set above according to dataset
 ESSrmin = 0.5
 nruns = 16
-results = [] 
+results = []
 
-# runs
+# runs
 print('Dataset: %s' % dataset)
 for M in Ms:
     for i in range(nruns):
         # need to shuffle the data for IBIS
         random.shuffle(data)
         model = LogisticRegression(data=data, prior=prior)
-        for alg_type in ['tempering', 'ibis']: 
-            if alg_type=='ibis': 
+        for alg_type in ['tempering', 'ibis']:
+            if alg_type=='ibis':
                 fk = smc_samplers.IBIS(model, mh_options={'nsteps': M})
-                pf = particles.SMC(N=N, fk=fk, ESSrmin=ESSrmin, 
+                pf = particles.SMC(N=N, fk=fk, ESSrmin=ESSrmin,
                                 moments=True, verbose=False)
             else:
-                fk = smc_samplers.AdaptiveTempering(model, ESSrmin=ESSrmin, 
+                fk = smc_samplers.AdaptiveTempering(model, ESSrmin=ESSrmin,
                                                     mh_options={'nsteps': M})
-                pf = particles.SMC(N=N, fk=fk, ESSrmin=1., moments=True, 
+                pf = particles.SMC(N=N, fk=fk, ESSrmin=1., moments=True,
                                 verbose=True)
                 # must resample at every time step when doing adaptive
                 # tempering
@@ -100,56 +107,65 @@ for M in Ms:
             else:
                 n_eval = N * T * (1. + M * (len(pf.summaries.ESSs) - 1))
                 res['path_sampling'] = pf.X.path_sampling[-1]
+                res['exponents'] = pf.X.exponents
             res['n_eval'] = n_eval
             results.append(res)
 
 # save results
 ##############
 # import pickle
-# pickle.dump({'results':results, 'Ms': Ms, 'N': N, 'nruns': nruns, 'T': T, 'p':p, 
-#              'ESSrmin' : ESSrmin, 'data': data}, 
+# pickle.dump({'results':results, 'Ms': Ms, 'N': N, 'nruns': nruns, 'T': T, 'p':p,
+#              'ESSrmin' : ESSrmin, 'data': data},
 #             open('%s_N%i.pickle' % (dataset, N), 'wb'))
 # Then reload like this
 # dp = pickle.load(file_name)
-# locals().update(dp)
+# locals().update(dp)
 
 # plots
 #######
-savefigs = True  # do you want to save figures as pdfs
+savefigs = True  # do you want to save figures as pdfs
 plt.style.use('ggplot')
-pal = sb.dark_palette('white', n_colors=2) 
+pal = sb.dark_palette('white', n_colors=2)
 
-# plt.figure()
-# diff_est = [(r['out'].logLt - r['path_sampling'])
-#             for r in results if r['type']=='tempering']
-# plt.hist(diff_est)
-# plt.xlabel('norm constant: ratio estimate minus path sampling estimate')
+# Compare standard and path sampling estimates of the log-normalising cst
+plt.figure()
+diff_est = [(r['out'].logLts[-1] - r['path_sampling'])
+            for r in results if r['type']=='tempering']
+sb.distplot(diff_est)
 
-# Behaviour for a typical ISIS run (Figure 17.1) 
-typMS = {'eeg': 5, 'pima': 3, 'sonar': 50}
-typM = typMS[dataset]
-typ_run = [r for r in results if r['type']=='ibis' and r['M'] == typM][0]
-typ_ess = typ_run['out'].ESSs
-typ_rs_times = np.nonzero(typ_run['out'].rs_flags)[0]
+# Figure 17.1: typical behaviour of IBIS
+typ_ibis = [r for r in results if r['type']=='ibis' and r['M'] == typM][0]
+typ_ess = typ_ibis['out'].ESSs
+typ_rs_times = np.nonzero(typ_ibis['out'].rs_flags)[0]
 
-# typical ESS (left panel of Fig 17.1) 
+# Left panel: evolution of ESS
 fig, ax = plt.subplots()
 ax.plot(typ_ess, 'k')
 ax.set(xlabel=r'$t$', ylabel='ESS')
 if savefigs:
-    plt.savefig(dataset + '_typical_ess_ibis.pdf')
+    plt.savefig(dataset + '_typical_ibis_ess.pdf')
 
-# typical evolution of resampling times (right panel of Figure 17.1)
+# Right panel: evolution of resampling times
 fig, ax = plt.subplots()
 ax.plot(typ_rs_times[:-1], np.diff(typ_rs_times), 'ko-')
 ax.set(xlabel=r'$t$', ylabel='duration between successive rs')
 if savefigs:
-    plt.savefig(dataset + '_typical_rs_times.pdf')
+    plt.savefig(dataset + '_typical_ibis_rs_times.pdf')
 
-# nr evals vs M for both algorithms
+# Figure 17.2: evolution of temperature in a typical tempering run
+typ_temp = [r for r in results if r['type']=='tempering' and r['M'] == typM][0]
+expnts = typ_temp['exponents']
+plt.figure()
+plt.plot(expnts, 'k')
+plt.xlabel(r'$t$')
+plt.ylabel('tempering exponent')
+if savefigs:
+    plt.savefig(dataset + '_typical_tempering_temperatures.pdf')
+
+# nr evals vs M for both algorithms
 plt.figure()
 sb.boxplot(x=[r['M'] for r in results],
-           y=[r['n_eval'] for r in results], 
+           y=[r['n_eval'] for r in results],
            hue=[r['type'] for r in results],
            palette=pal)
 plt.xlabel('number MCMC steps')
@@ -157,10 +173,11 @@ plt.ylabel('number likelihood evaluations')
 if savefigs:
     plt.savefig(dataset + '_boxplots_nevals_vs_M.pdf')
 
-# Box-plots estimate versus number of MCMC steps: marginal likelihood
+# Figure 17.3: Box-plots estimate versus number of MCMC steps
+# Left panel: marginal likelihood
 plt.figure()
 sb.boxplot(x=[r['M'] for r in results],
-           y=[r['out'].logLts[-1] for r in results], 
+           y=[r['out'].logLts[-1] for r in results],
            hue=[r['type'] for r in results],
            palette=pal)
 plt.xlabel('number MCMC steps')
@@ -168,37 +185,39 @@ plt.ylabel('marginal likelihood')
 if savefigs:
     plt.savefig(dataset + '_boxplots_marglik_vs_M.pdf')
 
-# Box-plots estimate versus number of MCMC steps: post expectation 1st pred
+# Right panel: post expectation 1st pred
 plt.figure()
 sb.boxplot(x=[r['M'] for r in results],
            y=[r['out'].moments[-1]['mean']['beta'][1] for r in results],
-           hue=[r['type'] for r in results], 
+           hue=[r['type'] for r in results],
            palette=pal)
 plt.xlabel('number MCMC steps')
 plt.ylabel('posterior expectation first predictor')
 if savefigs:
     plt.savefig(dataset + '_boxplots_postexp1_vs_M.pdf')
 
-# variance times M, as a function of M (variance vs CPU trade-off)
+# Figure 17.4: variance vs CPU trade-off
+# variance times M, as a function of M 
 plt.figure()
 cols = {'ibis': 'gray', 'tempering':'black'}
+lsts = {'ibis': '-', 'tempering': '-'}
 for i in range(p):
     for alg_type in ['ibis', 'tempering']:
         adj_var = []
         for M in Ms:
-            mts = [r['out'].moments[-1] 
+            mts = [r['out'].moments[-1]
                    for r in results if r['M']==M and r['type']==alg_type]
             av = (M * np.var([m['mean']['beta'][i] for m in mts]) /
                              np.mean([m['var']['beta'][i] for m in mts]))
             adj_var.append(av)
         if i==0:
             plt.plot(Ms, adj_var, color=cols[alg_type], label=alg_type,
-                     alpha=.8)
+                     alpha=.8, linewidth=2, linestyle=lsts[alg_type])
         else:
             plt.plot(Ms, adj_var, color=cols[alg_type], alpha=.8)
 plt.legend()
+plt.xticks(Ms, ['%i' % M for M in Ms])  # force int ticks
 plt.xlabel('number MCMC steps')
 plt.ylabel(r'variance times number MCMC steps')
 if savefigs:
     plt.savefig(dataset + '_postexp_var_vs_M.pdf')
-
