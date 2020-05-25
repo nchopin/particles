@@ -72,7 +72,7 @@ for mod in models.keys():
     errors = np.array( [ [mom['mean']-truemean for mom, truemean in 
                            zip(r['output'].summaries.moments, true_filt_means)] 
                                 for r in results if r['fk']==mod] ).squeeze()
-    plt.plot(np.sqrt(np.mean(errors**2, axis=0)), label=mod)
+    plt.plot(np.sqrt(np.mean(errors**2, axis=0)), label=mod, linewidth=2)
 plt.xlabel(r'$t$')
 plt.ylabel(r'MSE$^{1/2}$ of estimate of $E(X_t|Y_{0:t})$')
 plt.legend()
@@ -83,7 +83,7 @@ if savefigs:
 plt.figure()
 for model in models.keys():
     pf = next(r['output'] for r in results if r['fk']==model)
-    plt.plot(pf.summaries.ESSs,label=model)
+    plt.plot(pf.summaries.ESSs,label=model, linewidth=2)
 plt.legend(loc=(0.02,0.3))
 plt.axis([0,T,0,N])
 plt.xlabel(r'$t$')
