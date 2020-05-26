@@ -200,7 +200,7 @@ if savefigs:
 # variance times M, as a function of M 
 plt.figure()
 cols = {'ibis': 'gray', 'tempering':'black'}
-lsts = {'ibis': '-', 'tempering': '-'}
+lsts = {'ibis': '--', 'tempering': '-'}
 for i in range(p):
     for alg_type in ['ibis', 'tempering']:
         adj_var = []
@@ -214,7 +214,8 @@ for i in range(p):
             plt.plot(Ms, adj_var, color=cols[alg_type], label=alg_type,
                      alpha=.8, linewidth=2, linestyle=lsts[alg_type])
         else:
-            plt.plot(Ms, adj_var, color=cols[alg_type], alpha=.8)
+            plt.plot(Ms, adj_var, color=cols[alg_type], alpha=.8, linewidth=2,
+                     linestyle=lsts[alg_type])
 plt.legend()
 plt.xticks(Ms, ['%i' % M for M in Ms])  # force int ticks
 plt.xlabel('number MCMC steps')
