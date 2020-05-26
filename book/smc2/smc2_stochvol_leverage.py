@@ -62,7 +62,7 @@ fks['smc2_qmc'] = ssp.SMC2(**fk_opts)
 fk_opts['ssm_cls'] = state_space_models.StochVol
 fks['smc2_sv'] = ssp.SMC2(**fk_opts)
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     runs = particles.multiSMC(fk=fks, N=N, moments=qtiles, verbose=True, 
                               nprocs=0, nruns=25)
 
