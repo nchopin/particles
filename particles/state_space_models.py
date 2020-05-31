@@ -618,7 +618,7 @@ class MVStochVol(StateSpaceModel):
     default_params = {'mu': 0., 'covX': None, 'corY': None, 'F': None}  # TODO
 
     def offset(self):
-        return self.mu - np.dot(self.F, mu)
+        return self.mu - np.dot(self.F, self.mu)
 
     def PX0(self):
         return dists.MvNormal(loc=self.mu, cov=self.corX)
