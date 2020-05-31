@@ -101,15 +101,16 @@ if __name__ == '__main__':
         long_names[method] += r', N=%i' % Ns[method]
         print(long_names[method])
 
-        args_smc = {'fk': fkmod, 'nruns': nruns, 'nprocs': 0, 'N': N,
-                    attr_names[method]: True, 'out_func': partial(outf, method=attr_names[method])}
+        args_smc = {'fk': fkmod, 'nruns': nruns, 'nprocs': 1, 'N': N,
+                    attr_names[method]: True, 
+                    'out_func': partial(outf, method=attr_names[method])}
         runs[method] = particles.multiSMC(**args_smc)
         avg_cpu[method] = np.mean([r['cpu'] for r in runs[method]])
         print('average cpu time (across %i runs): %f' % (nruns, avg_cpu[method]))
 
     # Plots
     # =====
-    savefigs = False  #  toggle this to save the plots as PDFs
+    savefigs = True  # False if you don't want to save plots as pdfs
     plt.style.use('ggplot')
     colors = {'ON2': 'gray', 'naive': 'black'}
 
@@ -124,7 +125,8 @@ if __name__ == '__main__':
     for method in methods:
         est = estimates[method]
         delta = np.percentile(est, 75., axis=0) - np.percentile(est, 25., axis=0)
-        plt.plot(np.arange(T), delta, colors[method], label=long_names[method])
+        plt.plot(np.arange(T), delta, colors[method], linewidth=2, 
+                 label=long_names[method])
     plt.legend(loc=4)
     if savefigs:
         plt.savefig('online_iqr_vs_t_logscale.pdf')

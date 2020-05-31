@@ -118,7 +118,7 @@ df_var_mean = df_var.groupby('N').mean()  # mean variance as function of N
 
 # Plots
 #######
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 
 def msjd(theta):

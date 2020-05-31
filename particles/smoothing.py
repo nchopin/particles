@@ -243,7 +243,7 @@ class ParticleHistory(RollingParticleHistory):
 
     def save(self, smc):
         RollingParticleHistory.save(self, smc)
-        if hasattr(self, 'h_orders'):
+        if hasattr(smc, 'h_order'):
             self.h_orders.append(smc.h_order)
 
     def extract_one_trajectory(self):

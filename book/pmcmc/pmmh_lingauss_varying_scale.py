@@ -79,7 +79,7 @@ for alg_name, alg in algos.items():
 
 # Plots
 #######
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 
 # distance vs ar 

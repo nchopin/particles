@@ -35,7 +35,6 @@ def logLt(pf):
 
 
 if __name__ == '__main__':
-
     sigma = 0.18
     ng = 100
     mu_grid = np.linspace(-2.5, 0., ng)
@@ -52,7 +51,7 @@ if __name__ == '__main__':
 
     # PLOT
     # ====
-    savefigs = False  # change to True to save figs as pdf
+    savefigs = True  # False if you don't want to save plots as pdfs
 
     plt.figure()
     levels = ll.max() + np.linspace(-20, 0, 21)

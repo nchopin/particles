@@ -61,7 +61,7 @@ for Nx, alg in algos.items():
 
 # PLOTS
 #######
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 
 plt.figure()

@@ -82,7 +82,7 @@ df['fk_qmc'] = df['fk'] + df['qmc'].map({True:' SQMC', False:' SMC'})
 
 # Plot
 # ====
-savefigs = False  # change this to save figs as PDFs
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.rc('text', usetex=True) #to force tex rendering 
 
 plt.figure()

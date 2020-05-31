@@ -154,7 +154,7 @@ results = particles.multiSMC(fk=models, N=N, nruns=nruns, nprocs=1,
 
 ## PLOTS
 #########
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 
 # arbitrary time

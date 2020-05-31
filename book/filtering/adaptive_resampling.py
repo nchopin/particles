@@ -52,7 +52,7 @@ results = particles.multiSMC(fk=fk_model, N=N, ESSrmin=alphas, nruns=200,
 # PLOTS
 #======
 plt.style.use('ggplot')
-savefigs = False
+savefigs = True  # False if you don't want to save plots as pdfs
 
 # inter-quartile range of log-likelihood estimate as a function of ESSmin
 plt.figure()    

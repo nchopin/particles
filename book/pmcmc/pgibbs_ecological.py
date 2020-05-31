@@ -44,6 +44,10 @@ dict_prior['tau2'] = dists.TruncNormal(b=3.)
 dict_prior['precX'] = dists.Gamma(a=2., b=1.) 
 dict_prior['precY'] = dists.Gamma(a=2., b=1.) 
 prior = dists.StructDist(dict_prior)
+# parameter names on plots
+pretty_par_names = {'tau0': r'$\tau_0$', 'tau1': r'$\tau_1$', 'tau2': r'$\tau_2$',
+                    'precX': r'$1/\sigma_X^2$', 'precY': r'$1/\sigma_Y^2$',
+                    'x_0': r'$x_0$'}
 
 # Particle Gibbs
 class PGibbs(mcmc.ParticleGibbs):
@@ -140,15 +144,16 @@ def update_rate(x):
 
 # PLOTS
 # =====
-savefigs = False  # toggle to True to save figures as pdfs 
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 colors = {'pg-back': 'black', 'pg': 'gray'}
+linestyles = {'pg-back': '-', 'pg': '--'}
 
 # Update rates of PG samplers
 plt.figure()
 for alg_name, alg in algos.items():
     plt.plot(update_rate(alg.chain.x[burnin:]), label=alg_name, linewidth=2, 
-             color=colors[alg_name], alpha=0.9)
+             color=colors[alg_name], linestyle=linestyles[alg_name])
 plt.axis([0, data.shape[0], 0., 1.0])
 plt.xlabel('t')
 plt.ylabel('update rate')
@@ -166,9 +171,9 @@ for p1, p2 in [('tau1', 'tau0'), ('tau2', 'tau0')]:
     plt.subplot(1, 2, i)
     plt.scatter(th[p1], th[p2], c='k')
     plt.axis([0., 2., 0., 2.])
-    plt.xlabel(p1)
+    plt.xlabel(pretty_par_names[p1])
     if i == 1:
-        plt.ylabel(p2)
+        plt.ylabel(pretty_par_names[p2])
     i += 1
 if savefigs:
     plt.savefig('ecological_pairplot_taus.pdf')  # Figure 16.10
@@ -181,7 +186,8 @@ for i, p in enumerate(dict_prior.keys()):
         th = alg.chain.theta[p]
         plt.plot(th, label=alg_name, color=colors[alg_name])
     plt.xlabel('iter')
-    plt.ylabel(p)
+    plt.ylabel(pretty_par_names[p])
+plt.tight_layout()
 
 # compare marginals of parameter components
 plt.figure()
@@ -191,8 +197,9 @@ for i, p in enumerate(dict_prior.keys()):
         th = alg.chain.theta[p][burnin:]
         plt.hist(th, 40, density=True, alpha=0.5, label=alg_name,
                  histtype='stepfilled')
-        plt.xlabel(p)
+        plt.ylabel(pretty_par_names[p])
     plt.legend()
+plt.tight_layout()
 
 # ACFs
 plt.figure()
@@ -202,10 +209,11 @@ for i, p in enumerate(list(dict_prior.keys()) + ['x_0']):
     for alg_name, alg in algos.items():
         th = alg.chain.x[:, 0] if p=='x_0' else alg.chain.theta[p]
         acf_th = acf(th[burnin:], nlags=nlags, fft=True)
-        plt.plot(acf_th, label=alg_name, color=colors[alg_name])
+        plt.plot(acf_th, label=alg_name, color=colors[alg_name],
+                linestyle=linestyles[alg_name])
     plt.axis([0, nlags, -0.03, 1.])
     plt.xlabel('lag')
-    plt.ylabel(p)
+    plt.ylabel(pretty_par_names[p])
     if i == 2:
         plt.legend()
 plt.tight_layout()

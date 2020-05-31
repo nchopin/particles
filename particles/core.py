@@ -294,8 +294,6 @@ class SMC(object):
         self.wgts = rs.Weights()
         self.aux = None
         self.X, self.Xp, self.A = None, None, None
-        if qmc:
-            self.h_order = None
 
         # summaries computed at every t
         if summaries:
@@ -420,8 +418,8 @@ class SMC(object):
                    next(pf)  # performs 10 steps
                pf.run()  # runs the remaining steps
 
-            In that case, attribute `cpu_time` records the CPU cost of the last
-            command only.
+           In that case, attribute `cpu_time` records the CPU cost of the last
+           command only.
         """
         for _ in self:
             pass

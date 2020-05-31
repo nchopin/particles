@@ -59,8 +59,11 @@ C = pure_python_inverse_cdf(rs.uniform_spacings(N), W)
 """
 
 statements['searchsorted'] = """
-D = np.searchsorted(np.cumsum(W), rs.uniform_spacings(N))
+D = np.searchsorted(np.cumsum(W), stats.uniform.rvs(size=M))
 """
+# TODO: investigate why we get a lower running time if we do instead:
+# D = np.searchsorted(np.cumsum(W), rs.uniform_spacings(M))
+# this is NOT documented in numpy.searchsorted
 
 # For the record, the following two extra statements could
 # also be considered, but they are much slower 
@@ -83,7 +86,7 @@ for N in Ns:
 
 # PLOT
 # ====
-savefigs = False  # change this to save the plots as PDFs 
+savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 sb.set_palette(sb.dark_palette("lightgray", n_colors=4, reverse=True))
 

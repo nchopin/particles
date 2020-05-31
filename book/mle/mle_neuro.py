@@ -42,7 +42,7 @@ from particles import distributions as dists
 from particles import state_space_models as ssms
 
 # data 
-data = np.loadtxt('thaldata.csv', delimiter=',')
+data = np.loadtxt('../../datasets/thaldata.csv', delimiter=',')
 T = len(data)
 
 # state space model
@@ -180,7 +180,7 @@ save_results({'rhos_ga': rhos_ga, 'sig2s_ga': sig2s_ga})
 # PLOTS
 #######
 plt.style.use('ggplot')
-savefigs = True
+savefigs = True  # False if you don't want to save plots as pdfs
 
 # contour plots 
 rho_mg, sig2_mg = np.meshgrid(rhos, sig2s)
@@ -214,7 +214,7 @@ imax, jmax = np.unravel_index(np.argmax(ll_mean), (ng, ng))
 mle_ll = ll_mean[imax, jmax]
 ax.plot(rhos[imax], sig2s[jmax], markersize=3, marker="o", color='black')
 levels = mle_ll + np.linspace(- 2 * 10**4, -0., 121)
-CS = ax.contour(rho_mg, sig2_mg, ll_mean.T, levels=levels, colors='gray',
+CS = ax.contour(rho_mg, sig2_mg, ll_mean.T, levels=levels, colors='lightgray',
                 label='log-lik contour')
 ax.set_xlabel(r'$\rho$')
 ax.set_ylabel(r'$\sigma^2$')
@@ -227,9 +227,9 @@ ax.plot(em_results['rhos'], em_results['sig2s'], 'o-k', zorder=20, label='EM')
 # add simplex points
 rhos_simplex = [x[0] for x in ll_eval.args]
 sig2s_simplex = [x[1] for x in ll_eval.args]
-ax.scatter(rhos_simplex, sig2s_simplex, marker='x', c='k', zorder=10, 
+ax.scatter(rhos_simplex, sig2s_simplex, marker='x', c='gray', zorder=10, 
            label='simplex')
-ax.legend(loc=3)
+ax.legend(loc='upper left')
 if savefigs:
     plt.savefig('neuro_contour_ll_with_EM_and_simplex.pdf')
 

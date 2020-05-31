@@ -49,7 +49,7 @@ bigpf.run()
 # PLOTS
 # =====
 plt.style.use('ggplot')
-savefig = False  # True if you want to save figs as pdfs
+savefigs = True  # False if you don't want to save plots as pdfs
 
 # box-plots for log-likelihood evaluation
 plt.figure()
@@ -79,7 +79,7 @@ import matplotlib.lines as mlines
 black_line = mlines.Line2D([], [], color='black')
 artists.append(black_line)
 plt.legend(artists, models.keys(), loc=3)
-if savefig:
+if savefigs:
     plt.savefig('stochvol_filtering_error_boot_vs_guided_vs_apf.pdf')
 
 # ESS vs time (from a single run)
