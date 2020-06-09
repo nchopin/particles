@@ -487,7 +487,7 @@ class StochVol(StateSpaceModel):
         xhat = self._xhat(xst, self.sigma, data[t + 1])
         xhatmmu = xhat - self.mu
         return (0.5 / self.sigma**2 * (xhatmmu**2 - xstmmu**2)
-                - 0.5 * self.data[t + 1]**2 * np.exp(-xst) * (1. + xstmmu))
+                - 0.5 * data[t + 1]**2 * np.exp(-xst) * (1. + xstmmu))
 
 
 class StochVolLeverage(StochVol):
