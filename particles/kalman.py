@@ -158,14 +158,20 @@ error_msg = "arguments of KalmanFilter.__init__ have inconsistent shapes"
 ########################
 
 def dotdot(a, b, c):
-    """A faster and more memory efficient way of computing np.dot(a, np.dot(b, c))
+    """A faster and more memory efficient way of computing np.dot(a, np.dot(b, c)) for array inputs
     """
     return a.dot(b).dot(c)
 
 
+def dotdot1d(a, b, c):
+    """A faster and more memory efficient way of computing np.dot(a, np.dot(b, c)) for scalar inputs
+    """
+    return a * b * c
+
+
 def _dotdotinv(a, b, c):
     """
-    A faster and more stable way of computing dotdot(a, b, inv(c)) when c is symmetric positive (covariance matrix)
+    A faster and more stable way of computing _dotdotinv when c is symmetric positive (covariance matrix)
     >>> a = np.random.randn(50, 50)
     >>> b = np.random.randn(50, 50)
     >>> c = np.random.randn(50, 50)
@@ -175,20 +181,28 @@ def _dotdotinv(a, b, c):
     return solve(c, a.dot(b).T, sym_pos=True, overwrite_b=True).T
 
 
+def _dotdotinv1d(a, b, c):
+    """A faster and more stable way of computing _dotdotinv for scalar inputs
+    """
+    return a * b / c
+
+
 MeanAndCov = collections.namedtuple('MeanAndCov', 'mean cov')
 
 
-def predict_step(F, covX, filt):
+def predict_step(F, covX, filt, dotdotfun=dotdot):
     """Predictive step of Kalman filter.
 
     Parameters
     ----------
-    F:  (dx, dx) numpy array
+    F:  (dx, dx) numpy array or scalar
         Mean of X_t | X_{t-1} is F * X_{t-1}
-    covX: (dx, dx) numpy array
+    covX: (dx, dx) numpy array  or scalar
         covariance of X_t | X_{t-1}
     filt: MeanAndCov object
         filtering distribution at time t-1
+    dotdotfun: callable
+        Function to use to compute np.dot(a, np.dot(b, c)), either dotdot or dotdot1d
 
     Returns
     -------
@@ -201,21 +215,27 @@ def predict_step(F, covX, filt):
     N predictive steps are performed in parallel.
     """
     pred_mean = np.matmul(filt.mean, F.T)
-    pred_cov = dotdot(F, filt.cov, F.T) + covX
+    pred_cov = dotdotfun(F, filt.cov, F.T) + covX
     return MeanAndCov(mean=pred_mean, cov=pred_cov)
 
 
-def filter_step(G, covY, pred, yt):
+def filter_step(G, covY, pred, yt, dotdotfun=dotdot, dotdotinvfun=_dotdotinv):
     """Filtering step of Kalman filter.
 
     Parameters
     ----------
-    G:  (dy, dx) numpy array
+    G:  (dy, dx) numpy array  or scalar
         mean of Y_t | X_t is G * X_t
-    covX: (dx, dx) numpy array
+    covY: (dy, dy) numpy array or scalar
         covariance of Y_t | X_t
     pred: MeanAndCov object
         predictive distribution at time t
+    yt: (dy) numpy array or scalar
+        observation at time t
+    dotdotfun: callable
+        Function to use to compute np.dot(a, np.dot(b, c)), either dotdot or dotdot1d
+    dotdotinvfun: callable
+        Function to use to compute np.dot(a, np.dot(b, np.linalg.in(c))), either _dotdotinv or _dotdotinv1d
 
     Returns
     -------
@@ -226,7 +246,7 @@ def filter_step(G, covY, pred, yt):
     """
     # data prediction
     data_pred_mean = np.matmul(pred.mean, G.T)
-    data_pred_cov = dotdot(G, pred.cov, G.T) + covY
+    data_pred_cov = dotdotfun(G, pred.cov, G.T) + covY
     if covY.shape[0] == 1:
         logpyt = dists.Normal(loc=data_pred_mean,
                               scale=np.sqrt(data_pred_cov)).logpdf(yt)
@@ -235,9 +255,9 @@ def filter_step(G, covY, pred, yt):
                                 cov=data_pred_cov).logpdf(yt)
     # filter
     residual = yt - data_pred_mean
-    gain = _dotdotinv(pred.cov, G.T, data_pred_cov)
+    gain = dotdotinvfun(pred.cov, G.T, data_pred_cov)
     filt_mean = pred.mean + np.matmul(residual, gain.T)
-    filt_cov = pred.cov - dotdot(gain, G, pred.cov)
+    filt_cov = pred.cov - dotdotfun(gain, G, pred.cov)
     return MeanAndCov(mean=filt_mean, cov=filt_cov), logpyt
 
 
@@ -248,7 +268,7 @@ def filter_step_asarray(G, covY, pred, yt):
     ----------
     G:  (dy, dx) numpy array
         mean of Y_t | X_t is G * X_t
-    covX: (dx, dx) numpy array
+    covY: (dy, dy) numpy array
         covariance of Y_t | X_t
     pred: MeanAndCov object
         predictive distribution at time t
@@ -269,13 +289,13 @@ def filter_step_asarray(G, covY, pred, yt):
     """
     pm = pred.mean[:, np.newaxis] if pred.mean.ndim == 1 else pred.mean
     new_pred = MeanAndCov(mean=pm, cov=pred.cov)
-    filt, logpyt = filter_step(G, covY, new_pred, yt)
+    filt, logpyt = filter_step(G, covY, new_pred, yt, dotdot, _dotdotinv)
     if pred.mean.ndim == 1:
         filt.mean.squeeze()
     return filt, logpyt
 
 
-def smoother_step(F, filt, next_pred, next_smth):
+def smoother_step(F, filt, next_pred, next_smth, dotdotfun=dotdot, dotdotinvfun=_dotdotinv):
     """Smoothing step of Kalman filter/smoother.
 
     Parameters
@@ -288,14 +308,19 @@ def smoother_step(F, filt, next_pred, next_smth):
         predictive distribution at time t+1
     next_smth: MeanAndCov object
         smoothing distribution at time t+1
+    dotdotfun: callable
+        Function to use to compute np.dot(a, np.dot(b, c)), either dotdot or dotdot1d
+    dotdotinvfun: callable
+        Function to use to compute np.dot(a, np.dot(b, np.linalg.in(c))), either _dotdotinv or _dotdotinv1d
+
 
     Returns
     -------
     smth: MeanAndCov object
         smoothing distribution at time t
     """
-    J = _dotdotinv(filt.cov, F.T, next_pred.cov)
-    smth_cov = filt.cov + dotdot(J, next_smth.cov - next_pred.cov, J.T)
+    J = dotdotinvfun(filt.cov, F.T, next_pred.cov)
+    smth_cov = filt.cov + dotdotfun(J, next_smth.cov - next_pred.cov, J.T)
     smth_mean = filt.mean + np.matmul(next_smth.mean - next_pred.mean, J.T)
     return MeanAndCov(mean=smth_mean, cov=smth_cov)
 
@@ -366,7 +391,7 @@ class MVLinearGauss(ssms.StateSpaceModel):
 
     def proposal0(self, data):
         pred0 = MeanAndCov(mean=self.mu0, cov=self.cov0)
-        f, _ = filter_step(self.G, self.covY, pred0, data[0])
+        f, _ = filter_step(self.G, self.covY, pred0, data[0], dotdot, _dotdotinv)
         return dists.MvNormal(loc=f.mean, cov=f.cov)
 
     def logeta(self, t, x, data):
@@ -482,6 +507,13 @@ class Kalman(object):
         self.data = data
         self.pred, self.filt, self.logpyt = [], [], []
 
+        if isinstance(ssm, LinearGauss):
+            self._dotdotfun = dotdot1d
+            self._dotdotinvfun = _dotdotinv1d
+        else:
+            self._dotdotfun = dotdot
+            self._dotdotinvfun = _dotdotinv
+
     @property
     def t(self):
         return len(self.filt)
@@ -494,9 +526,9 @@ class Kalman(object):
         if not self.pred:
             self.pred += [MeanAndCov(mean=self.ssm.mu0, cov=self.ssm.cov0)]
         else:
-            self.pred += [predict_step(self.ssm.F, self.ssm.covX, self.filt[-1])]
+            self.pred += [predict_step(self.ssm.F, self.ssm.covX, self.filt[-1], self._dotdotfun)]
         new_filt, new_logpyt = filter_step(self.ssm.G, self.ssm.covY,
-                                           self.pred[-1], yt)
+                                           self.pred[-1], yt, self._dotdotfun, self._dotdotinvfun)
         self.filt.append(new_filt)
         self.logpyt.append(new_logpyt)
 
@@ -522,5 +554,5 @@ class Kalman(object):
         self.smth = [self.filt[-1]]
         for t, f in reversed(list(enumerate(self.filt[:-1]))):
             self.smth += [smoother_step(self.ssm.F, f, self.pred[t + 1],
-                                        self.smth[t + 1])]
+                                        self.smth[t + 1], self._dotdotfun, self._dotdotinvfun)]
         self.smth.reverse()
