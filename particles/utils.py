@@ -46,25 +46,23 @@ replace by more legible labels; e.g. option ` model` of class `SMC`.
 `multiplexer` also accepts three extra keyword arguments (whose name may not
 therefore be used as keyword arguments for function f):
 
-* ``nprocs``: if >0, number of CPU cores to use in parallel; if <=0, number
-  of cores *not* to use; in particular, ``nprocs=0`` means all CPU cores must
-  be used.
+* ``nprocs`` (default=1): if >0, number of CPU cores to use in parallel; if
+  <=0, number of cores *not* to use; in particular, ``nprocs=0`` means all CPU
+  cores must be used.
 * ``nruns`` (default=1): evaluate f *nruns* time for each combination of arguments;
   an entry `run` (ranging from 0 to nruns-1) is added to the output dictionaries.
-  This is mostly useful when the output of ``f`` is random.
-  * ``seeding`` (default: True if ``nruns``>1, False otherwise):  if True, seeds
+* ``seeding`` (default: True if ``nruns``>1, False otherwise):  if True, seeds
   the pseudo-random generator before each call of function `f` with a different
-  seed. See second warning below.
-
-.. warning ::
-    Option ``nprocs`` rely on the standard library `multiprocessing`,
-    whose performance and behaviour seems to be OS-dependent. In particular,
-    it may not work well on Windows.
+  seed; see below. 
 
 .. warning ::
     Library `multiprocessing` generates identical workers, up to the state of
-    the random generator. Thus, as soon as more than one core is used, we
-    strongly recommend to set option ``seeding`` above to True.
+    the Numpy random generator. If your function involves random numbers: (a)
+    set option ``seeding`` to True (otherwise, you will get
+    identical results from all your workers); (b) make sure the function f does
+    not rely on scipy frozen distributions, as these distributions also
+    freezes the states. For instance, do not use any frozen distribution when
+    defining your own Feynman-Kac object. 
 
 .. seealso :: `multiSMC`
 
