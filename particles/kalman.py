@@ -144,7 +144,7 @@ from __future__ import division, print_function
 
 import collections
 import numpy as np
-from numpy.linalg import inv
+from scipy.linalg import solve
 
 from particles import distributions as dists
 from particles import state_space_models as ssms
@@ -157,6 +157,11 @@ error_msg = "arguments of KalmanFilter.__init__ have inconsistent shapes"
 
 def dotdot(a, b, c):
     return np.dot(np.dot(a, b), c)
+
+def dotdotinv(a, b, c):
+    """ a * b * c^{-1}, where c is symmetric positive
+    """
+    return solve(c, np.dot(a, b).T, assume_a='pos', overwrite_b=True).T
 
 MeanAndCov = collections.namedtuple('MeanAndCov', 'mean cov')
 
@@ -217,7 +222,7 @@ def filter_step(G, covY, pred, yt):
                                 cov=data_pred_cov).logpdf(yt)
     # filter
     residual = yt - data_pred_mean
-    gain = dotdot(pred.cov, G.T, inv(data_pred_cov))
+    gain = dotdotinv(pred.cov, G.T, data_pred_cov)
     filt_mean = pred.mean + np.matmul(residual, gain.T)
     filt_cov = pred.cov - dotdot(gain, G, pred.cov)
     return MeanAndCov(mean=filt_mean, cov=filt_cov), logpyt
@@ -276,7 +281,7 @@ def smoother_step(F, filt, next_pred, next_smth):
     smth: MeanAndCov object
         smoothing distribution at time t
     """
-    J = dotdot(filt.cov, F.T, inv(next_pred.cov))
+    J = dotdotinv(filt.cov, F.T, next_pred.cov)
     smth_cov = filt.cov + dotdot(J, next_smth.cov - next_pred.cov, J.T)
     smth_mean = filt.mean + np.matmul(next_smth.mean - next_pred.mean, J.T)
     return MeanAndCov(mean=smth_mean, cov=smth_cov)
@@ -497,5 +502,5 @@ class Kalman(object):
         self.smth = [self.filt[-1]]
         for t, f in reversed(list(enumerate(self.filt[:-1]))):
             self.smth += [smoother_step(self.ssm.F, f, self.pred[t + 1],
-                                        self.smth[t + 1])]
+                                        self.smth[-1])]
         self.smth.reverse()
