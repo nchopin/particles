@@ -61,7 +61,7 @@ therefore be used as keyword arguments for function f):
     set option ``seeding`` to True (otherwise, you will get
     identical results from all your workers); (b) make sure the function f does
     not rely on scipy frozen distributions, as these distributions also
-    freezes the states. For instance, do not use any frozen distribution when
+    freeze the states. For instance, do not use any frozen distribution when
     defining your own Feynman-Kac object. 
 
 .. seealso :: `multiSMC`
