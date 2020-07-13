@@ -3,3 +3,4 @@ numpy
 scipy
 ipython
 nbsphinx
+pot
