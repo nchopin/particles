@@ -66,6 +66,7 @@ class EnsembleTransform(EnsembleTransformBase):
         M = ot.utils.cdist(X.reshape(N, -1), X.reshape(N, -1), self.metric, p=self.p)
         return N * ot.lp.emd(uniform_weights, W, M) @ X
 
+
 class EntropyRegularizedEnsembleTransform(EnsembleTransformBase):
     """Method from S. Reich, A non-parametric ensemble transform method for Bayesian inference (2013)"""
 
@@ -80,6 +81,7 @@ class EntropyRegularizedEnsembleTransform(EnsembleTransformBase):
         M = ot.utils.cdist(X.reshape(N, -1), X.reshape(N, -1), self.metric, p=self.p)
         new_X = N * ot.bregman.sinkhorn(uniform_weights, W, M, self.epsilon) @ X
         return new_X
+
 
 class CorrectedEntropyRegularizedEnsembleTransform(EnsembleTransformBase):
     """Method from S. Reich, A non-parametric ensemble transform method for Bayesian inference (2013)"""
@@ -129,7 +131,6 @@ class EnsembleTransformFilter(SMC):
             self.Xp = self.ensemble_transform.resample(self.aux.W, self.X)
             self.reset_weights()
             self.X = self.fk.M(self.t, self.Xp)
-
 
     def resample_move_qmc(self):
         self.rs_flag = True  # we *always* resample in SQMC
