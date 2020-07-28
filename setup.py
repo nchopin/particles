@@ -5,8 +5,6 @@ import io
 import setuptools  
 import sys
 
-import particles
-
 NAME = 'particles'
 DESCRIPTION = 'Sequential Monte Carlo in Python'
 
@@ -42,15 +40,15 @@ METADATA = dict(
     ]
 )
 
-# Readthedocs uses the --force option, and does not work if we ask to 
-# compile fortran code, so we disable this in that case.
-if '--force' in sys.argv: 
-    from setuptools import setup 
-else:
+# Try to install using Fortran, if the compilator
+# cannot be found, switch to traditional installation.
+try:
     from numpy.distutils.core import setup
     from numpy.distutils.extension import Extension
     ext = Extension(name=NAME + ".lowdiscrepancy", 
                     sources=["src/LowDiscrepancy.f"])
     METADATA['ext_modules'] = [ext,]
-    
+except ModuleNotFoundError:
+    from setuptools import setup
+
 setup(**METADATA)
