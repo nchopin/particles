@@ -1,12 +1,13 @@
+"""
+A quick implementation of Malik and Pitt (2011)'s interpolation method. 
+
+We simply subclass SMC, so as to replace the resampling step by the
+interpolated version of Malik and Pitt. 
+"""
+
 import numpy as np
 from numpy import random
 
-""" A quick implementation of Malik and Pitt (2011)'s interpolation method. 
-
-    We simply subclass SMC, so as to replace the resampling step by the
-    interpolated version of Malik and Pitt. 
-
-"""
 import numba as nb
 import particles
 
