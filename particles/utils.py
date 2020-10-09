@@ -77,8 +77,9 @@ import time
 
 import numpy as np
 from numpy import random
+from typing import List
 
-MAX_INT_32 = np.iinfo(np.int32).max
+MAX_INT_32 = np.iinfo(np.uint32).max
 
 
 def timer(method):
@@ -138,15 +139,13 @@ def add_to_dict(d, obj, key='output'):
     return d
 
 
-def worker(qin, qout, f):
+def worker(i, args, qout, f):
     """Worker for muliprocessing.
 
     A worker repeatedly picks a dict of arguments in the queue and computes
     f for this set of arguments, until the input queue is empty.
     """
-    while not qin.empty():
-        i, args = qin.get()
-        qout.put((i, f(**args)))
+    qout.put((i, f(**args)))
 
 
 def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
@@ -169,19 +168,40 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
                 for ip, op in zip(inputs, outputs)]
 
     # multiprocessing
-    queue_in = multiprocessing.Queue()
     queue_out = multiprocessing.Queue()
-    procs = [multiprocessing.Process(target=worker,
-                                     args=(queue_in, queue_out, f))
-             for _ in range(nprocs)]
-    sent = [queue_in.put((i, args)) for i, args in enumerate(inputs)]
-    [p.start() for p in procs]
-    results = [queue_out.get() for _ in sent]
+    tasks = [multiprocessing.Process(target=worker, args=(i, args, queue_out, f)) for i, args in enumerate(inputs)]
+    results = _run_tasks(tasks, nprocs, queue_out)
     for i, r in results:
         add_to_dict(outputs[i], r)
-    [p.join() for p in procs]
 
     return outputs
+
+def _run_tasks(tasks: List[multiprocessing.Process], nprocs: int, queue_out: multiprocessing.Queue):
+    """
+    Runs `tasks` using `nprocs` cores. Each task in `tasks` must put the result in `queue_out`.
+    :returns the results accumulated in the `queue_out`. If a process does not terminate correctly, a `Runtime Error` is raised.
+    """
+    res = []
+
+    def _get_one_result_and_append_to_res():
+        incoming_result = queue_out.get()
+        underlying_task = tasks[incoming_result[0]]
+        underlying_task.join(timeout=10)
+        if underlying_task.exitcode != 0:
+            raise RuntimeError('Task number {} has encountered an error. Exitcode: {}'.format(incoming_result[0], underlying_task.exitcode))
+        res.append(incoming_result)
+
+    for core, task in itertools.zip_longest(range(nprocs), tasks):
+        if (core is not None) and (task is not None):
+            task.start()
+        elif core is None:
+            # there is no more core to execute processes, so we must wait for one process to finish before executing a new one
+            _get_one_result_and_append_to_res()
+            task.start()
+    while len(res) < len(tasks):
+        _get_one_result_and_append_to_res()
+
+    return res
 
 
 def distinct_seeds(k):
@@ -197,7 +217,7 @@ def distinct_seeds(k):
     return seeds
 
 
-class seeder(object):
+class Seeder(object):
     def __init__(self, func):
         self.func = func
 
@@ -207,6 +227,7 @@ class seeder(object):
             random.seed(seed)
         return self.func(**kwargs)
 
+seeder = Seeder
 
 def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     """Evaluate a function for different parameters, optionally in parallel.
