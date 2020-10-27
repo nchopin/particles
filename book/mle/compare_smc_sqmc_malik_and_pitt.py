@@ -20,8 +20,6 @@ from __future__ import division, print_function
 import numpy as np
 from numpy import random
 from matplotlib import pyplot as plt
-import matplotlib.cm as cm
-from scipy.optimize import fmin 
 
 import particles
 from particles import state_space_models as ssms
@@ -52,9 +50,6 @@ def loglik(theta, seed=None, qmc=False, N=10**4, verbose=False, interpol=False):
         print(theta, out)
     return out
 
-#theta0 = [-1., 0.9, 0.3] 
-#mle = fmin(objfunc, theta0, xtol=.1, ftol=.1, maxfun=1000)
-
 sig_min = 0.2; sig_max = 0.5
 mu = -1.; rho = 0.9 
 sigmas = np.linspace(sig_min, sig_max, 1000)
@@ -79,7 +74,7 @@ plt.plot(sigmas, ll, '+', color='gray', label='standard')
 plt.plot(sigmas, ll_frozen, 'o', color='gray', label='fixed seed')
 plt.plot(sigmas, ll_pol, color='gray', label='interpolation')
 plt.plot(sigmas, ll_qmc,'k.', lw=2, label='SQMC')
-plt.xlabel('sigma')
+plt.xlabel(r'$\sigma$')
 plt.ylabel('log-likelihood')
 plt.legend()
 if savefigs:

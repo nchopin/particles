@@ -1,8 +1,14 @@
 Python 2 vs Python 3 
 ====================
 
-**particles** is currently compatible with both Python 2 and Python 3. When 
-Python 2 gets deprecated (around 2020) Python 2 support may be dropped. 
+Short version: **particles** only supports Python 3. 
+
+Long version:  initially, **particles** supported both Python 2 and Python 3.
+However, Python 2 has been deprecated, and supporting it has become
+troublesome. The last version to support it has been turned into a release; you
+may find in the releases section of the github page (first release, April 15,
+2020). 
+
 
 Requirements
 ============
@@ -36,26 +42,8 @@ However, in the maintainer's experience, conda is usually less hassle, and
 runs faster (because it install a more efficient version of low-level libraries
 such as BLAS). 
 
-Basic installation
-==================
-
-The package is available on PyPI_ (the Python package index), so you may
-install it by running pip. On a Linux machine:: 
-
-    pip install --user particles
-
-.. _PyPi: https://pypi.python.org/pypi 
-
-It is best to install any package from PyPI_ **without** root privilege.
-Option ``--user`` lets you install the package in your home directory, rather than
-globally for all users. 
-
-The only drawback of this method is that it install only the modules of the
-package, and not the additional examples (e.g. the datasets and scripts that 
-were used to generate the plots found in the book). 
-
-Manual/Editable installation
-============================
+Installation: recommended method
+================================
 
 The package is available on Github_ and may be installed using git::
 
@@ -68,6 +56,23 @@ way you may edit yourself the package (in the folder you chose), and then
 import the modified version. 
 
 .. _Github: https://github.com/nchopin/particles.git
+
+Installation: a simpler method
+===============================
+
+The package is also available on PyPI_ (the Python package index), so you may
+install it by running pip. On a Linux machine:: 
+
+    pip install --user particles
+
+.. _PyPi: https://pypi.python.org/pypi 
+
+Option ``--user`` lets you install the package in your home directory, rather than
+globally for all users. 
+
+The only drawback of this method is that it install only the modules of the
+package, and not the additional examples (e.g. the datasets and scripts that 
+were used to generate the plots found in the book). 
 
 Troubleshooting
 ===============

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import io
+import os
 import setuptools  
 import sys
-
-import particles
+import warnings
 
 NAME = 'particles'
 DESCRIPTION = 'Sequential Monte Carlo in Python'
@@ -42,15 +42,28 @@ METADATA = dict(
     ]
 )
 
-# Readthedocs uses the --force option, and does not work if we ask to 
-# compile fortran code, so we disable this in that case.
-if '--force' in sys.argv: 
-    from setuptools import setup 
+fortran_warning = """
+lowdiscrepancy fortran module could not be built (missing compiler? see INSTALL
+notes). Package should work as expected, except for the parts related to QMC
+(quasi-Monte Carlo). 
+"""
+
+# detect that Read the docs is trying to build the package
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if on_rtd:
+    # RTD does not have a fortran compiler
+    from setuptools import setup
 else:
-    from numpy.distutils.core import setup
-    from numpy.distutils.extension import Extension
-    ext = Extension(name=NAME + ".lowdiscrepancy", 
-                    sources=["src/LowDiscrepancy.f"])
-    METADATA['ext_modules'] = [ext,]
-    
+    # Try to install using Fortran, if the compiler
+    # cannot be found, switch to traditional installation.
+    try:
+        from numpy.distutils.core import setup
+        from numpy.distutils.extension import Extension
+        ext = Extension(name=NAME + ".lowdiscrepancy", 
+                        sources=["src/LowDiscrepancy.f"])
+        METADATA['ext_modules'] = [ext,]
+    except:
+        from setuptools import setup
+        warnings.warn(fortran_warning)
+
 setup(**METADATA)

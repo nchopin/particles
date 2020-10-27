@@ -10,9 +10,9 @@ This package was developed to complement the forthcoming book:
 
 ## Features ##
 
-* **resampling**: multinomial, residual, stratified, systematic and SSP. 
-
 * **particle filtering**: bootstrap filter, guided filter, APF.
+
+* **resampling**: multinomial, residual, stratified, systematic and SSP. 
 
 * possibility to define **state-space models** using some (basic) form of 
   probabilistic programming; see below for an example. 
@@ -25,7 +25,7 @@ This package was developed to complement the forthcoming book:
   variants).  FFBS for SQMC is also implemented. 
 
 * Exact filtering/smoothing algorithms: **Kalman** (for linear Gaussian models) 
-and **Baum-Welch** (for hidden Markov models).
+  and **forward-backward recursions** (for finite hidden Markov models).
 
 * **SMC samplers**: SMC tempering, IBIS (a.k.a. data tempering). 
 
@@ -33,9 +33,9 @@ and **Baum-Welch** (for hidden Markov models).
   and **SMC^2**. 
 
 * Basic support for **parallel computation** (i.e. running multiple SMC algorithms 
-on different CPU cores). 
+  on different CPU cores). 
 
-* Basic implementation of **nested sampling** (experimental). 
+* **nested sampling** (basic, experimental). 
 
 ## Example ##
 
