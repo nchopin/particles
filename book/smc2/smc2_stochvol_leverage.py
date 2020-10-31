@@ -27,15 +27,14 @@ import numpy as np
 from numpy import random
 
 import particles
+from particles import datasets as dta 
 from particles import distributions as dists
 from particles import resampling as rs
 from particles import smc_samplers as ssp
 from particles import state_space_models 
 
 # data 
-raw_data = np.loadtxt('../../datasets/GBP_vs_USD_9798.txt',
-                      skiprows=2, usecols=(3,), comments='(C)')
-data = 100. * np.diff(np.log(raw_data))
+data = dta.GBP_vs_USD_9798().data
 
 # prior 
 dictprior = {'mu':dists.Normal(scale=2.),

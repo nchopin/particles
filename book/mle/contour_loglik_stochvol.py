@@ -17,13 +17,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import particles
+from particles import datasets as dta
 from particles import state_space_models as ssms
 
 # data
-raw_data = np.loadtxt('../../datasets/GBP_vs_USD_9798.txt',
-                      skiprows=2, usecols=(3,), comments='(C)')
 T = 200
-data = 100. * np.diff(np.log(raw_data[:(T + 1)]))
+data = dta.GBP_vs_USD_9798().data[:(T + 1)]
 
 
 def fkmod(**kwargs):

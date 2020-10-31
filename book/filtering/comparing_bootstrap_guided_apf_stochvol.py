@@ -21,13 +21,12 @@ import numpy as np
 import seaborn as sb
 
 import particles
+from particles import datasets as dta
 from particles import state_space_models as ssms
 
 # Data and parameter values from Pitt & Shephard
-raw_data = np.loadtxt('../../datasets/GBP_vs_USD_9798.txt',
-                      skiprows=2, usecols=(3,), comments='(C)')
-T = 201
-data = 100. * np.diff(np.log(raw_data[:(T + 1)]))
+T = 200
+data = dta.GBP_vs_USD_9798().data[:(T + 1)]
 my_ssm = ssms.StochVol(mu=2 * np.log(.5992), sigma=0.178, rho=0.9702)
 
 # FK models

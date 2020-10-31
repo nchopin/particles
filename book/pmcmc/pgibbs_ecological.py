@@ -17,6 +17,7 @@ from scipy import stats
 from statsmodels.tsa.stattools import acf
 
 import particles
+from particles import datasets as dta
 from particles import distributions as dists
 from particles import mcmc
 from particles import smc_samplers as ssp
@@ -34,7 +35,7 @@ class ThetaLogisticReparametrised(ssms.ThetaLogistic):
 ssm_cls = ThetaLogisticReparametrised
 
 # data 
-data = np.loadtxt('../../datasets/nutria.txt')
+data = dta.Nutria().data
 
 # prior 
 dict_prior = OrderedDict()

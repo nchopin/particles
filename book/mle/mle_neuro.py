@@ -38,11 +38,12 @@ from scipy.special import expit
 from scipy import optimize
 
 import particles
+from particles import datasets as dta
 from particles import distributions as dists
 from particles import state_space_models as ssms
 
 # data 
-data = np.loadtxt('../../datasets/thaldata.csv', delimiter=',')
+data = dta.Neuro().data
 T = len(data)
 
 # state space model
