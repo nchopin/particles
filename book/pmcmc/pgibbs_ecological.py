@@ -3,7 +3,7 @@
 
 """
 Particle Gibbs (with or without the backward step) for the Theta-logistic
-model (second numerical example in Chapter 16 on PMCMC). 
+model (second numerical example in Chapter 16 on PMCMC).
 """
 
 from __future__ import division, print_function
@@ -11,21 +11,21 @@ from __future__ import division, print_function
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 import numpy as np
-import numpy.random as random 
+import numpy.random as random
 from scipy import linalg
 from scipy import stats
 from statsmodels.tsa.stattools import acf
 
 import particles
-from particles import datasets as dta
+from particles import datasets as dts
 from particles import distributions as dists
 from particles import mcmc
 from particles import smc_samplers as ssp
-from particles import state_space_models as ssms 
+from particles import state_space_models as ssms
 
 # state-space model
 class ThetaLogisticReparametrised(ssms.ThetaLogistic):
-    default_params = {'precX': 4., 'precY': 6.25, 'tau0': 0.15, 
+    default_params = {'precX': 4., 'precY': 6.25, 'tau0': 0.15,
                           'tau1': 0.12, 'tau2': 0.1}
     def __init__(self, **kwargs):
         ssms.ThetaLogistic.__init__(self, **kwargs)
@@ -34,16 +34,16 @@ class ThetaLogisticReparametrised(ssms.ThetaLogistic):
 
 ssm_cls = ThetaLogisticReparametrised
 
-# data 
-data = dta.Nutria().data
+# data
+data = dts.Nutria().data
 
-# prior 
+# prior
 dict_prior = OrderedDict()
 dict_prior['tau0'] = dists.TruncNormal(b=3.)
-dict_prior['tau1'] = dists.TruncNormal(b=3.) 
+dict_prior['tau1'] = dists.TruncNormal(b=3.)
 dict_prior['tau2'] = dists.TruncNormal(b=3.)
-dict_prior['precX'] = dists.Gamma(a=2., b=1.) 
-dict_prior['precY'] = dists.Gamma(a=2., b=1.) 
+dict_prior['precX'] = dists.Gamma(a=2., b=1.)
+dict_prior['precY'] = dists.Gamma(a=2., b=1.)
 prior = dists.StructDist(dict_prior)
 # parameter names on plots
 pretty_par_names = {'tau0': r'$\tau_0$', 'tau1': r'$\tau_1$', 'tau2': r'$\tau_2$',
@@ -80,11 +80,11 @@ class PGibbs(mcmc.ParticleGibbs):
                          - prior.laws['tau2'].logpdf(theta['tau2']))
         if np.log(stats.uniform.rvs()) < log_prob:
             new_theta['tau2'] = tau2_prop
-            # ugly hack to store the number of accepted steps 
+            # ugly hack to store the number of accepted steps
             if hasattr(self, 'nacc_tau2'):
-                self.nacc_tau2 += 1 
+                self.nacc_tau2 += 1
             else:
-                self.nacc_tau2 = 1 
+                self.nacc_tau2 = 1
 
         # update of tau0 (tau1 kept fixed)
         # delta0 = (dax - tau0 + tau1 * np.exp(new_theta['tau2'] * ax[:-1]))
@@ -94,7 +94,7 @@ class PGibbs(mcmc.ParticleGibbs):
 
         # joint update of tau0 and tau1
         T = ay.shape[0]
-        features = np.ones((T - 1, 2)) 
+        features = np.ones((T - 1, 2))
         features[:, 1] = - np.exp(new_theta['tau2'] * ax[:-1])
         xtx = np.dot(features.T, features)
         beta_ols = linalg.solve(xtx, np.matmul(features.T, dax))
@@ -102,11 +102,11 @@ class PGibbs(mcmc.ParticleGibbs):
         Qprior = np.diag([prior.laws[p].sigma**(-2) for p in ['tau0', 'tau1']])
         Qpost = Qprior + new_theta['precX'] * xtx
         Sigpost = linalg.inv(Qpost)
-        mpost = (np.matmul(Qprior, muprior) 
-                 + np.matmul(Sigpost, new_theta['precX'] 
+        mpost = (np.matmul(Qprior, muprior)
+                 + np.matmul(Sigpost, new_theta['precX']
                                  * np.matmul(xtx, beta_ols)))
         while True:
-            # reject until tau0 and tau1 are > 0 
+            # reject until tau0 and tau1 are > 0
             v = stats.multivariate_normal.rvs(mean=mpost, cov=Sigpost)
             if np.all(v > 0.):
                 break
@@ -119,26 +119,26 @@ algos = OrderedDict()
 niter = 10 ** 5
 burnin = int(niter / 10)
 for name, opt in zip(['pg-back', 'pg'], [True, False]):
-    algos[name] = PGibbs(ssm_cls=ssm_cls, data=data, prior=prior, Nx=50, 
+    algos[name] = PGibbs(ssm_cls=ssm_cls, data=data, prior=prior, Nx=50,
                          niter=niter, backward_step=opt, store_x=True,
                          verbose=10)
 
-for alg_name, alg in algos.items(): 
+for alg_name, alg in algos.items():
     print('\nRunning ' + alg_name)
     alg.run()
     print('CPU time: %.2f min' % (alg.cpu_time / 60))
 
-# Update rates 
+# Update rates
 def update_rate(x):
-    """Update rate. 
+    """Update rate.
 
     Parameters
     ----------
-    x: (N,T) or (N,T,d) array 
+    x: (N,T) or (N,T,d) array
 
     Returns
     -------
-    a (T,) or (T,d) array containing the frequency at which each 
+    a (T,) or (T,d) array containing the frequency at which each
     component was updated (along axis 0)
     """
     return np.mean(x[1:] != x[:-1], axis=0)
@@ -153,7 +153,7 @@ linestyles = {'pg-back': '-', 'pg': '--'}
 # Update rates of PG samplers
 plt.figure()
 for alg_name, alg in algos.items():
-    plt.plot(update_rate(alg.chain.x[burnin:]), label=alg_name, linewidth=2, 
+    plt.plot(update_rate(alg.chain.x[burnin:]), label=alg_name, linewidth=2,
              color=colors[alg_name], linestyle=linestyles[alg_name])
 plt.axis([0, data.shape[0], 0., 1.0])
 plt.xlabel('t')
@@ -165,7 +165,7 @@ if savefigs:
 # pair plots from PG-back
 plt.figure()
 thin = int(niter / min(1000, niter))
-# at most 1000 points, so that file is not too heavy 
+# at most 1000 points, so that file is not too heavy
 th = algos['pg-back'].chain.theta[(thin - 1):niter:thin]
 i = 1
 for p1, p2 in [('tau1', 'tau0'), ('tau2', 'tau0')]:
@@ -222,4 +222,3 @@ if savefigs:
     plt.savefig('ecological_acfs.pdf')  # Figure 16.9
 
 plt.show()
-

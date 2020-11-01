@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" 
+"""
 Plot the contours of the log-likelihood of a stochastic volatility model;
-see Figure 13.1 in the MLE Chapter for more details. 
+see Figure 13.1 in the MLE Chapter for more details.
 
 Notes: this script uses multi-processing to speed things up; this may not work
 on certain OSes (see documentation). Replace 0 by 1 in line 41 below to discard
-multiprocessing. 
+multiprocessing.
 """
 
 from __future__ import division, print_function
@@ -17,12 +17,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import particles
-from particles import datasets as dta
+from particles import datasets as dts
 from particles import state_space_models as ssms
 
 # data
 T = 200
-data = dta.GBP_vs_USD_9798().data[:(T + 1)]
+data = dts.GBP_vs_USD_9798().data[:(T + 1)]
 
 
 def fkmod(**kwargs):

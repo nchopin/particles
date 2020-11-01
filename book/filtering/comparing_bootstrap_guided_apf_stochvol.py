@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Compare bootstrap, guided and APF filters on a stochastic volatility model. 
+"""Compare bootstrap, guided and APF filters on a stochastic volatility model.
 
-The proposal of the guided and auxiliary filter, and the auxiliary function 
+The proposal of the guided and auxiliary filter, and the auxiliary function
 of the APF, are based on the Taylor expansion trick of Pitt and Shephard
 (1999).
 
-A SQMC algorithm run with with N=10^5 is used as a baseline. 
+A SQMC algorithm run with with N=10^5 is used as a baseline.
 
-See Section 10.4.2 and Figure 10.3 in the book for a discussion. 
+See Section 10.4.2 and Figure 10.3 in the book for a discussion.
 
-""" 
+"""
 
 from __future__ import division, print_function
 
@@ -21,12 +21,12 @@ import numpy as np
 import seaborn as sb
 
 import particles
-from particles import datasets as dta
+from particles import datasets as dts
 from particles import state_space_models as ssms
 
 # Data and parameter values from Pitt & Shephard
 T = 201
-data = dta.GBP_vs_USD_9798().data[:(T + 1)]
+data = dts.GBP_vs_USD_9798().data[:(T + 1)]
 my_ssm = ssms.StochVol(mu=2 * np.log(.5992), sigma=0.178, rho=0.9702)
 
 # FK models

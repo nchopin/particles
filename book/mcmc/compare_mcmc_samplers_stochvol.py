@@ -29,7 +29,7 @@ from statsmodels.tsa.stattools import acf
 from statsmodels.graphics.gofplots import qqplot_2samples
 
 import particles
-from particles import datasets as dta
+from particles import datasets as dts
 from particles import distributions as dists
 from particles import mcmc
 from particles import smc_samplers
@@ -37,7 +37,7 @@ from particles import state_space_models
 
 # data
 T = 200
-data = dta.GBP_vs_USD_9798().data[:T]
+data = dts.GBP_vs_USD_9798().data[:T]
 
 # prior
 # Note: the MCMC samplers require a prior as an argument, but since we are

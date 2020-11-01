@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Plots Figure 13.5 which illustrates Hüurzeler and Künsch's method for using CRN
+Plots Figure 13.5 which illustrates Hürzeler and Künsch's method for using CRN
 (common random numbers) when evaluating the log-likelihood function.  See
 Chapter 13 (MLE) for more details.
 
-Note: takes less than one minute. 
+Note: takes less than one minute.
 """
 
 from __future__ import division, print_function
@@ -18,12 +18,12 @@ import seaborn as sb
 from scipy.optimize import fmin
 
 import particles
-from particles import datasets as dta
+from particles import datasets as dts
 from particles import resampling as rs
 from particles import state_space_models as ssms
 
 # data
-data = dta.GBP_vs_USD_9798().data
+data = dts.GBP_vs_USD_9798().data
 
 # ssm model
 def ssmod(theta):

@@ -20,17 +20,17 @@ from numpy import random
 import seaborn as sb
 
 import particles
-from particles import datasets as dta
+from particles import datasets as dts
 from particles import distributions as dists
 from particles import resampling as rs
 from particles import smc_samplers
 
-datasets = {'pima': dta.Pima, 'eeg': dta.Eeg, 'sonar': dta.Sonar}
-dataset_name = 'pima'  # choose one of the three 
-data = datasets[dataset_name]().data 
+datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
+dataset_name = 'pima'  # choose one of the three
+data = datasets[dataset_name]().data
 T, p = data.shape
 
-# for each dataset, we adapt: 
+# for each dataset, we adapt:
 # * N: number of particles
 # * Ms = list of Ms (nr MCMC steps)
 # * typM: value of M used for plots on "typical" run
@@ -185,7 +185,7 @@ if savefigs:
     plt.savefig(dataset_name + '_boxplots_postexp1_vs_M.pdf')
 
 # Figure 17.4: variance vs CPU trade-off
-# variance times M, as a function of M 
+# variance times M, as a function of M
 plt.figure()
 cols = {'ibis': 'gray', 'tempering':'black'}
 lsts = {'ibis': '--', 'tempering': '-'}
