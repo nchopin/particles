@@ -24,6 +24,14 @@ bit more general that that. Here is a simple example::
 Once the algorithm is run, the object `my_alg.summaries` contains the computed
 summaries, stored in lists of length T (one component for each iteration t).
 
+Default summaries
+=================
+
+By default, the following summaries are collected:
+    * ``ESSs``: ESS at each iteration;
+    * ``rs_flags``: whether resampling was triggered or not at each time t;
+    * ``logLts``: log-likelihood estimates.
+
 Turning off summary collection
 ==============================
 
@@ -33,16 +41,8 @@ any summary::
     my_alg = particles.SMC(fk=some_fk_model, N=100, summaries=False)
 
 This might be useful in cases when you need to keep a large number of SMC
-objects in memory (as in SMC^2). In that case, even the default summaries (see
-below) might take too much space.
-
-Default summaries
-=================
-
-By default, the following summaries are collected:
-    * ``ESSs``: ESS at each iteration;
-    * ``rs_flags``: whether resampling was triggered or not at each time t;
-    * ``logLts``: log-likelihood estimates.
+objects in memory (as in SMC^2). In that case, even the default summaries
+might take too much space.
 
 Computing moments
 =================
@@ -245,6 +245,8 @@ class Collector(object):
     def collect(self, smc):
         self.summary.append(self.fetch(smc))
 
+# Default collectors
+####################
 
 class ESSCollector(Collector):
     summary_name = 'ESSs'
@@ -266,6 +268,8 @@ class RSFlagsCollector(Collector):
     def fetch(self, smc):
         return smc.rs_flag
 
+# Other basic collectors
+########################
 
 class MomentsCollector(Collector):
     """Collect the moments (weighted mean and variance) of the particles, or
@@ -277,11 +281,66 @@ class MomentsCollector(Collector):
         f = smc.fk.default_moments if self.arg is None else self.arg
         return f(smc.W, smc.X)
 
+def var_estimate(X, W, phi, B):
+    """Variance estimate from Chan & Lai. 
+
+    Parameters
+    ----------
+    X:  (N,) or (N,d) array 
+        The N particles 
+    W:  (N,) numpy.array
+        normalised weights (>=0, sum to one)
+    phi: callable
+        test function 
+    B: (N,) int numpy.array
+        eve variables
+    """
+    phix = phi(X)
+    m = np.average(phix, weights=W, axis=0)
+    if B[0] == B[-1]:
+        v = zeros_like(m)
+    else:
+        N = W.shape[0]
+        s = np.zeros_like(m)
+        for n in range(N): # TODO numba
+            s[n] += W[B[n]] * (phix[B[n]] - m)
+        v = np.mean(s**2) # TODO sum? 
+    return m, v
+
+class LeeWhiteleyVarCollector(Collector):
+    """Computes and collects Lee and Whiteley (2018) variance estimates. 
+    """
+    summary_name = 'lee_whiteley'
+
+    def fetch(self, smc):
+        if smc.t == 0:
+            self.B = np.arange(smc.N)
+        else:
+            self.B = self.B[smc.A]
+        return var_estimate(smc.X, smc.W, self.arg, self.B)
+
+
+class OlssonDoucVarCollector(Collector):
+    """Computes and collects Olsson and Douc (2019) variance estimates, which
+    are based on a fixed-lag approximation. 
+
+    Must be used in conjunction with a rolling window history (store_history=k,
+    with k an int, see module ``smoothing``).
+    """
+    summary_name = 'olsson_douc'
+
+    def fetch(self, smc):
+        B = smc.hist.compute_trajectories()
+        return var_estimate(self.X, self.W, self.arg, B[0])
+
+# Smoothing collectors
+######################
 
 class FixedLagSmoother(Collector):
-    """Compute some function of fixed-lag trajectories; must be used in
-    conjunction with a rolling window history (store_history=k, with k an int,
-    see module smoothing).
+    """Compute some function of fixed-lag trajectories.
+
+    Must be used in conjunction with a rolling window history (store_history=k,
+    with k an int, see module ``smoothing``).
     """
     summary_name = 'fixed_lag_smooth'
 
@@ -372,3 +431,4 @@ class ParisOnlineSmoother(Collector, OnlineSmootherMixin):
     def save_for_later(self, smc):
         self.prev_X = smc.X
         self.prev_W = smc.W
+

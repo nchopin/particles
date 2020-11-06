@@ -300,7 +300,7 @@ class SMC(object):
             self.summaries = collectors.Summaries(**sum_options)
         else:
             self.summaries = None
-        self.hist = smoothing.generate_hist_obj(store_history, fk, qmc)
+        self.hist = smoothing.generate_hist_obj(store_history, self)
 
     def __str__(self):
         return self.fk.summary_format(self)

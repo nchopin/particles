@@ -143,9 +143,9 @@ from particles import hilbert
 from particles import qmc
 from particles import resampling as rs
 
-def generate_hist_obj(option, fk, qmc):
+def generate_hist_obj(option, smc):
     if option is True:
-        return ParticleHistory(fk, qmc)
+        return ParticleHistory(smc.fk, smc.qmc)
     elif option is False:
         return None
     elif callable(option):
@@ -273,8 +273,8 @@ class ParticleHistory(RollingParticleHistory):
         smoothing algorithms, which generate smoothing trajectories constructed
         from the history of a particle filter.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         M: int
             number of trajectories we want to generate
         linear_cost: bool
