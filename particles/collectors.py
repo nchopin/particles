@@ -77,55 +77,12 @@ override method `default_moments` of the considered FeynmanKac class::
 In that case, ``my_fk_model.summaries.moments`` is a list of weighed averages
 of the squares of the components of the particles.
 
-Variance estimation
+Variance estimators
 ===================
 
-As discussed in Section 19.3 of the book, several recent papers (Chan & Lai,
-2013; Lee & Whiteley, 2018; Olsson & Douc, 2019) have proposed variance
-estimates that may be computed from a **single** run of the algorithm. These
-estimates rely on genealogy tracking; more precisely they require to track eve
-variables; i.e. the index of the ancestor at time 0 (or some other origin, in
-Olsson and Douc, 2019) of each particle X_t^n. See function ``var_estimate``
-for the exact expression of this type of estimate.
-
-These estimates may be collected as follows:
-
-    #  same as before
-    #  ...
-    # phi = lambda x: x  # for instance
-    my_alg = particles.SMC(fk=my_fk_model, N=100, chan_lai=phi)
-
-will compute at each time t both the estimate of the expectation of function
-phi (with respect to the current target, :math:`Q_t`), and the associated
-variance estimate.
-
-If you'd rather compute Lee & Whiteley (2018)'s estimate (which is the same as
-Chan & Lai, times a factor :math:`(N/ N-1)^t`), use this collector instead::
-
-    my_alg = particles.SMC(fk=my_fk_model, N=100, lee_whiteley=phi)
-
-Note that these estimators suffer from the well known problem of **particle
-degeneracy**; as soon as the number of distinct ancestors falls to one, these
-variance estimates equal zero. Olsson and Douc (2019) proposed a variant based
-on a fixed-lag approximation. To compute it, you need to activate the
-tracking of a rolling-window history, as for fixed-lag smoothing (see below)::
-
-    k = 10  # for instance
-    my_alg = particles.SMC(fk=my_fk_model, N=100, olsson_douc=phi, store_history=k)
-
-which is going to compute the same type of estimates, but using as eve
-variables (called Enoch variables in Olsson and Douc) the index of the ancestor
-of each particle :math:`X_t^n` as time :math:`t-l`, where `l` is the lag.
-This collector actually computes and stores simultaneously the estimates that
-correspond to lags 0, 1, ..., k (where `k` is the size of the rolling window
-history). This makes it easier to assess the impact of the lag on the
-estimates. Thus
-
-    my_alg = particles.SMC(fk=my_fk_model, N=100, olsson_douc=phi,
-                           store_history=10)
-    my_alg.run()
-    print(my_alg.olsson_douc[-1])  # prints a list of length 10
-
+The variance estimators of Chan & Lai (2013), Lee & Whiteley (2018), etc., are
+implemented as collectors in  module ``variance_estimators``; see the
+documentation of that module for more details. 
 
 Fixed-lag smoothing
 ===================
@@ -236,7 +193,6 @@ time by the ``fetch`` method.
 
 from __future__ import division, print_function
 
-from numba import jit
 from numpy import random
 import numpy as np
 
@@ -251,6 +207,7 @@ class Summaries(object):
 
     def __init__(self, **sum_options):
         # Python magic at its finest
+        from particles import variance_estimators  # collectors for variance estimation
         col_classes = {cls.summary_name: cls
                        for cls in Collector.__subclasses__()}
         # default summaries
@@ -329,96 +286,6 @@ class MomentsCollector(Collector):
     def fetch(self, smc):
         f = smc.fk.default_moments if self.arg is None else self.arg
         return f(smc.W, smc.X)
-
-@jit(nopython=True)
-def var_estimate(X, W, phi, B):
-    """Variance estimate based on genealogy tracking.
-
-    This computes the variance estimate of Chan & Lai (2013), Lee & Whiteley
-    (2018), that is the quantity:
-
-        .. math::
-          \sum_{n=1}^N \left\{ \sum_{m:B_t=n} W_t^m (\varphi(X_t^m) - \Q_t^N(\varphi)) \right\}^2
-
-    where :math:`Q_t^N(\varphi)` is the particle estimate of :math:`Q_t(\varphi)`:
-
-        .. math::
-          \hat{\varphi} = \sum_{n=1}^N W_t^n \varphi(X_t^n)
-
-    Parameters
-    ----------
-    X:  (N,) or (N,d) array
-        The N particles
-    W:  (N,) numpy.array
-        normalised weights (>=0, sum to one)
-    phi: callable
-        test function
-    B: (N,) int numpy.array
-        eve variables
-
-    Output
-    ------
-    (m, v): tuple
-        estimate of :math:`Q_t(\varphi)` and its associated variance estimate
-
-    """
-    phix = phi(X)
-    m = np.average(phix, weights=W, axis=0)
-    if B[0] == B[-1]:
-        v = zeros_like(m)
-    else:
-        N = W.shape[0]
-        s = np.zeros_like(m)
-        for n in range(N):
-            s[n] += W[B[n]] * (phix[B[n]] - m)
-        v = np.mean(s**2)
-    return m, v
-
-class ChanLaiCollector(Collector):
-    """Computes and collects Chan & Lai (2013) variance estimates.
-
-    See the module doc for more details on variance estimation.
-    """
-    summary_name = 'chan_lai'
-
-    def fetch(self, smc):
-        if smc.t == 0:
-            self.B = np.arange(smc.N)
-        else:
-            self.B = self.B[smc.A]
-        return var_estimate(smc.X, smc.W, self.arg, self.B)
-
-class LeeWhiteleyCollector(ChanLaiCollector):
-    """Computes and collects Lee & Whiteley (2018) variance estimates.
-
-    Note: Lee & Whiteley's and Chan & Lai's estimates differ by a (N/N-1)^(t+1) factor.
-
-    See the module doc for more details on variance estimation.
-    """
-    summary_name = 'lee_whiteley'
-
-    def fetch(self, smc):
-        out = super().fetch(self, smc)
-        out[1] *= (smc.N / (smc.N -1)) ** (smc.t + 1)
-        return out
-
-class OlssonDoucVarCollector(Collector):
-    """Computes and collects Olsson and Douc (2019) variance estimates, which
-    are based on a fixed-lag approximation.
-
-    Must be used in conjunction with a rolling window history (store_history=k,
-    with k an int, see module ``smoothing``). The collector computes the
-    estimates for all the lags 0, ..., k. Hence, it returns a list, such that
-    element i is the estimate based on lag i.
-
-    See the module doc for more details on variance estimation.
-    """
-    summary_name = 'olsson_douc'
-
-    def fetch(self, smc):
-        B = smc.hist.compute_trajectories()
-        return [var_estimate(self.X, self.W, self.arg, Bt) for Bt in B][::-1]
-
 # Smoothing collectors
 ######################
 

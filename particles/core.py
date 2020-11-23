@@ -205,7 +205,7 @@ class FeynmanKac(object):
 
 
 class SMC(object):
-    """Metaclass for SMC algorithms. 
+    """Metaclass for SMC algorithms.
 
        Parameters
        ----------
