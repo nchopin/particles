@@ -53,7 +53,7 @@ therefore be used as keyword arguments for function f):
   an entry `run` (ranging from 0 to nruns-1) is added to the output dictionaries.
 * ``seeding`` (default: True if ``nruns``>1, False otherwise):  if True, seeds
   the pseudo-random generator before each call of function `f` with a different
-  seed; see below. 
+  seed; see below.
 
 .. warning ::
     Library `multiprocessing` generates identical workers, up to the state of
@@ -62,7 +62,7 @@ therefore be used as keyword arguments for function f):
     identical results from all your workers); (b) make sure the function f does
     not rely on scipy frozen distributions, as these distributions also
     freeze the states. For instance, do not use any frozen distribution when
-    defining your own Feynman-Kac object. 
+    defining your own Feynman-Kac object.
 
 .. seealso :: `multiSMC`
 
@@ -77,7 +77,6 @@ import time
 
 import numpy as np
 from numpy import random
-from typing import List
 
 MAX_INT_32 = np.iinfo(np.uint32).max
 
@@ -139,13 +138,17 @@ def add_to_dict(d, obj, key='output'):
     return d
 
 
-def worker(i, args, qout, f):
+def worker(qin, qout, f):
     """Worker for muliprocessing.
 
     A worker repeatedly picks a dict of arguments in the queue and computes
     f for this set of arguments, until the input queue is empty.
     """
-    qout.put((i, f(**args)))
+    while True:
+        i, args = qin.get()
+        if i is None and args is None:
+            break
+        qout.put((i, f(**args)))
 
 
 def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
@@ -168,40 +171,21 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
                 for ip, op in zip(inputs, outputs)]
 
     # multiprocessing
+    queue_in = multiprocessing.Queue()
     queue_out = multiprocessing.Queue()
-    tasks = [multiprocessing.Process(target=worker, args=(i, args, queue_out, f)) for i, args in enumerate(inputs)]
-    results = _run_tasks(tasks, nprocs, queue_out)
+    procs = [multiprocessing.Process(target=worker,
+                                     args=(queue_in, queue_out, f))
+             for _ in range(nprocs)]
+    sent = [queue_in.put((i, args)) for i, args in enumerate(inputs)]
+    [queue_in.put((None, None)) for _ in range(nprocs)] # signalling the end of queue
+    [p.start() for p in procs]
+    results = [queue_out.get() for _ in sent]
     for i, r in results:
         add_to_dict(outputs[i], r)
+    [p.join() for p in procs]
+    [p.close() for p in procs]
 
     return outputs
-
-def _run_tasks(tasks: List[multiprocessing.Process], nprocs: int, queue_out: multiprocessing.Queue):
-    """
-    Runs `tasks` using `nprocs` cores. Each task in `tasks` must put the result in `queue_out`.
-    :returns the results accumulated in the `queue_out`. If a process does not terminate correctly, a `Runtime Error` is raised.
-    """
-    res = []
-
-    def _get_one_result_and_append_to_res():
-        incoming_result = queue_out.get()
-        underlying_task = tasks[incoming_result[0]]
-        underlying_task.join(timeout=10)
-        if underlying_task.exitcode != 0:
-            raise RuntimeError('Task number {} has encountered an error. Exitcode: {}'.format(incoming_result[0], underlying_task.exitcode))
-        res.append(incoming_result)
-
-    for core, task in itertools.zip_longest(range(nprocs), tasks):
-        if (core is not None) and (task is not None):
-            task.start()
-        elif core is None:
-            # there is no more core to execute processes, so we must wait for one process to finish before executing a new one
-            _get_one_result_and_append_to_res()
-            task.start()
-    while len(res) < len(tasks):
-        _get_one_result_and_append_to_res()
-
-    return res
 
 
 def distinct_seeds(k):
@@ -217,7 +201,7 @@ def distinct_seeds(k):
     return seeds
 
 
-class Seeder(object):
+class seeder(object):
     def __init__(self, func):
         self.func = func
 
@@ -227,7 +211,6 @@ class Seeder(object):
             random.seed(seed)
         return self.func(**kwargs)
 
-seeder = Seeder
 
 def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     """Evaluate a function for different parameters, optionally in parallel.
