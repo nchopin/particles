@@ -189,16 +189,15 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
 
 
 def distinct_seeds(k):
-    """ returns k distinct seeds for random number generation
+    """generates k distinct seeds for random number generation.
     """
-    seeds = []
-    for _ in range(k):
-        while True:
-            s = random.randint(MAX_INT_32)
-            if s not in seeds:
-                break
-        seeds.append(s)
-    return seeds
+    while(True):
+        seeds = random.randint(MAX_INT_32, size=2 * k)  # birthday's problem
+        unique_seeds = np.unique(seeds)
+        if len(unique_seeds) >= k:
+            break
+    random.shuffle(unique_seeds)
+    return(unique_seeds[:k])
 
 
 class seeder(object):
