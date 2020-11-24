@@ -183,7 +183,6 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
     for i, r in results:
         add_to_dict(outputs[i], r)
     [p.join() for p in procs]
-    [p.close() for p in procs]
 
     return outputs
 
