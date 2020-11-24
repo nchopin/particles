@@ -35,6 +35,9 @@ This package was developed to complement the forthcoming book:
 * Basic support for **parallel computation** (i.e. running multiple SMC algorithms 
   on different CPU cores). 
 
+* **Variance estimators** (Chan and Lai, 2013 ; Lee and Whiteley, 2018; Olsson
+  and Douc, 2019)
+
 * **nested sampling** (basic, experimental). 
 
 ## Example ##

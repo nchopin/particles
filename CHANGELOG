@@ -1,0 +1,6 @@
+version 0.2
+===========
+
+* new datasets module 
+* new variance_estimators module 
+* utils module: performance improvements (multi-processing, distinct seeds)
