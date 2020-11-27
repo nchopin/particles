@@ -200,7 +200,7 @@ def distinct_seeds(k):
     uses stratified sampling to make sure the seeds are distinct.
     """
     bw = MAX_INT_32 // k  # bin width
-    return np.arange(0, k, bw) + random.randint(bw, size=k)
+    return np.arange(0, k * bw, bw) + random.randint(bw, size=k)
 
 
 class seeder(object):
