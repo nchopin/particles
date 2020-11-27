@@ -26,7 +26,7 @@ from particles import state_space_models as ssms
 
 # Data and parameter values from Pitt & Shephard
 T = 201
-data = dts.GBP_vs_USD_9798().data[:(T + 1)]
+data = dts.GBP_vs_USD_9798().data[:T]
 my_ssm = ssms.StochVol(mu=2 * np.log(.5992), sigma=0.178, rho=0.9702)
 
 # FK models

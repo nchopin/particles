@@ -22,7 +22,7 @@ from particles import state_space_models as ssms
 
 # data
 T = 200
-data = dts.GBP_vs_USD_9798().data[:(T + 1)]
+data = dts.GBP_vs_USD_9798().data[:T]
 
 
 def fkmod(**kwargs):
