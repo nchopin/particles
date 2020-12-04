@@ -5,8 +5,10 @@
 Numerical experiment of Chapter 17 (SMC samplers).
 
 Compare IBIS and SMC tempering for approximating:
-    * the normalising constant (marginal likelihood)
-    * the posterior expectation of the p coefficients
+
+* the normalising constant (marginal likelihood)
+* the posterior expectation of the p coefficients
+
 for a logistic regression model.
 
 See below for how to select the data-set.
@@ -18,51 +20,37 @@ from numpy import random
 import seaborn as sb
 
 import particles
+from particles import datasets as dts
 from particles import distributions as dists
 from particles import resampling as rs
 from particles import smc_samplers
 
-# raw data
-dataset = 'eeg'  # choose between: sonar, pima, eeg
-# for each dataset, fix
-# N: number of particles
-# Ms = list of Ms (nr MCMC steps)
-# typM: value of M used for plots on "typical" run
+datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
+dataset_name = 'pima'  # choose one of the three
+data = datasets[dataset_name]().data
+T, p = data.shape
 
-if dataset == 'sonar':
+# for each dataset, we adapt:
+# * N: number of particles
+# * Ms = list of Ms (nr MCMC steps)
+# * typM: value of M used for plots on "typical" run
+
+if dataset_name == 'sonar':
     N = 10 ** 4
     Ms = [10, 20, 30, 40, 50, 60]
     typM = 50
-    raw_data = np.loadtxt('../../datasets/sonar.all-data', delimiter=',',
-                          converters={60: lambda x: 1 if x ==b'R' else 0})
-elif dataset == 'pima':
+elif dataset_name == 'pima':
     N = 10 ** 3
     Ms = [1, 3, 5]
     typM = 3
-    raw_data = np.loadtxt('../../datasets/pima-indians-diabetes.data',
-                          delimiter=',')
-elif dataset == 'eeg':
+elif dataset_name == 'eeg':
     N = 10 ** 3
     Ms = [1, 3, 5, 7, 10, 15, 20]
     typM = 5
-    raw_data = np.loadtxt('../../datasets/eeg_eye_state.data',
-                          delimiter=',', skiprows=19)
-
-T, p = raw_data.shape
-data = np.empty((T, p))
-response = 2 * raw_data[:, -1] - 1  # 0/1 -> -1/1
-preds = raw_data[:, :-1]
-
-# normalise predictors (mean=0, sd=0.5)
-data[:, 0] = 1. # intercept
-data[:, 1:] = 0.5 * (preds - np.mean(preds, axis=0)) / np.std(preds, axis=0)
-
-# flip signs according to response
-data *= response[:, np.newaxis]
 
 # prior & model
 prior = dists.StructDist({'beta':dists.MvNormal(scale=5.,
-                                                  cov=np.eye(p))})
+                                                cov=np.eye(p))})
 
 class LogisticRegression(smc_samplers.StaticModel):
     def logpyt(self, theta, t):
@@ -77,7 +65,7 @@ nruns = 16
 results = []
 
 # runs
-print('Dataset: %s' % dataset)
+print('Dataset: %s' % dataset_name)
 for M in Ms:
     for i in range(nruns):
         # need to shuffle the data for IBIS
@@ -143,14 +131,14 @@ fig, ax = plt.subplots()
 ax.plot(typ_ess, 'k')
 ax.set(xlabel=r'$t$', ylabel='ESS')
 if savefigs:
-    plt.savefig(dataset + '_typical_ibis_ess.pdf')
+    plt.savefig(dataset_name + '_typical_ibis_ess.pdf')
 
 # Right panel: evolution of resampling times
 fig, ax = plt.subplots()
 ax.plot(typ_rs_times[:-1], np.diff(typ_rs_times), 'ko-')
 ax.set(xlabel=r'$t$', ylabel='duration between successive rs')
 if savefigs:
-    plt.savefig(dataset + '_typical_ibis_rs_times.pdf')
+    plt.savefig(dataset_name + '_typical_ibis_rs_times.pdf')
 
 # Figure 17.2: evolution of temperature in a typical tempering run
 typ_temp = [r for r in results if r['type']=='tempering' and r['M'] == typM][0]
@@ -160,7 +148,7 @@ plt.plot(expnts, 'k')
 plt.xlabel(r'$t$')
 plt.ylabel('tempering exponent')
 if savefigs:
-    plt.savefig(dataset + '_typical_tempering_temperatures.pdf')
+    plt.savefig(dataset_name + '_typical_tempering_temperatures.pdf')
 
 # nr evals vs M for both algorithms
 plt.figure()
@@ -171,7 +159,7 @@ sb.boxplot(x=[r['M'] for r in results],
 plt.xlabel('number MCMC steps')
 plt.ylabel('number likelihood evaluations')
 if savefigs:
-    plt.savefig(dataset + '_boxplots_nevals_vs_M.pdf')
+    plt.savefig(dataset_name + '_boxplots_nevals_vs_M.pdf')
 
 # Figure 17.3: Box-plots estimate versus number of MCMC steps
 # Left panel: marginal likelihood
@@ -183,7 +171,7 @@ sb.boxplot(x=[r['M'] for r in results],
 plt.xlabel('number MCMC steps')
 plt.ylabel('marginal likelihood')
 if savefigs:
-    plt.savefig(dataset + '_boxplots_marglik_vs_M.pdf')
+    plt.savefig(dataset_name + '_boxplots_marglik_vs_M.pdf')
 
 # Right panel: post expectation 1st pred
 plt.figure()
@@ -194,10 +182,10 @@ sb.boxplot(x=[r['M'] for r in results],
 plt.xlabel('number MCMC steps')
 plt.ylabel('posterior expectation first predictor')
 if savefigs:
-    plt.savefig(dataset + '_boxplots_postexp1_vs_M.pdf')
+    plt.savefig(dataset_name + '_boxplots_postexp1_vs_M.pdf')
 
 # Figure 17.4: variance vs CPU trade-off
-# variance times M, as a function of M 
+# variance times M, as a function of M
 plt.figure()
 cols = {'ibis': 'gray', 'tempering':'black'}
 lsts = {'ibis': '--', 'tempering': '-'}
@@ -221,4 +209,4 @@ plt.xticks(Ms, ['%i' % M for M in Ms])  # force int ticks
 plt.xlabel('number MCMC steps')
 plt.ylabel(r'variance times number MCMC steps')
 if savefigs:
-    plt.savefig(dataset + '_postexp_var_vs_M.pdf')
+    plt.savefig(dataset_name + '_postexp_var_vs_M.pdf')

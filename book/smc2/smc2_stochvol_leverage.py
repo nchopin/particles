@@ -2,19 +2,19 @@
 # -*- coding: utf-8 -*-
 
 """
-Numerical example of Chapter 18 on SMC^2. 
+Numerical example of Chapter 18 on SMC^2.
 
-Runs several instances of the SMC^2 algorithm; the likelihood may be 
-approximated: 
-    * either by a standard bootstrap filter 
+Runs several instances of the SMC^2 algorithm; the likelihood may be
+approximated:
+    * either by a standard bootstrap filter
     * or its SQMC version
 
-The considered state-space model is a stochastic volatility model 
-with leverage. 
+The considered state-space model is a stochastic volatility model
+with leverage.
 
-Notes: for N=10^3, a single run takes about 2 hrs; since runs are executed 
-in parallel, the total CPU time depends on the number of cores. 
-(With 50+ cores, it should take 2 hrs as well.) 
+Notes: for N=10^3, a single run takes about 2 hrs; since runs are executed
+in parallel, the total CPU time depends on the number of cores.
+(With 50+ cores, it should take 2 hrs as well.)
 """
 
 from __future__ import division, print_function
@@ -27,17 +27,16 @@ import numpy as np
 from numpy import random
 
 import particles
+from particles import datasets as dts
 from particles import distributions as dists
 from particles import resampling as rs
 from particles import smc_samplers as ssp
-from particles import state_space_models 
+from particles import state_space_models
 
-# data 
-raw_data = np.loadtxt('../../datasets/GBP_vs_USD_9798.txt',
-                      skiprows=2, usecols=(3,), comments='(C)')
-data = 100. * np.diff(np.log(raw_data))
+# data
+data = dts.GBP_vs_USD_9798().data
 
-# prior 
+# prior
 dictprior = {'mu':dists.Normal(scale=2.),
              'sigma':dists.Gamma(a=2., b=2.),
              'rho': dists.Beta(a=9., b=1.),
@@ -45,15 +44,15 @@ dictprior = {'mu':dists.Normal(scale=2.),
             }
 prior = dists.StructDist(dictprior)
 
-# moment function 
+# moment function
 def qtiles(W, x):
     alphas = np.linspace(0.05, 0.95, 19)
     return rs.wquantiles_str_array(W, x.theta, alphas=alphas)
 
-# algorithms 
+# algorithms
 N = 10 ** 3  # re-run with N= 10^4 for the second CDF plots
 fks = {}
-fk_opts = {'ssm_cls': state_space_models.StochVolLeverage, 'prior': prior, 
+fk_opts = {'ssm_cls': state_space_models.StochVolLeverage, 'prior': prior,
            'data': data, 'init_Nx': 100, 'mh_options': {'nsteps': 5},
            'smc_options': {'qmc': False}, 'ar_to_increase_Nx': 0.1}
 fks['smc2'] = ssp.SMC2(**fk_opts)
@@ -63,7 +62,7 @@ fk_opts['ssm_cls'] = state_space_models.StochVol
 fks['smc2_sv'] = ssp.SMC2(**fk_opts)
 
 if __name__ == '__main__':
-    runs = particles.multiSMC(fk=fks, N=N, moments=qtiles, verbose=True, 
+    runs = particles.multiSMC(fk=fks, N=N, moments=qtiles, verbose=True,
                               nprocs=0, nruns=25)
 
     # plots
@@ -79,7 +78,7 @@ if __name__ == '__main__':
     # Figure 18.2: variance marginal likelihood vs time
     plt.figure()
     for k, c in colors.items():
-        plt.plot(np.var(np.array([r['output'].summaries.logLts 
+        plt.plot(np.var(np.array([r['output'].summaries.logLts
                                        for r in runs if r['fk']==k]), axis=0),
                  color=c, label=k, linewidth=2, linestyle=lsts[k])
     plt.xlabel(r'$t$')
@@ -90,9 +89,9 @@ if __name__ == '__main__':
 
     # Figure 18.3: model evidence leverage vs basic SV model
     plt.figure()
-    evidence_lvg = np.mean([r['output'].summaries.logLts 
+    evidence_lvg = np.mean([r['output'].summaries.logLts
                             for r in runs if r['fk']=='smc2_qmc'], axis=0)
-    evidence_sv = np.mean([r['output'].summaries.logLts 
+    evidence_sv = np.mean([r['output'].summaries.logLts
                             for r in runs if r['fk']=='smc2_sv'], axis=0)
     plt.plot(evidence_lvg - evidence_sv, 'k')
     plt.xlabel(r'$t$')
@@ -105,9 +104,9 @@ if __name__ == '__main__':
     plt.figure()
     for i, p in enumerate(prior.laws.keys()):
         plt.subplot(2, 2, i + 1)
-        q25, q50, q75 = [[typical_run.summaries.moments[t][p][j] for t in range(T)] 
+        q25, q50, q75 = [[typical_run.summaries.moments[t][p][j] for t in range(T)]
                     for j in [5, 10, 15]]
-        plt.fill_between(range(T), q25, q75, color='gray') 
+        plt.fill_between(range(T), q25, q75, color='gray')
         plt.plot(range(T), q50, 'k')
         plt.title(r'$\%s$' % p)
         plt.xlabel(r'$t$')
@@ -115,7 +114,7 @@ if __name__ == '__main__':
     if savefigs:
         plt.savefig('%s_seq_inference.pdf' % prefix)
 
-    # Figure 18.1 (left panel): ESS vs time for a typical run 
+    # Figure 18.1 (left panel): ESS vs time for a typical run
     plt.figure()
     typ_run = runs[0]
     print(typ_run['fk'])
@@ -153,9 +152,9 @@ if __name__ == '__main__':
     if savefigs:
         plt.savefig('%s_cdfs.pdf' % prefix)
 
-    # Figure 18.1 (right panel): Nx vs time 
+    # Figure 18.1 (right panel): Nx vs time
     plt.figure()
-    for r in smc2s: 
+    for r in smc2s:
         jitter = 5 * random.randn()
         plt.plot(np.array(r.X.Nxs) + jitter, 'k', alpha=0.5)
     plt.ylim(bottom=0)

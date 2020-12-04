@@ -4,7 +4,7 @@
 """
 Follow-up on: pmmh_lingauss.py 
 
-Show an instance where PMMH may be biased because it fails to explore a
+Shows an instance where PMMH may be biased because it fails to explore a
 "corner" of the parameter space, where the performance of the bootstrap filter
 deteriorates too much. 
 
@@ -37,8 +37,8 @@ prior = dists.StructDist(dict_prior)
 # State-space model 
 class ReparamLinGauss(kalman.LinearGauss):
     def __init__(self, varX=1., varY=1., rho=0.):
-        sigmaX = np.sqrt(varX)
-        sigmaY = np.sqrt(varY)
+        sigmaY = np.sqrt(varY) if varY > 0. else 0.
+        sigmaX = np.sqrt(varX) if varX > 0. else 0.
         sigma0 = sigmaX
         # Note: We take X_0 ~ N(0, sigmaX^2) so that Gibbs step is tractable
         kalman.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
@@ -86,9 +86,9 @@ savefigs = True  # False if you don't want to save plots as pdfs
 
 # compare marginals of varY
 plt.figure()
-plt.hist(algos['mh'].chain.theta['varY'][burnin:], 35, alpha=0.7, normed=True, 
+plt.hist(algos['mh'].chain.theta['varY'][burnin:], 35, alpha=0.7, density=True, 
          histtype='stepfilled', color='black', label='mh', range=(0., .4))
-plt.hist(algos['pmmh'].chain.theta['varY'][burnin:], 35, alpha=0.7, normed=True, 
+plt.hist(algos['pmmh'].chain.theta['varY'][burnin:], 35, alpha=0.7, density=True, 
          histtype='stepfilled', color='gray', label='pmmh-100', range=(0., .4))
 plt.xlabel(r'$\sigma_Y^2$')
 plt.legend()
@@ -105,7 +105,7 @@ for i, param in enumerate(dict_prior.keys()):
             w, par = alg.W, alg.X.theta[param]
         else:
             w, par = None, alg.chain.theta[param][burnin:]
-        plt.hist(par, 30, normed=True, alpha=0.5, weights=w,
+        plt.hist(par, 30, density=True, alpha=0.5, weights=w,
                  label=alg_name, histtype='stepfilled')
     ax = plt.axis()
     xx = np.linspace(ax[0], ax[1], 100)
