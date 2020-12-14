@@ -326,7 +326,7 @@ class ParticleHistory(RollingParticleHistory):
     def _backward_sampling_ON(self, M, idx):
         """O(N) version of backward sampling.
 
-        not meant to be called directly, see backward_sampling
+        not meant to be called directly, see backward_sampling.
         """
         nattempts = 0
         for t in reversed(range(self.T - 1)):
@@ -351,7 +351,7 @@ class ParticleHistory(RollingParticleHistory):
     def _backward_sampling_ON2(self, M, idx):
         """O(N^2) version of backward sampling.
 
-        not meant to be called directly, see backward_sampling
+        not meant to be called directly, see backward_sampling.
         """
         for m in range(M):
             for t in reversed(range(self.T - 1)):

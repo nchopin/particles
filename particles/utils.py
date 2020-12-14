@@ -78,7 +78,7 @@ import time
 import numpy as np
 from numpy import random
 
-MAX_INT_32 = np.iinfo(np.int32).max
+MAX_INT_32 = np.iinfo(np.uint32).max
 
 
 def timer(method):
@@ -144,8 +144,10 @@ def worker(qin, qout, f):
     A worker repeatedly picks a dict of arguments in the queue and computes
     f for this set of arguments, until the input queue is empty.
     """
-    while not qin.empty():
+    while True:
         i, args = qin.get()
+        if i is None and args is None:
+            break
         qout.put((i, f(**args)))
 
 
@@ -175,6 +177,7 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
                                      args=(queue_in, queue_out, f))
              for _ in range(nprocs)]
     sent = [queue_in.put((i, args)) for i, args in enumerate(inputs)]
+    [queue_in.put((None, None)) for _ in range(nprocs)] # signalling the end of queue
     [p.start() for p in procs]
     results = [queue_out.get() for _ in sent]
     for i, r in results:
@@ -185,16 +188,19 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
 
 
 def distinct_seeds(k):
-    """ returns k distinct seeds for random number generation
+    """generates distinct seeds for random number generation.
+
+    Parameters
+    ----------
+    k:  int
+        number of requested seeds
+
+    Note
+    ----
+    uses stratified sampling to make sure the seeds are distinct.
     """
-    seeds = []
-    for _ in range(k):
-        while True:
-            s = random.randint(MAX_INT_32)
-            if s not in seeds:
-                break
-        seeds.append(s)
-    return seeds
+    bw = MAX_INT_32 // k  # bin width
+    return np.arange(0, k * bw, bw) + random.randint(bw, size=k)
 
 
 class seeder(object):
