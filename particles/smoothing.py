@@ -49,10 +49,10 @@ Partial History
 
 Here are some examples on one may record history only at certain times::
 
-    # store every other 10 iterations
+    # store every other 10 iterations
     smc = SMC(fk=fk, N=100, store_history=lambda t: (t % 10) == 0)
 
-    # store at certain times given by a list
+    # store at certain times given by a list
     times = [10, 30, 84]
     smc = SMC(fk=fk, N=100, store_history=lambda t: t in times)
 
@@ -61,8 +61,8 @@ dictionaries, the keys of which are the times where history was recorded. The
 ancestor variables are not recorded in that case::
 
     smc.run()
-    smc.hist.X[10]  # the N particles at time 10
-    smc.hist.A[10]  # raises an error
+    smc.hist.X[10]  # the N particles at time 10
+    smc.hist.A[10]  # raises an error
 
 
 Full history, off-line smoothing algorithms
@@ -107,20 +107,20 @@ To obtain a rolling window (fixed-length) history::
 In that case, fields ``smc.hist.X``, ``smc.hist.wgts`` and ``smc.hist.A`` are
 `deques`_  of max length 10.  Using negative indices::
 
-    smc.hist.X[-1]  # the particles at final time T
-    smc.hist.X[-2]  # the particles at time T - 1
+    smc.hist.X[-1]  # the particles at final time T
+    smc.hist.X[-2]  # the particles at time T - 1
     # ...
-    smc.hist.X[-10] # the N particles at time T - 9
-    smc.hist.X[-11] # raises an error
+    smc.hist.X[-10] # the N particles at time T - 9
+    smc.hist.X[-11] # raises an error
 
 Note that this type of history makes it possible to perform fixed-lag smoothing
 as follows::
 
     B = smc.hist.compute_trajectories()
-    # B[t, n] is index of ancestor of X_T^n at time t
-    phi = lambda x: x  # any test function
+    # B[t, n] is index of ancestor of X_T^n at time t
+    phi = lambda x: x  # any test function
     est = np.average(phi(smc.hist.X[-10][B[-10, :]]), weights=smc.W)
-    # est is an estimate of E[ phi(X_{T-9}) | Y_{0:T}]
+    # est is an estimate of E[ phi(X_{T-9}) | Y_{0:T}]
 
 .. note:: recall that it is possible to run `SMC` algorithms step by step,
    since they are iterators. Hence it is possible to do fixed-lag smoothing
@@ -207,7 +207,7 @@ class RollingParticleHistory(object):
         at time t of particle X_T^n, where T is the current length of history.
         """
         Bs = [np.arange(self.N)]
-        for A in list(self.A)[-1:0:-1]: # list in case self.A is a deque
+        for A in list(self.A)[-1:0:-1]: # list in case self.A is a deque
             Bs.append(A[Bs[-1]])
         Bs.reverse()
         return np.array(Bs)

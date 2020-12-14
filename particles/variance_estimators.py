@@ -87,9 +87,9 @@ from __future__ import division, print_function
 from numba import jit
 import numpy as np
 
-from particles.collectors import Collector
+import particles.collectors as col
 
-def var_estimate(X, W, phi, B):
+def var_estimate(W, phi_x, B):
     """Variance estimate based on genealogy tracking.
 
     This computes the variance estimate of Chan & Lai (2013):
@@ -100,16 +100,14 @@ def var_estimate(X, W, phi, B):
     where :math:`Q_t^N(\varphi)` is the particle estimate of :math:`Q_t(\varphi)`:
 
         .. math::
-          \hat{\varphi} = \sum_{n=1}^N W_t^n \varphi(X_t^n)
+          Q_t^N(\varphi) = \sum_{n=1}^N W_t^n \varphi(X_t^n)
 
     Parameters
     ----------
-    X:  (N,) or (N,d) array
-        The N particles
     W:  (N,) numpy.array
         normalised weights (>=0, sum to one)
-    phi: callable
-        test function
+    phi_x: (N) or (N, d) numpy.array
+        values of phi(X_t^n)
     B: (N,) int numpy.array
         eve variables
 
@@ -119,32 +117,38 @@ def var_estimate(X, W, phi, B):
         estimate of :math:`Q_t(\varphi)` and its associated variance estimate
 
     """
-    phix = phi(X)
-    m = np.average(phix, weights=W, axis=0)
-    phixm = phi(X) - m
+    m = np.average(phi_x, weights=W, axis=0)
+    phixm = phi_x - m
+    w_phi = W[:, np.newaxis] * phixm if phixm.ndim == 2 else W * phixm
     if B[0] == B[-1]:
         out = np.zeros_like(m)
     else:
-        out = _var_est_loop(phixm, W, B)
+        out = _sum_over_branches(w_phi, B)
     return out
 
 @jit(nopython=True)
-def _var_est_loop(phixm, W, B):
-    N= W.shape[0]
-    s = np.zeros_like(W)
-    for n in range(N):
-        s[n] += W[B[n]] * phixm[B[n]]
+def _sum_over_branches(w_phi, B):
+    N = w_phi.shape[0]
+    s = np.zeros(N)
+    for m in range(N):
+        s[B[m]] += w_phi[m]
     return np.sum(s**2)
 
-def var_estimate_norm_cst(B, t):
-    N = B.shape[0]
-    uniques, counts = np.unique(B, return_counts=True)
-    phi = np.zeros_like(B)
-    phi[uniques] = counts ** 2
-    cf = (N / (N - 1))**(t + 1)  # TODO t or t +1?
-    return 1. + cf * (np.sum(phi) / N**2 - 1.)
+class VarColMixin(object):
+    def update_B(self, smc):
+        if smc.t == 0:
+            self.B = np.arange(smc.N)
+        else:
+            self.B = self.B[smc.A]
 
-class NormCstVarCollector(Collector):
+class Var(col.CollectorWithFunc, VarColMixin):
+    """Computes and collects variance estimates for a given function phi.
+   """
+    def fetch(self, smc):
+        self.update_B(smc)
+        return var_estimate(smc.W, self.phi(smc.X), self.B)
+
+class Var_logLt(col.Collector, VarColMixin):
     """Computes and collects estimates of the relative variance of the normalising
     constant estimator.
 
@@ -153,27 +157,11 @@ class NormCstVarCollector(Collector):
     time t-1. This *shift* is inherent to the method.
 
     """
-    summary_name = 'norm_cst_var_est'
     def fetch(self, smc):
-        if smc.t == 0:
-            self.B = np.arange(smc.N)
-        else:
-            self.B = self.B[smc.A]
-        return var_estimate_norm_cst(self.B, smc.t)
+        self.update_B(smc)
+        return _sum_over_branches(smc.W, self.B)
 
-class VarCollector(Collector):
-    """Computes and collects variance estimates for a given function phi.
-    """
-    summary_name = 'var_est'
-    def fetch(self, smc):
-        if smc.t == 0:
-            self.B = np.arange(smc.N)
-        else:
-            self.B = self.B[smc.A]
-        return var_estimate(smc.X, smc.W, self.arg, self.B)
-
-
-class LagBasedVarCollector(Collector):
+class Lag_based_var(col.CollectorWithFunc):
     """Computes and collects Olsson and Douc (2019) variance estimates, which
     are based on a fixed-lag approximation.
 
@@ -186,9 +174,6 @@ class LagBasedVarCollector(Collector):
     See the module doc for more details on variance estimation.
 
     """
-    summary_name = 'lag_based_var_est'
-
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
-        return [var_estimate(smc.X, smc.W, self.arg, Bt) for Bt in B][::-1]
-
+        return [var_estimate(smc.W, self.phi(smc.X), Bt) for Bt in B][::-1]

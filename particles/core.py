@@ -277,8 +277,7 @@ class SMC(object):
                  ESSrmin=0.5,
                  store_history=False,
                  verbose=False,
-                 summaries=True,
-                 **sum_options):
+                 collect=None):
 
         self.fk = fk
         self.N = N
@@ -296,10 +295,7 @@ class SMC(object):
         self.X, self.Xp, self.A = None, None, None
 
         # summaries computed at every t
-        if summaries:
-            self.summaries = collectors.Summaries(**sum_options)
-        else:
-            self.summaries = None
+        self.summaries = collectors.Summaries(collect)
         self.hist = smoothing.generate_hist_obj(store_history, self)
 
     def __str__(self):
@@ -483,11 +479,20 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     arguments::
 
         results = multiSMC(fk=my_fk_model, N=[100, 1000], resampling=['multinomial',
-                             'residual'], nruns=20)
+                           'residual'], nruns=20)
 
     In that case we run our algorithm 80 times: 20 times with N=100 and
     resampling set to multinomial, 20 times with N=100 and resampling set to
     residual and so on.
+
+    Finally, if one uses a dictionary instead of a list, e.g.::
+
+        results = multiSMC(fk={'bootstrap': fk_boot, 'guided': fk_guided}, N=100)
+
+    then, in the output dictionaries, the values of the parameters will be replaced
+    by corresponding keys; e.g. in the example above, {'fk': 'bootstrap'}. This is
+    convenient in cases such like this where the parameter value is some non-standard
+    object.
 
     Parameters
     ----------
@@ -510,10 +515,8 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     --------
     `utils.multiplexer`: for more details on the syntax.
     """
-
-
-    if out_func is None:
-        return utils.multiplexer(f=_identity, nruns=nruns, nprocs=nprocs, seeding=True,
-                                 **args)
-    return utils.multiplexer(f=_pickleable_f(out_func), nruns=nruns, nprocs=nprocs, seeding=True,
+    collect = args.pop('collect', None)  # must be protected from Cartesianisation
+    f = _identity if out_func is None else _pickable_f(out_func)
+    return utils.multiplexer(f=f, nruns=nruns, nprocs=nprocs, seeding=True,
+                             protected_args={'collect': collect},
                              **args)

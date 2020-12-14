@@ -53,7 +53,7 @@ therefore be used as keyword arguments for function f):
   an entry `run` (ranging from 0 to nruns-1) is added to the output dictionaries.
 * ``seeding`` (default: True if ``nruns``>1, False otherwise):  if True, seeds
   the pseudo-random generator before each call of function `f` with a different
-  seed; see below. 
+  seed; see below.
 
 .. warning ::
     Library `multiprocessing` generates identical workers, up to the state of
@@ -62,7 +62,7 @@ therefore be used as keyword arguments for function f):
     identical results from all your workers); (b) make sure the function f does
     not rely on scipy frozen distributions, as these distributions also
     freeze the states. For instance, do not use any frozen distribution when
-    defining your own Feynman-Kac object. 
+    defining your own Feynman-Kac object.
 
 .. seealso :: `multiSMC`
 
@@ -208,7 +208,8 @@ class seeder(object):
         return self.func(**kwargs)
 
 
-def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
+def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
+                **args):
     """Evaluate a function for different parameters, optionally in parallel.
 
     Parameters
@@ -224,6 +225,8 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     seeding: bool (default: True if nruns > 1, False otherwise)
         whether to seed the pseudo-random generator (with distinct
         seeds) before each evaluation of function f.
+    protected_args: dict
+        args protected from cartesian product (even if they are lists)
     **args:
         keyword arguments for function f.
 
@@ -235,7 +238,8 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     if not callable(f):
         raise ValueError('multiplexer: function f missing, or not callable')
     # extra arguments (meant to be arguments for f)
-    fixedargs, listargs, dictargs = {}, {}, {}
+    fixedargs = {} if protected_args is None else protected_args
+    listargs, dictargs = {}, {}
     listargs['run'] = list(range(nruns))
     for k, v in args.items():
         if isinstance(v, list):
@@ -259,3 +263,4 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
             op['seed'] = seed
     # the actual work happens here
     return distribute_work(f, inputs, outputs, nprocs=nprocs)
+

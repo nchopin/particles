@@ -82,7 +82,7 @@ Variance estimators
 
 The variance estimators of Chan & Lai (2013), Lee & Whiteley (2018), etc., are
 implemented as collectors in  module ``variance_estimators``; see the
-documentation of that module for more details. 
+documentation of that module for more details.
 
 Fixed-lag smoothing
 ===================
@@ -100,7 +100,7 @@ this is achieved by using a rolling window history, by setting option
 ``store_history`` to an int equals to $h+1$ (the length of the trajectories)::
 
     my_alg = particles.SMC(fk=some_fk_model, N=100, fixed_lag_smooth=phi,
-                           store_history=3)  # h = 2
+                           store_history=3)  # h = 2
 
 See module `smoothing` for more details on rolling window and other types of
 particle history. Function phi must have the same signature as for moments::
@@ -175,11 +175,9 @@ You may implement your own collectors as follows::
 
     import collectors
 
-    class ToyCollector(collectors.Collector):
-        summary_name = 'toy'
+    class Toy_example(collectors.Collector):
         def fetch(self, smc):  # smc is the particles.SMC instance
-            return smc.X[self.arg]
-            # self.arg is the argument passed to the collector
+            return np.mean(smc.X)
 
 Once this is done, you may use this new collector exactly as the other
 ones::
@@ -205,48 +203,43 @@ class Summaries(object):
     Attribute ``summaries`` of ``SMC`` objects is an instance of this class.
     """
 
-    def __init__(self, **sum_options):
-        # Python magic at its finest
-        from particles import variance_estimators  # collectors for variance estimation
-        col_classes = {cls.summary_name: cls
-                       for cls in Collector.__subclasses__()}
-        # default summaries
-        sopts = {k: True for k in ['ESSs', 'rs_flags', 'logLts']}
-        sopts.update(sum_options)
-        self._collectors = []
-        for key, val in sopts.items():
-            if val:  # ignores if False or None
-                arg = None if val is True else val
-                col = col_classes[key](arg)
+    def __init__(self, col_cls_ls):
+        self._collectors = [cls() for cls in default_collector_cls]
+        if col_cls_ls is not None:
+            for cc in col_cls_ls:
+                if isinstance(cc, tuple):
+                    cls, kwargs = cc
+                    col = cls(**kwargs)
+                else:
+                    col = cc()
                 self._collectors.append(col)
-                self.__dict__[col.summary_name] = col.summary
+        for col in self._collectors:
+            setattr(self, col.summary_name, col.summary)
 
     def collect(self, smc):
-        for s in self._collectors:
-            s.collect(smc)
+        for col in self._collectors:
+            col.collect(smc)
 
 
 class Collector(object):
     """Base class for collectors.
 
     To subclass `Collector`:
-        * define summary name in string `summary_name` (should not clash
-          with other summary names);
-        * implement method `fetch(self, smc)` which fetches (in object smc)
-          the summary that must be collected.
+    * implement method `fetch(self, smc)` which computes the summary that
+      must be collected (from object smc, at each time).
+    * (optionally) define class attribute summary_name (name of the collected summary;
+      by default, name of the class, un-capitalised, i.e. Moments > moments)
+    * (optionally) define function __init__ (in case for instance you want to
+      define input parameters)
     """
 
     @property
-    def summary(self):
-        return getattr(self, self.summary_name)
+    def summary_name(self):
+        cn = self.__class__.__name__
+        return cn[0].lower() + cn[1:]
 
-    @summary.setter
-    def summary(self, s):
-        setattr(self, self.summary_name, s)
-
-    def __init__(self, arg):
+    def __init__(self):
         self.summary = []
-        self.arg = arg
 
     def collect(self, smc):
         self.summary.append(self.fetch(smc))
@@ -254,59 +247,62 @@ class Collector(object):
 # Default collectors
 ####################
 
-class ESSCollector(Collector):
+class ESSs(Collector):
     summary_name = 'ESSs'
-
     def fetch(self, smc):
         return smc.wgts.ESS
 
-
-class LogLikCollector(Collector):
-    summary_name = 'logLts'
-
+class LogLts(Collector):
     def fetch(self, smc):
         return smc.logLt
 
-
-class RSFlagsCollector(Collector):
-    summary_name = 'rs_flags'
-
+class Rs_flags(Collector):
     def fetch(self, smc):
         return smc.rs_flag
 
-# Moments, variance estimates
-#############################
+default_collector_cls = [ESSs, LogLts, Rs_flags]
 
-class MomentsCollector(Collector):
-    """Collect the moments (weighted mean and variance) of the particles, or
-    some other moment (as specified by function func).
+# Moments
+#########
+
+class CollectorWithFunc(Collector):
+    def __init__(self, phi=None):
+        super().__init__()
+        self.phi = phi
+
+class Moments(CollectorWithFunc):
+    """Collects empirical moments (e.g. mean and variance) of the particles.
+
+    Moments are defined through a function phi with the following signature:
+
+        def phi(W, X):
+           return np.average(X, weights=W)  # for instance
+
+    If no function is provided, the default moment of the Feynman-Kac class
+    is used (mean and variance of the particles, see ``core.FeynmanKac``.
     """
-    summary_name = 'moments'
-
     def fetch(self, smc):
-        f = smc.fk.default_moments if self.arg is None else self.arg
+        f = smc.fk.default_moments if self.phi is None else self.phi
         return f(smc.W, smc.X)
+
 # Smoothing collectors
 ######################
 
-class FixedLagSmoother(Collector):
+class Fixed_lag_smooth(CollectorWithFunc):
     """Compute some function of fixed-lag trajectories.
 
     Must be used in conjunction with a rolling window history (store_history=k,
     with k an int, see module ``smoothing``).
     """
-    summary_name = 'fixed_lag_smooth'
-
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
         Xs = [X[B[i, :]] for i, X in enumerate(smc.hist.X)]
-        return self.arg(smc.W, Xs)
+        return self.phi(smc.W, Xs)
 
 
 class OnlineSmootherMixin(object):
     """Mix-in for on-line smoothing algorithms.
     """
-
     def fetch(self, smc):
         if smc.t == 0:
             self.Phi = smc.fk.add_func(0, None, smc.X)
@@ -328,16 +324,12 @@ class OnlineSmootherMixin(object):
         pass
 
 
-class NaiveOnLineSmoother(Collector, OnlineSmootherMixin):
-    summary_name = 'naive_online_smooth'
-
+class Online_smooth_naive(Collector, OnlineSmootherMixin):
     def update(self, smc):
         self.Phi = self.Phi[smc.A] + smc.fk.add_func(smc.t, smc.Xp, smc.X)
 
 
-class ON2OnlineSmoother(Collector, OnlineSmootherMixin):
-    summary_name = 'ON2_online_smooth'
-
+class Online_smooth_ON2(Collector, OnlineSmootherMixin):
     def update(self, smc):
         prev_Phi = self.Phi.copy()
         for n in range(smc.N):
@@ -353,13 +345,11 @@ class ON2OnlineSmoother(Collector, OnlineSmootherMixin):
         self.prev_logw = smc.wgts.lw
 
 
-class ParisOnlineSmoother(Collector, OnlineSmootherMixin):
-    summary_name = 'paris'
-
-    def __init__(self, arg):
+class Paris(Collector, OnlineSmootherMixin):
+    def __init__(self, Nparis=2):
         self.paris = []
         self.nprop = [0.]
-        self.Nparis = 2 if arg is None else arg
+        self.Nparis = Nparis
 
     def update(self, smc):
         prev_Phi = self.Phi.copy()
