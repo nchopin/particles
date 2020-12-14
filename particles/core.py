@@ -226,11 +226,8 @@ class SMC(object):
            whether and when history should be saved; see module `smoothing`
        verbose: bool, optional
            whether to print basic info at every iteration (default=False)
-       summaries: bool, optional (default=True)
-           whether summaries should be collected at every time.
-       **summaries_opts: dict
-           options that determine which summaries collected at each iteration
-           (e.g. moments, on-line smoothing estimates); see module `collectors`.
+       collect: list of collectors, or 'off' (for turning off summary collections)
+           see module ``collectors``
 
        Attributes
        ----------
@@ -295,7 +292,10 @@ class SMC(object):
         self.X, self.Xp, self.A = None, None, None
 
         # summaries computed at every t
-        self.summaries = collectors.Summaries(collect)
+        if collect == 'off':
+            self.summaries = None
+        else:
+            self.summaries = collectors.Summaries(collect)
         self.hist = smoothing.generate_hist_obj(store_history, self)
 
     def __str__(self):
@@ -424,7 +424,7 @@ class SMC(object):
 ####################################################
 
 
-class _pickleable_f(object):
+class _picklable_f(object):
 
     def __init__(self, fun):
         self.fun = fun
@@ -435,12 +435,12 @@ class _pickleable_f(object):
         return self.fun(pf)
 
 
-@_pickleable_f
+@_picklable_f
 def _identity(x):
     return x
 
 
-def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
+def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
     """Run SMC algorithms in parallel, for different combinations of parameters.
 
 
@@ -504,8 +504,11 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     * out_func: callable, optional
         function to transform the output of each SMC run. (If not given, output
         will be the complete SMC object).
+    * collect: list of collectors, or 'off'
+        this particular argument of class SMC may be a list, hence it is "protected"
+        from Cartesianisation
     * args: dict
-        arguments passed to SMC class
+        arguments passed to SMC class (except collect)
 
     Returns
     -------
@@ -515,8 +518,7 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     --------
     `utils.multiplexer`: for more details on the syntax.
     """
-    collect = args.pop('collect', None)  # must be protected from Cartesianisation
-    f = _identity if out_func is None else _pickable_f(out_func)
+    f = _identity if out_func is None else _picklable_f(out_func)
     return utils.multiplexer(f=f, nruns=nruns, nprocs=nprocs, seeding=True,
                              protected_args={'collect': collect},
                              **args)

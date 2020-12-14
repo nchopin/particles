@@ -141,9 +141,11 @@ class VarColMixin(object):
         else:
             self.B = self.B[smc.A]
 
-class Var(col.CollectorWithFunc, VarColMixin):
+class Var(col.Collector, VarColMixin):
     """Computes and collects variance estimates for a given function phi.
    """
+    signature = {'phi': None}
+
     def fetch(self, smc):
         self.update_B(smc)
         return var_estimate(smc.W, self.phi(smc.X), self.B)
@@ -161,7 +163,7 @@ class Var_logLt(col.Collector, VarColMixin):
         self.update_B(smc)
         return _sum_over_branches(smc.W, self.B)
 
-class Lag_based_var(col.CollectorWithFunc):
+class Lag_based_var(col.Collector):
     """Computes and collects Olsson and Douc (2019) variance estimates, which
     are based on a fixed-lag approximation.
 
@@ -174,6 +176,7 @@ class Lag_based_var(col.CollectorWithFunc):
     See the module doc for more details on variance estimation.
 
     """
+    signature = {'phi': None}
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
         return [var_estimate(smc.W, self.phi(smc.X), Bt) for Bt in B][::-1]

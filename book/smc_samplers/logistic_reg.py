@@ -24,6 +24,7 @@ from particles import datasets as dts
 from particles import distributions as dists
 from particles import resampling as rs
 from particles import smc_samplers
+from particles.collectors import Moments
 
 datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
 dataset_name = 'pima'  # choose one of the three
@@ -75,11 +76,11 @@ for M in Ms:
             if alg_type=='ibis':
                 fk = smc_samplers.IBIS(model, mh_options={'nsteps': M})
                 pf = particles.SMC(N=N, fk=fk, ESSrmin=ESSrmin,
-                                moments=True, verbose=False)
+                                collect=[Moments], verbose=False)
             else:
                 fk = smc_samplers.AdaptiveTempering(model, ESSrmin=ESSrmin,
                                                     mh_options={'nsteps': M})
-                pf = particles.SMC(N=N, fk=fk, ESSrmin=1., moments=True,
+                pf = particles.SMC(N=N, fk=fk, ESSrmin=1., collect=[Moments],
                                 verbose=True)
                 # must resample at every time step when doing adaptive
                 # tempering

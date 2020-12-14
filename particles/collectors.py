@@ -203,16 +203,11 @@ class Summaries(object):
     Attribute ``summaries`` of ``SMC`` objects is an instance of this class.
     """
 
-    def __init__(self, col_cls_ls):
+    def __init__(self, cols):
         self._collectors = [cls() for cls in default_collector_cls]
-        if col_cls_ls is not None:
-            for cc in col_cls_ls:
-                if isinstance(cc, tuple):
-                    cls, kwargs = cc
-                    col = cls(**kwargs)
-                else:
-                    col = cc()
-                self._collectors.append(col)
+        if cols is not None:
+            # call each collector to get a fresh instance
+            self._collectors.extend(col() for col in cols)
         for col in self._collectors:
             setattr(self, col.summary_name, col.summary)
 
@@ -227,19 +222,33 @@ class Collector(object):
     To subclass `Collector`:
     * implement method `fetch(self, smc)` which computes the summary that
       must be collected (from object smc, at each time).
-    * (optionally) define class attribute summary_name (name of the collected summary;
+    * (optionally) define class attribute `summary_name` (name of the collected summary;
       by default, name of the class, un-capitalised, i.e. Moments > moments)
-    * (optionally) define function __init__ (in case for instance you want to
-      define input parameters)
+    * (optionally) define class attribute `signature` (the signature of the
+      constructor, by default, an empty dict)
     """
+    signature = {}
 
     @property
     def summary_name(self):
         cn = self.__class__.__name__
         return cn[0].lower() + cn[1:]
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.summary = []
+        for k, v in self.signature.items():
+            setattr(self, k, v)
+        for k, v in kwargs.items():
+            if k in self.signature.keys():
+                setattr(self, k, v)
+            else:
+                raise ValueError('Collector %s: unknown parameter %s' %
+                                 (self.__class__.__name__, k))
+
+    def __call__(self):
+        # clone the object
+        return self.__class__(**{k: getattr(self, k) for k in
+                                 self.signature.keys()})
 
     def collect(self, smc):
         self.summary.append(self.fetch(smc))
@@ -265,12 +274,7 @@ default_collector_cls = [ESSs, LogLts, Rs_flags]
 # Moments
 #########
 
-class CollectorWithFunc(Collector):
-    def __init__(self, phi=None):
-        super().__init__()
-        self.phi = phi
-
-class Moments(CollectorWithFunc):
+class Moments(Collector):
     """Collects empirical moments (e.g. mean and variance) of the particles.
 
     Moments are defined through a function phi with the following signature:
@@ -279,8 +283,10 @@ class Moments(CollectorWithFunc):
            return np.average(X, weights=W)  # for instance
 
     If no function is provided, the default moment of the Feynman-Kac class
-    is used (mean and variance of the particles, see ``core.FeynmanKac``.
+    is used (mean and variance of the particles, see ``core.FeynmanKac``).
     """
+    signature = {'phi': None}
+
     def fetch(self, smc):
         f = smc.fk.default_moments if self.phi is None else self.phi
         return f(smc.W, smc.X)
@@ -288,12 +294,14 @@ class Moments(CollectorWithFunc):
 # Smoothing collectors
 ######################
 
-class Fixed_lag_smooth(CollectorWithFunc):
+class Fixed_lag_smooth(Collector):
     """Compute some function of fixed-lag trajectories.
 
     Must be used in conjunction with a rolling window history (store_history=k,
     with k an int, see module ``smoothing``).
     """
+    signature = {'phi': None}
+
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
         Xs = [X[B[i, :]] for i, X in enumerate(smc.hist.X)]
@@ -346,10 +354,11 @@ class Online_smooth_ON2(Collector, OnlineSmootherMixin):
 
 
 class Paris(Collector, OnlineSmootherMixin):
-    def __init__(self, Nparis=2):
-        self.paris = []
+    signature = {'Nparis': 2}
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.nprop = [0.]
-        self.Nparis = Nparis
 
     def update(self, smc):
         prev_Phi = self.Phi.copy()

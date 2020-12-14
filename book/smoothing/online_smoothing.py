@@ -32,6 +32,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import particles
+from particles import collectors as col
 from particles import state_space_models
 
 
@@ -82,8 +83,9 @@ if __name__ == '__main__':
     plt.plot(data)
     plt.title('data')
 
-    methods = ['ON2', 'naive']
-    attr_names = {k: k + '_online_smooth' for k in methods}
+    methods = ['ON2', 'naive']  # in that order: ON2 must be run first
+    collectors = {'ON2': col.Online_smooth_ON2(),
+                  'naive': col.Online_smooth_naive()}
     long_names = {'ON2': r'$O(N^2)$ forward-only',
                   'naive': r'naive, $O(N)$ forward-only'}
     runs = {}
@@ -91,22 +93,22 @@ if __name__ == '__main__':
     Ns = {'ON2': 100, 'naive': 10 ** 4}  #  for naive N is rescaled later
 
     for method in methods:
-        N = Ns[method]
+        col = collectors[method]
         if method == 'naive':
             # rescale N to match CPU time
-            pf = particles.SMC(fk=fkmod, N=N, naive_online_smooth=True)
+            pf = particles.SMC(fk=fkmod, N=Ns['naive'], collect=[col])
             pf.run()
-            Ns['naive'] = int(N * avg_cpu['ON2'] / pf.cpu_time)
+            Ns['naive'] = int(Ns['naive'] * avg_cpu['ON2'] / pf.cpu_time)
             print('rescaling N to %i to match CPU time' % Ns['naive'])
         long_names[method] += r', N=%i' % Ns[method]
         print(long_names[method])
 
-        args_smc = {'fk': fkmod, 'nruns': nruns, 'nprocs': 1, 'N': N,
-                    attr_names[method]: True, 
-                    'out_func': partial(outf, method=attr_names[method])}
-        runs[method] = particles.multiSMC(**args_smc)
+        runs[method] = particles.multiSMC(fk= fkmod, N=Ns[method],
+                          collect=[col], nruns=nruns, nprocs=1,
+                          out_func=partial(outf, method=col.summary_name))
         avg_cpu[method] = np.mean([r['cpu'] for r in runs[method]])
-        print('average cpu time (across %i runs): %f' % (nruns, avg_cpu[method]))
+        print('average cpu time (across %i runs): %f' % 
+              (nruns, avg_cpu[method]))
 
     # Plots
     # =====

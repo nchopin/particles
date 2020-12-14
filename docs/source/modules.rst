@@ -12,6 +12,7 @@ Here is a list of the modules available in ``particles``:
    resampling
    smoothing
    collectors
+   datasets
    qmc
    hilbert
    hmm
@@ -20,3 +21,4 @@ Here is a list of the modules available in ``particles``:
    mcmc
    utils
    nested
+   variance_estimators

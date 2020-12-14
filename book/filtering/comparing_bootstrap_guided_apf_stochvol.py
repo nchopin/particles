@@ -23,6 +23,7 @@ import seaborn as sb
 import particles
 from particles import datasets as dts
 from particles import state_space_models as ssms
+from particles.collectors import Moments
 
 # Data and parameter values from Pitt & Shephard
 T = 201
@@ -36,12 +37,12 @@ models['guided'] = ssms.GuidedPF(ssm=my_ssm, data=data)
 models['apf'] = ssms.AuxiliaryPF(ssm=my_ssm, data=data)
 
 # Get results
-results = particles.multiSMC(fk=models, N=10**3, nruns=250, moments=True)
+results = particles.multiSMC(fk=models, N=10**3, nruns=250, collect=[Moments])
 
 # Golden standard
 bigN = 10**5
 bigpf = particles.SMC(fk=models['bootstrap'], N=bigN, qmc=True,
-        moments=True)
+                      collect=[Moments])
 print('One SQMC run with N=%i' % bigN)
 bigpf.run()
 
