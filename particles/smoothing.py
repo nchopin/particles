@@ -207,7 +207,7 @@ class RollingParticleHistory(object):
         at time t of particle X_T^n, where T is the current length of history.
         """
         Bs = [np.arange(self.N)]
-        for A in list(self.A)[-1:0:-1]: # list in case self.A is a deque
+        for A in list(self.A)[-1:0:-1]:  # list in case self.A is a deque
             Bs.append(A[Bs[-1]])
         Bs.reverse()
         return np.array(Bs)

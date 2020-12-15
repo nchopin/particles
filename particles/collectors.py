@@ -11,61 +11,72 @@ are **fixed-lag smoothing** and **on-line smoothing**. However, the idea is a
 bit more general that that. Here is a simple example::
 
     import particles
+    from particles import collectors as col
+
     # ...
     # define some_fk_model
     # ...
-    my_alg = particles.SMC(fk=some_fk_model, N=100, moments=True,
-                           naive_online_smooth=True)
-    my_alg.run()
-    print(my_alg.summaries.moments)  # print a list of moments
-    print(my_alg.summaries.naive_online_smooth)  # print a list of estimates
+    alg = particles.SMC(fk=some_fk_model, N=100, 
+                        collect=[col.Moments(), col.Online_smooth_naive()])
 
-Once the algorithm is run, the object `my_alg.summaries` contains the computed
+    alg.run()
+    print(alg.summaries.moments)  # list of moments
+    print(alg.summaries.naive_online_smooth)  # list of smoothing estimates
+
+Once the algorithm is run, the object `alg.summaries` contains the computed
 summaries, stored in lists of length T (one component for each iteration t).
+Note that:
+
+    * argument `collect` expects a **list** of Collector objects;
+    * the name of the collector classes are capitalised, e.g. `Moments`;
+    * by default, the name of the corresponding summaries are not, e.g.
+      `pf.summaries.moments`.
 
 Default summaries
 =================
 
-By default, the following summaries are collected:
-    * ``ESSs``: ESS at each iteration;
+By default, the following summaries are collected (even if argument `collect`
+is not used): 
+    * ``ESSs``: ESS (effective sample size) at each iteration;
     * ``rs_flags``: whether resampling was triggered or not at each time t;
     * ``logLts``: log-likelihood estimates.
 
-Turning off summary collection
-==============================
+For instance::
 
-You may set option ``summaries`` of class ``SMC`` to False to avoid collecting
-any summary::
+    print(alg.summaries.ESSs) # sequence of ESSs
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100, summaries=False)
+You may turn off summary collection entirey::
 
-This might be useful in cases when you need to keep a large number of SMC
-objects in memory (as in SMC^2). In that case, even the default summaries
-might take too much space.
+    alg = particles.SMC(fk=some_fk_model, N=100, collect='off')
+
+This might be useful in very specific cases when you need to keep a large
+number of SMC objects in memory (as in SMC^2). In that case, even the default
+summaries might take too much space.
 
 Computing moments
 =================
 
-To compute moments (functions of the particle sample, typically weighted
-averages), use option ``moments`` as follows::
+To compute moments (functions of the current particle sample)::
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100, moments=mom_func)
+    alg = particles.SMC(fk=some_fk_model, N=100,
+                           collect=[Moments(mom_func=f)])
 
-where ``mom_func`` is a function with the following signature::
+where ``f`` is a function with the following signature::
 
-    def mom_func(W, X):
+    def f(W, X):
         return np.average(X, weights=W)  # for instance
 
-If option ``moments`` is set to ``True``, the default moments  are computed.
-For instance, for a ``FeynmanKac`` object  derived from a state-space model,
-the default moments at time t consist of a dictionary, with keys 'mean', and
-'var', containing the particle estimates (at time t) of the filtering mean
-and variance.
+Without an argument, i.e. `Moments()`, the collector computes the default
+moments defined by the ``FeynmanKac`` object; for instance, for a
+``FeynmanKac`` object derived from a state-space model, the default moments at
+time t consist of a dictionary, with keys 'mean', and 'var', containing the
+particle estimates (at time t) of the filtering mean and variance.
 
 It is possible to define different defaults for the moments. To do so,
 override method `default_moments` of the considered FeynmanKac class::
 
-    class Bootstrap_with_better_moments(Bootstrap):
+    from particles import state_space_models as ssms
+    class Bootstrap_with_better_moments(ssms.Bootstrap):
         def default_moments(W, X):
             return np.average(X**2, weights=W)
     #  ...
@@ -77,13 +88,6 @@ override method `default_moments` of the considered FeynmanKac class::
 In that case, ``my_fk_model.summaries.moments`` is a list of weighed averages
 of the squares of the components of the particles.
 
-Variance estimators
-===================
-
-The variance estimators of Chan & Lai (2013), Lee & Whiteley (2018), etc., are
-implemented as collectors in  module ``variance_estimators``; see the
-documentation of that module for more details.
-
 Fixed-lag smoothing
 ===================
 
@@ -93,20 +97,24 @@ Fixed-lag smoothing means smoothing of the latest h states; that is, computing
 .. math::
     \mathbb{E}[\phi_t(X_{t-h:t}) | Y_{0:t} = y_{0:t}]
 
-for a fixed integer $h$ (at times $t \geq h$; if $t<h$, replace $h$ by $t$).
+for a fixed integer h (at times t <= h; if t<h, replace h by t).
 
-This requires keeping track of the $h$ previous states for each particle;
+This requires keeping track of the h previous states for each particle;
 this is achieved by using a rolling window history, by setting option
-``store_history`` to an int equals to $h+1$ (the length of the trajectories)::
+``store_history`` to an int equals to h+1 (the length of the trajectories)::
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100, fixed_lag_smooth=phi,
+    my_alg = particles.SMC(fk=some_fk_model, N=100,
+                           collect=[col.Fixed_lag_smooth(phi=phi)],
                            store_history=3)  # h = 2
 
 See module `smoothing` for more details on rolling window and other types of
-particle history. Function phi must have the same signature as for moments::
+particle history. Function phi takes as an input the N particles, and returns
+a numpy.array::
 
-    def phi(W, X):
-        return np.average(np.array(X), axis=-1, weights=W)
+    def phi(X):
+        return np.exp(X - 2.)
+
+If no argument is provided, test function :math:`\varphi(x)=x` is used.
 
 Note however that X is a deque of length at most $h$; it behaves like a list,
 except that its length is always at most $h + 1$.  Of course this function
@@ -125,13 +133,13 @@ expectations of the form:
 On-line smoothing is covered in Sections 11.1 and 11.3 in the book. Note that
 on-line smoothing is typically restricted to *additive* functions $\phi$, see below.
 
-The following three algorithms are implemented:
+The following collectors implement online-smoothing algorithms:
 
-* ``naive_online_smooth``: basic forward smoothing (carry forward full trajectories);
+* ``Online_smooth_naive``: basic forward smoothing (carry forward full trajectories);
   cost is O(N) but performance may be poor for large t.
-* ``ON2_online_smooth``: O(N^2) on-line smoothing. Expensive (cost is O(N^2),
+* ``Online_smooth_ON2``: O(N^2) on-line smoothing. Expensive (cost is O(N^2),
   so big increase of CPU time), but better performance.
-* ``'paris'``: on-line smoothing using Paris algorithm. (Warning: current
+* ``'Paris'``: on-line smoothing using Paris algorithm. (Warning: current
   implementation is very slow, work in progress).
 
 These algorithms compute the smoothing expectation of a certain additive
@@ -143,9 +151,7 @@ function, that is a function of the form:
 The elementary function :math:`\psi_t` is specified by defining method
 `add_func` in considered state-space model. Here is an example::
 
-    class ToySSM(StateSpaceModel):
-        def PX0(self):
-            ... # as usual, see module `state_space_model`
+    class BootstrapWithAddFunc(ssms.Bootstrap):
         def add_func(self, t, xp, x):  # xp means x_{t-1} (p=past)
             if t == 0:
                 return x**2
@@ -157,16 +163,21 @@ additive functions often depend on fixed parameters of the state-space model
 (which are available in the closure of the ``StateSpaceModel`` object, but
 not outside).
 
-The two first algorithms do not require any parameter::
+The two first algorithms do not have any parameter, the third one (Paris) have one
+(default: 2): to use them simultaneously::
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100, naive_online_smooth=True)
+    my_alg = particles.SMC(fk=some_fk_model, N=100,
+                           collect=[col.Online_smooth_naive(),
+                                    col.Online_smooth_ON2(),
+                                    col.Paris(Nparis=5)])
 
-Paris algoritm has an optional parameter ``Nparis``, which you may specify
-as follows::
+Variance estimators
+===================
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100, paris=5)
+The variance estimators of Chan & Lai (2013), Lee & Whiteley (2018), etc., are
+implemented as collectors in  module ``variance_estimators``; see the
+documentation of that module for more details.
 
-If option `paris` is set to True, then the default value (2) is used.
 
 User-defined collectors
 =======================
@@ -175,14 +186,21 @@ You may implement your own collectors as follows::
 
     import collectors
 
-    class Toy_example(collectors.Collector):
+    class Toy(collectors.Collector):
+        # optional, default: toy (same name without capital)
+        summary_name = 'toy'
+
+        # signature of the __init__ function (optional, default: {})
+        signature = {phi=None}
+
+        # fetch the quantity to collect at time t
         def fetch(self, smc):  # smc is the particles.SMC instance
-            return np.mean(smc.X)
+            return np.mean(self.phi(smc.X))
 
 Once this is done, you may use this new collector exactly as the other
 ones::
 
-    pf = particles.SMC(N=30, fk=some_fk_model, toy=3)
+    pf = particles.SMC(N=30, fk=some_fk_model, collect=[col.Moments(), Toy(phi=f)])
 
 Then ``pf.summaries.toy`` will be a list of the summaries collected at each
 time by the ``fetch`` method.
@@ -279,16 +297,16 @@ class Moments(Collector):
 
     Moments are defined through a function phi with the following signature:
 
-        def phi(W, X):
+        def mom_func(W, X):
            return np.average(X, weights=W)  # for instance
 
     If no function is provided, the default moment of the Feynman-Kac class
     is used (mean and variance of the particles, see ``core.FeynmanKac``).
     """
-    signature = {'phi': None}
+    signature = {'mom_func': None}
 
     def fetch(self, smc):
-        f = smc.fk.default_moments if self.phi is None else self.phi
+        f = smc.fk.default_moments if self.mom_func is None else self.mom_func
         return f(smc.W, smc.X)
 
 # Smoothing collectors
@@ -302,10 +320,16 @@ class Fixed_lag_smooth(Collector):
     """
     signature = {'phi': None}
 
+    def test_func(self, x):
+        if self.phi is None:
+            return x
+        else:
+            return self.phi(x)
+
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
         Xs = [X[B[i, :]] for i, X in enumerate(smc.hist.X)]
-        return self.phi(smc.W, Xs)
+        return np.average(self.test_func(Xs), weights=smc.W)
 
 
 class OnlineSmootherMixin(object):

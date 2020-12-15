@@ -16,31 +16,27 @@ Variance estimators (Chan & Lai, 2013; Lee & Whiteley, 2018)
 
 These estimates may be *collected* (see module ``collectors``) as follows::
 
-    #  same as before
-    #  ...
-    # phi = lambda x: x  # for instance
-    my_alg = particles.SMC(fk=my_fk_model, N=100, var_est=phi)
+    import particles
+    from particles import variance_estimators as var  # this module
 
-This will compute at each time t an estimate of the variance of
+    # Define a FeynmanKac object, etc.
+    #  ...
+    phi = lambda x: x**2  # for instance
+    my_alg = particles.SMC(fk=my_fk_model, N=100,
+                           collect=[var.Var(phi=phi), var.Var_logLt()])
+
+The first collector will compute at each time t an estimate of the variance of
 :math:`\sum_{n=1}^N W_t^n \varphi(X_t^n)` (which is itself a particle estimate
-of expectation :math:`\mathbb{Q}_t(\varphi)`).
+of expectation :math:`\mathbb{Q}_t(\varphi)`). If argument `phi` is not provided,
+the function :math:`\varphi(x)=x` will be used.
 
-You can also estimate the variance of the normalising constant as follows::
+The second collector will compute an estimate of the variance of the log
+normalising constant, i.e. :math:`\log L_t`.
 
-    #  same as before
-    #  ...
-    # phi = lambda x: x  # for instance
-    my_alg = particles.SMC(fk=my_fk_model, N=100, var_est_norm_cst=True)
-
-This one is a bit tricky: it returns at time t an estimate of the *relative*
-variance (variance divided expectation squared) of the normalising constant
-:math:`L_{t-1}` (at time t-1). This is inherent to the method. To get this
-estimate at the final time T, you may add one extra (arbitrary) point to the
-data.
-
-In both cases, the estimators from Chan & Lai (2013) are computed. To compute
-the version from Lee & Whiteley (2018), you must multiply by a factor
-:math:`(N/(N-1))^t` at time t.
+.. note::
+    The estimators found in Chan & Lai (2013) and Lee & Whiteley (2018) differ only
+    by a factor :math:`(N/(N-1))^t`; the collectors above implement the former
+    version, without the factor. 
 
 Lag-based variance estimators (Olsson and Douc, 2019)
 =====================================================
@@ -48,12 +44,12 @@ Lag-based variance estimators (Olsson and Douc, 2019)
 The above estimators suffer from the well known problem of **particle
 degeneracy**; as soon as the number of distinct ancestors falls to one, these
 variance estimates equal zero. Olsson and Douc (2019) proposed a variant based
-on a fixed-lag approximation. To compute it, you need to activate the tracking
+on a fixed-lag approximation.  To compute it, you need to activate the tracking
 of a rolling-window history, as for fixed-lag smoothing (see below)::
 
-    k = 10  # for instance
-    my_alg = particles.SMC(fk=my_fk_model, N=100, lag_based_var_est=phi,
-                           store_history=k)
+    my_alg = particles.SMC(fk=my_fk_model, N=100,
+                           collect=[var.Lag_based_var(phi=phi)],
+                           store_history=10)
 
 which is going to compute the same type of estimates, but using as eve
 variables (called Enoch variables in Olsson and Douc) the index of the ancestor
@@ -61,12 +57,17 @@ of each particle :math:`X_t^n` as time :math:`t-l`, where `l` is the lag.
 This collector actually computes and stores simultaneously the estimates that
 correspond to lags 0, 1, ..., k (where `k` is the size of the rolling window
 history). This makes it easier to assess the impact of the lag on the
-estimates. Thus
+estimates. Thus::
 
-    my_alg = particles.SMC(fk=my_fk_model, N=100, lag_based_var_est=phi,
-                           store_history=10)
-    my_alg.run()
-    print(my_alg.lag_based_var_est[-1])  # prints a list of length 10
+    print(my_alg.lag_based_var[-1])  # prints a list of length 10
+
+Numerical experiments
+=====================
+
+See `here`_ for a jupyter notebook that illustrates these variance estimates in a
+simple example.
+
+.. _here: https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/notebooks/Variance_estimation.html
 
 References
 ==========
@@ -141,29 +142,36 @@ class VarColMixin(object):
         else:
             self.B = self.B[smc.A]
 
+
 class Var(col.Collector, VarColMixin):
-    """Computes and collects variance estimates for a given function phi.
+    """Computes and collects variance estimates for a given test function phi.
+
+    Parameters
+    ----------
+    phi:  callable
+       the test function (default: identity function)
    """
     signature = {'phi': None}
 
+    def test_func(self, x):
+        if self.phi is None:
+            return x
+        else:
+            return self.phi(x)
+
     def fetch(self, smc):
         self.update_B(smc)
-        return var_estimate(smc.W, self.phi(smc.X), self.B)
+        return var_estimate(smc.W, self.test_func(smc.X), self.B)
 
 class Var_logLt(col.Collector, VarColMixin):
-    """Computes and collects estimates of the relative variance of the normalising
+    """Computes and collects estimates of the variance of the log normalising
     constant estimator.
-
-    Note: the estimate at time t corresponds to the relative variance (variance
-    divided by squared expectation) of the normalising constant estimate at
-    time t-1. This *shift* is inherent to the method.
-
     """
     def fetch(self, smc):
         self.update_B(smc)
         return _sum_over_branches(smc.W, self.B)
 
-class Lag_based_var(col.Collector):
+class Lag_based_var(Var):
     """Computes and collects Olsson and Douc (2019) variance estimates, which
     are based on a fixed-lag approximation.
 
@@ -173,10 +181,12 @@ class Lag_based_var(col.Collector):
     element i is the estimate based on lag i. This makes it easier to assess
     the impact of the lag on the estimator.
 
-    See the module doc for more details on variance estimation.
+    Parameters
+    ----------
+    phi:  callable
+       the test function (default: identity function)
 
     """
-    signature = {'phi': None}
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
-        return [var_estimate(smc.W, self.phi(smc.X), Bt) for Bt in B][::-1]
+        return [var_estimate(smc.W, self.test_func(smc.X), Bt) for Bt in B][::-1]
