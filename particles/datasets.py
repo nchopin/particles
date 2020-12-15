@@ -250,14 +250,14 @@ class Pima(BinaryRegDataset):
 class Eeg(BinaryRegDataset):
     """EEG dataset from UCI repository.
 
-    A dataset with 122 observations and 64 predictors.
+    A dataset with 122 observations and 64 predictors. 
 
     * Response: alcohic vs control
     * predictors: EEG measurements 
 
     Reference
     ---------
-    * `UCI: <https://archive.ics.uci.edu/ml/datasets/eeg+database>`__
+    `UCI: <https://archive.ics.uci.edu/ml/datasets/eeg+database>`__
     """
     file_name = 'eeg_eye_state.data'
     load_opts = {'delimiter': ',', 'skiprows': 19}

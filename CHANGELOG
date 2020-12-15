@@ -1,6 +1,7 @@
 version 0.2
 ===========
 
-* new datasets module 
-* new variance_estimators module 
+* collectors module: new implementation of collectors
+* datasets module: new
+* variance_estimators module: new
 * utils module: performance improvements (multi-processing, distinct seeds)

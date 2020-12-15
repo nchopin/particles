@@ -97,12 +97,13 @@ def var_estimate(W, phi_x, B):
 
         .. math::
 
-           \sum_{n=1}^N \left\{ \sum_{m:B_t^m=n} W_t^m (\varphi(X_t^m) - \Q_t^N(\varphi)) \right\}^2
+           \sum_{n=1}^N \left\{ \sum_{m:B_t^m=n} W_t^m (\varphi(X_t^m) - \mathbb{Q}_t^N(\varphi)) \right\}^2
 
-    where :math:`Q_t^N(\varphi)` is the particle estimate of :math:`Q_t(\varphi)`:
+    where :math:`\mathbb{Q}_t^N(\varphi)` is the particle estimate 
+    of :math:`\mathbb{Q}_t(\varphi)`:
 
         .. math::
-          Q_t^N(\varphi) = \sum_{n=1}^N W_t^n \varphi(X_t^n)
+          \mathbb{Q}_t^N(\varphi) = \sum_{n=1}^N W_t^n \varphi(X_t^n)
 
     Parameters
     ----------
