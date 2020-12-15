@@ -13,10 +13,10 @@ Module summary
     :toctree: _autosummary
     :nosignatures: 
 
+    Nutria
+    Neuro
     Boston
     Eeg
-    GBP_vs_USD_9798
-    Nutria
     Pima
     Sonar
-    Neuro
+    GBP_vs_USD_9798

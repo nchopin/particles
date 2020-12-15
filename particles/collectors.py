@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Collecting summaries at each iteration of a SMC algorithm.
+"""Objects that collect summaries at each iteration of a SMC algorithm.
 
 Overview
 ========
@@ -27,8 +27,8 @@ Once the algorithm is run, the object `alg.summaries` contains the computed
 summaries, stored in lists of length T (one component for each iteration t).
 Note that:
 
-    * argument `collect` expects a **list** of Collector objects;
-    * the name of the collector classes are capitalised, e.g. `Moments`;
+    * argument ``collect`` expects a **list** of Collector objects;
+    * the name of the collector classes are capitalised, e.g. ``Moments``;
     * by default, the name of the corresponding summaries are not, e.g.
       `pf.summaries.moments`.
 
@@ -58,19 +58,17 @@ Computing moments
 
 To compute moments (functions of the current particle sample)::
 
+    def f(W, X):  # expected signature for the moment function
+        return np.average(X, weights=W)  # for instance
+
     alg = particles.SMC(fk=some_fk_model, N=100,
                            collect=[Moments(mom_func=f)])
 
-where ``f`` is a function with the following signature::
-
-    def f(W, X):
-        return np.average(X, weights=W)  # for instance
-
-Without an argument, i.e. `Moments()`, the collector computes the default
-moments defined by the ``FeynmanKac`` object; for instance, for a
-``FeynmanKac`` object derived from a state-space model, the default moments at
-time t consist of a dictionary, with keys 'mean', and 'var', containing the
-particle estimates (at time t) of the filtering mean and variance.
+Without an argument, i.e. ``Moments()``, the collector computes the default
+moments defined by the `FeynmanKac` object; for instance, for a `FeynmanKac`
+object derived from a state-space model, the default moments at time t consist
+of a dictionary, with keys ``'mean'`` and ``'var'``, containing the particle
+estimates (at time t) of the filtering mean and variance.
 
 It is possible to define different defaults for the moments. To do so,
 override method `default_moments` of the considered FeynmanKac class::
@@ -83,7 +81,7 @@ override method `default_moments` of the considered FeynmanKac class::
     #  define state-space model my_ssm
     #  ...
     my_fk_model = Bootstrap_with_better_moments(ssm=my_ssm, data=data)
-    my_alg = particles.SMC(fk=my_fk_model, N=100, moments=True)
+    alg = particles.SMC(fk=my_fk_model, N=100, moments=True)
 
 In that case, ``my_fk_model.summaries.moments`` is a list of weighed averages
 of the squares of the components of the particles.
@@ -91,7 +89,7 @@ of the squares of the components of the particles.
 Fixed-lag smoothing
 ===================
 
-Fixed-lag smoothing means smoothing of the latest h states; that is, computing
+Fixed-lag smoothing means smoothing of the previous h states; that is, computing
 (at every time t) expectations of
 
 .. math::
@@ -103,7 +101,7 @@ This requires keeping track of the h previous states for each particle;
 this is achieved by using a rolling window history, by setting option
 ``store_history`` to an int equals to h+1 (the length of the trajectories)::
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100,
+    alg = particles.SMC(fk=some_fk_model, N=100,
                            collect=[col.Fixed_lag_smooth(phi=phi)],
                            store_history=3)  # h = 2
 
@@ -116,10 +114,10 @@ a numpy.array::
 
 If no argument is provided, test function :math:`\varphi(x)=x` is used.
 
-Note however that X is a deque of length at most $h$; it behaves like a list,
-except that its length is always at most $h + 1$.  Of course this function
+Note however that X is a deque of length at most h; it behaves like a list,
+except that its length is always at most h + 1.  Of course this function
 could simply return its arguments ``W`` and ``X``; in that case you simply
-record the fixed-lag trajectories (and their weights) at every time $t$.
+record the fixed-lag trajectories (and their weights) at every time t.
 
 On-line smoothing
 =================
@@ -131,15 +129,16 @@ expectations of the form:
     \mathbb{E}[\phi_t(X_{0:t}) | Y_{0:t} = y_{0:t}]
 
 On-line smoothing is covered in Sections 11.1 and 11.3 in the book. Note that
-on-line smoothing is typically restricted to *additive* functions $\phi$, see below.
+on-line smoothing is typically restricted to *additive* functions :math:`\phi`,
+see below.
 
 The following collectors implement online-smoothing algorithms:
 
-* ``Online_smooth_naive``: basic forward smoothing (carry forward full trajectories);
+* `Online_smooth_naive`: basic forward smoothing (carry forward full trajectories);
   cost is O(N) but performance may be poor for large t.
-* ``Online_smooth_ON2``: O(N^2) on-line smoothing. Expensive (cost is O(N^2),
+* `Online_smooth_ON2`: O(N^2) on-line smoothing. Expensive (cost is O(N^2),
   so big increase of CPU time), but better performance.
-* ``'Paris'``: on-line smoothing using Paris algorithm. (Warning: current
+* `Paris`: on-line smoothing using Paris algorithm. (Warning: current
   implementation is very slow, work in progress).
 
 These algorithms compute the smoothing expectation of a certain additive
@@ -164,9 +163,9 @@ additive functions often depend on fixed parameters of the state-space model
 not outside).
 
 The two first algorithms do not have any parameter, the third one (Paris) have one
-(default: 2): to use them simultaneously::
+(default: 2). To use them simultaneously::
 
-    my_alg = particles.SMC(fk=some_fk_model, N=100,
+    alg = particles.SMC(fk=some_fk_model, N=100,
                            collect=[col.Online_smooth_naive(),
                                     col.Online_smooth_ON2(),
                                     col.Paris(Nparis=5)])
@@ -175,7 +174,7 @@ Variance estimators
 ===================
 
 The variance estimators of Chan & Lai (2013), Lee & Whiteley (2018), etc., are
-implemented as collectors in  module ``variance_estimators``; see the
+implemented as collectors in  module `variance_estimators`; see the
 documentation of that module for more details.
 
 
@@ -200,7 +199,7 @@ You may implement your own collectors as follows::
 Once this is done, you may use this new collector exactly as the other
 ones::
 
-    pf = particles.SMC(N=30, fk=some_fk_model, collect=[col.Moments(), Toy(phi=f)])
+    alg = particles.SMC(N=30, fk=some_fk_model, collect=[col.Moments(), Toy(phi=f)])
 
 Then ``pf.summaries.toy`` will be a list of the summaries collected at each
 time by the ``fetch`` method.

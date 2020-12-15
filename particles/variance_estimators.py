@@ -1,4 +1,4 @@
-"""Single-run variance estimators.
+r"""Single-run variance estimators.
 
 Overview
 ========
@@ -8,13 +8,13 @@ As discussed in Section 19.3 of the book, several recent papers (Chan & Lai,
 estimates that may be computed from a **single** run of the algorithm. These
 estimates rely on genealogy tracking; more precisely they require to track eve
 variables; i.e. the index of the ancestor at time 0 (or some other origin, in
-Olsson and Douc, 2019) of each particle X_t^n. See function ``var_estimate``
+Olsson and Douc, 2019) of each particle X_t^n. See function `var_estimate`
 for the exact expression of this type of estimate.
 
 Variance estimators (Chan & Lai, 2013; Lee & Whiteley, 2018)
 ============================================================
 
-These estimates may be *collected* (see module ``collectors``) as follows::
+These estimates may be *collected* (see module `collectors`) as follows::
 
     import particles
     from particles import variance_estimators as var  # this module
@@ -27,7 +27,7 @@ These estimates may be *collected* (see module ``collectors``) as follows::
 
 The first collector will compute at each time t an estimate of the variance of
 :math:`\sum_{n=1}^N W_t^n \varphi(X_t^n)` (which is itself a particle estimate
-of expectation :math:`\mathbb{Q}_t(\varphi)`). If argument `phi` is not provided,
+of expectation :math:`\mathbb{Q}_t(\varphi)`). If argument ``phi`` is not provided,
 the function :math:`\varphi(x)=x` will be used.
 
 The second collector will compute an estimate of the variance of the log

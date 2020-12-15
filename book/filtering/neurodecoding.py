@@ -186,7 +186,7 @@ proposed_rvs = chosen_ssm.proposal(t0, Xp, data).rvs(size=N)
 for i in range(6):
     plt.subplot(2, 3, i+1)
     plt.hist(X[:,i], nbins, label='predictive', density=True, alpha=0.7)
-    plt.hist(X[:,i], nbins, weights=pf.hist.wgt[t0].W, label='filter',
+    plt.hist(X[:,i], nbins, weights=pf.hist.wgts[t0].W, label='filter',
              density=True, alpha=0.7)
     plt.hist(proposed_rvs[:, i], nbins, label='approx', density=True, alpha=0.7)
 plt.legend()

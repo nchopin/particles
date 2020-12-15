@@ -19,3 +19,4 @@ with the recorded sessions.
     /notebooks/Bayes_estimation_ssm.ipynb
     /notebooks/SMC_samplers_tutorial.ipynb
     /notebooks/Defining_Feynman-Kac_models_manually.ipynb
+    /notebooks/variance_estimation.ipynb
