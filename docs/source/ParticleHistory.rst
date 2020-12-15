@@ -16,5 +16,5 @@ particles.smoothing.ParticleHistory
         ParticleHistory.compute_trajectories
         ParticleHistory.extract_one_trajectory
         ParticleHistory.save
-        ParticleHistory.twofilter_smoothing
+        ParticleHistory.two_filter_smoothing
    

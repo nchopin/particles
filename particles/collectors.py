@@ -45,7 +45,7 @@ For instance::
 
     print(alg.summaries.ESSs) # sequence of ESSs
 
-You may turn off summary collection entirey::
+You may turn off summary collection entirely::
 
     alg = particles.SMC(fk=some_fk_model, N=100, collect='off')
 

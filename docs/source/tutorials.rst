@@ -6,9 +6,9 @@ package.
 
 .. note:: 
 These tutorials are also available as `ipython notebooks
-<https://ipython.org/ipython-doc/3/notebook/notebook.html#introduction>`: 
+<https://ipython.org/ipython-doc/3/notebook/notebook.html#introduction>`_: 
 Once you have installed the package, go to sub-folder ``docs/source/notebooks``
-and open them with ``ipython`` (or `jupyter <http://jupyter.org/>`) to interact
+and open them with ``ipython`` (or `jupyter <http://jupyter.org/>`_) to interact
 with the recorded sessions. 
 
 .. toctree:: 

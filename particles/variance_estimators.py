@@ -8,7 +8,7 @@ As discussed in Section 19.3 of the book, several recent papers (Chan & Lai,
 estimates that may be computed from a **single** run of the algorithm. These
 estimates rely on genealogy tracking; more precisely they require to track eve
 variables; i.e. the index of the ancestor at time 0 (or some other origin, in
-Olsson and Douc, 2019) of each particle X_t^n. See function `var_estimate`
+Olsson and Douc, 2019) of each particle. See function `var_estimate`
 for the exact expression of this type of estimate.
 
 Variance estimators (Chan & Lai, 2013; Lee & Whiteley, 2018)
@@ -91,12 +91,13 @@ import numpy as np
 import particles.collectors as col
 
 def var_estimate(W, phi_x, B):
-    """Variance estimate based on genealogy tracking.
+    r"""Variance estimate based on genealogy tracking.
 
     This computes the variance estimate of Chan & Lai (2013):
 
         .. math::
-          \sum_{n=1}^N \left\{ \sum_{m:B_t^m=n} W_t^m (\varphi(X_t^m) - \Q_t^N(\varphi)) \right\}^2
+
+           \sum_{n=1}^N \left\{ \sum_{m:B_t^m=n} W_t^m (\varphi(X_t^m) - \Q_t^N(\varphi)) \right\}^2
 
     where :math:`Q_t^N(\varphi)` is the particle estimate of :math:`Q_t(\varphi)`:
 
