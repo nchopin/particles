@@ -28,13 +28,13 @@ sub-class for more details on the preprocessing step.
 ================= ===================== =======================
 Dataset           parent class          typical use/model
 ================= ===================== =======================
-Boston            `RegressionDataset`   regression
-Eeg               `BinaryRegDataset`    logistic regression
-GBP_vs_USD_9798   `LogReturnsDataset`   stochastic volatility
-Nutria            `Dataset`             population ecology
-Pima              `BinaryRegDataset`    logistic regression
-Sonar             `BinaryRegDataset`    logistic regression
-Neuro             `Dataset`             neuroscience ssm
+`Boston`          `RegressionDataset`   regression
+`Eeg`             `BinaryRegDataset`    logistic regression
+`GBP_vs_USD_9798` `LogReturnsDataset`   stochastic volatility
+`Nutria`          `Dataset`             population ecology
+`Pima`            `BinaryRegDataset`    logistic regression
+`Sonar`           `BinaryRegDataset`    logistic regression
+`Neuro`           `Dataset`             neuroscience ssm
 ================= ===================== =======================
 
 See also utility function `prepare_predictors`, which prepares (rescales,
@@ -203,11 +203,11 @@ class BinaryRegDataset(Dataset):
         3. optionally, appling the "flip sign" trick.
 
     Point 3 refers to the fact that the likelihood of a binary regression
-    models depends only on the vectors::
+    models depends only on the vectors:
 
     .. math:: y_i * x_i
 
-    where :math:`y_i=-1/1` is the response, and :math: `x_i` is the vector of p
+    where :math:`y_i=-1/1` is the response, and :math:`x_i` is the vector of p
     predictors.
 
     Hence, by default, the pre-processing steps returns a single array,

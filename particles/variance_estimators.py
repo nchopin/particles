@@ -53,9 +53,9 @@ of a rolling-window history, as for fixed-lag smoothing (see below)::
 
 which is going to compute the same type of estimates, but using as eve
 variables (called Enoch variables in Olsson and Douc) the index of the ancestor
-of each particle :math:`X_t^n` as time :math:`t-l`, where `l` is the lag.
+of each particle :math:`X_t^n` as time :math:`t-l`, where :math:`l` is the lag.
 This collector actually computes and stores simultaneously the estimates that
-correspond to lags 0, 1, ..., k (where `k` is the size of the rolling window
+correspond to lags 0, 1, ..., k (where k is the size of the rolling window
 history). This makes it easier to assess the impact of the lag on the
 estimates. Thus::
 
@@ -175,11 +175,11 @@ class Lag_based_var(Var):
     """Computes and collects Olsson and Douc (2019) variance estimates, which
     are based on a fixed-lag approximation.
 
-    Must be used in conjunction with a rolling window history (store_history=k,
-    with k an int, see module ``smoothing``). The collector computes the
-    estimates for all the lags 0, ..., k. Hence, it returns a list, such that
-    element i is the estimate based on lag i. This makes it easier to assess
-    the impact of the lag on the estimator.
+    Must be used in conjunction with a rolling window history
+    (``store_history=k``, with ``k`` an int, see module `smoothing`). The
+    collector computes the estimates for all the lags 0, ..., k. Hence, it
+    returns a list, such that element i is the estimate based on lag i. This
+    makes it easier to assess the impact of the lag on the estimator.
 
     Parameters
     ----------
