@@ -12,6 +12,7 @@ Module summary
     :toctree: _autosummary
     :nosignatures: 
 
+    variance_estimate
     Var
     Var_logLt
     Lag_based_var

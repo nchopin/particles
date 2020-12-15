@@ -37,7 +37,7 @@ Sonar             `BinaryRegDataset`    logistic regression
 Neuro             `Dataset`             neuroscience ssm
 ================= ===================== =======================
 
-See also utility function ``prepare_predictors``, which prepares (rescales,
+See also utility function `prepare_predictors`, which prepares (rescales,
 adds an intercept) predictors/features for a regression or classification task.
 
 """

@@ -67,7 +67,7 @@ Numerical experiments
 See `here`_ for a jupyter notebook that illustrates these variance estimates in a
 simple example.
 
-.. _here: https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/notebooks/Variance_estimation.html
+.. _here: notebooks/variance_estimation.html
 
 References
 ==========

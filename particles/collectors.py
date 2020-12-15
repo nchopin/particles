@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Objects that collect summaries at each iteration of a SMC algorithm.
+r"""Objects that collect summaries at each iteration of a SMC algorithm.
 
 Overview
 ========
@@ -23,14 +23,14 @@ bit more general that that. Here is a simple example::
     print(alg.summaries.moments)  # list of moments
     print(alg.summaries.naive_online_smooth)  # list of smoothing estimates
 
-Once the algorithm is run, the object `alg.summaries` contains the computed
+Once the algorithm is run, the object ``alg.summaries`` contains the computed
 summaries, stored in lists of length T (one component for each iteration t).
 Note that:
 
     * argument ``collect`` expects a **list** of Collector objects;
     * the name of the collector classes are capitalised, e.g. ``Moments``;
     * by default, the name of the corresponding summaries are not, e.g.
-      `pf.summaries.moments`.
+      ``pf.summaries.moments``.
 
 Default summaries
 =================
