@@ -32,6 +32,7 @@ from particles import distributions as dists
 from particles import resampling as rs
 from particles import smc_samplers as ssp
 from particles import state_space_models
+from particles.collectors import Moments
 
 # data
 data = dts.GBP_vs_USD_9798().data
@@ -62,8 +63,8 @@ fk_opts['ssm_cls'] = state_space_models.StochVol
 fks['smc2_sv'] = ssp.SMC2(**fk_opts)
 
 if __name__ == '__main__':
-    runs = particles.multiSMC(fk=fks, N=N, moments=qtiles, verbose=True,
-                              nprocs=0, nruns=25)
+    runs = particles.multiSMC(fk=fks, N=N, collect=[Moments(qtiles)],
+                              verbose=True, nprocs=0, nruns=25)
 
     # plots
     #######

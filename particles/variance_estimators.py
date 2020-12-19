@@ -114,10 +114,9 @@ def var_estimate(W, phi_x, B):
     B: (N,) int numpy.array
         eve variables
 
-    Output
-    ------
-    (m, v): tuple
-        estimate of :math:`Q_t(\varphi)` and its associated variance estimate
+    Returns
+    -------
+    variance estimate
 
     """
     m = np.average(phi_x, weights=W, axis=0)
@@ -135,7 +134,7 @@ def _sum_over_branches(w_phi, B):
     s = np.zeros(N)
     for m in range(N):
         s[B[m]] += w_phi[m]
-    return np.sum(s**2)
+    return np.sum(s**2, axis=0)
 
 class VarColMixin(object):
     def update_B(self, smc):

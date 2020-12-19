@@ -214,8 +214,7 @@ imax, jmax = np.unravel_index(np.argmax(ll_mean), (ng, ng))
 mle_ll = ll_mean[imax, jmax]
 ax.plot(rhos[imax], sig2s[jmax], markersize=3, marker="o", color='black')
 levels = mle_ll + np.linspace(- 2 * 10**4, -0., 121)
-CS = ax.contour(rho_mg, sig2_mg, ll_mean.T, levels=levels, colors='lightgray',
-                label='log-lik contour')
+CS = ax.contour(rho_mg, sig2_mg, ll_mean.T, levels=levels, colors='lightgray')
 ax.set_xlabel(r'$\rho$')
 ax.set_ylabel(r'$\sigma^2$')
 ax.set_xlim(left=0., right=1.)
