@@ -63,7 +63,7 @@ fk_opts['ssm_cls'] = state_space_models.StochVol
 fks['smc2_sv'] = ssp.SMC2(**fk_opts)
 
 if __name__ == '__main__':
-    runs = particles.multiSMC(fk=fks, N=N, collect=[Moments(qtiles)],
+    runs = particles.multiSMC(fk=fks, N=N, collect=[Moments(mom_func=qtiles)],
                               verbose=True, nprocs=0, nruns=25)
 
     # plots
