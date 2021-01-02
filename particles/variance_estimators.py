@@ -7,7 +7,7 @@ As discussed in Section 19.3 of the book, several recent papers (Chan & Lai,
 2013; Lee & Whiteley, 2018; Olsson & Douc, 2019) have proposed variance
 estimates that may be computed from a **single** run of the algorithm. These
 estimates rely on genealogy tracking; more precisely they require to track eve
-variables; i.e. the index of the ancestor at time 0 (or some other origin, in
+variables; i.e. the index of the ancestor at time 0 (or some other time, in
 Olsson and Douc, 2019) of each particle. See function `var_estimate`
 for the exact expression of this type of estimate.
 

@@ -948,10 +948,13 @@ class StructDist(ProbDist):
         else:
             raise ValueError('recdist class requires a dict or'
                              ' an ordered dict to be instantiated')
-        formats = [str(law.dim) + law.dtype
-                   for law in self.laws.values()]
-        self.dtype = {'names': list(self.laws.keys()), 'formats': formats}
-        # list added for python 3 compatibility
+        self.dtype = []
+        for key, law in self.laws.items():
+            if law.dim == 1:
+                typ = (key, law.dtype)  # avoid FutureWarning about (1,) fields
+            else:
+                typ = (key, law.dtype, law.dim)
+            self.dtype.append(typ)
 
     def logpdf(self, theta):
         l = 0.
