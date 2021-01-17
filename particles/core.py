@@ -203,6 +203,9 @@ class FeynmanKac(object):
                                                               smc.rs_flag,
                                                               smc.wgts.ESS)
 
+    def weights_obj(self, lw=None):
+        return rs.Weights(lw=lw)
+
 
 class SMC(object):
     """Metaclass for SMC algorithms.
@@ -287,7 +290,7 @@ class SMC(object):
         self.t = 0
         self.rs_flag = False  # no resampling at time 0, by construction
         self.logLt = 0.
-        self.wgts = rs.Weights()
+        self.wgts = fk.weights_obj()
         self.aux = None
         self.X, self.Xp, self.A = None, None, None
 
@@ -311,9 +314,9 @@ class SMC(object):
         if self.fk.isAPF:
             lw = (rs.log_mean_exp(self.logetat, W=self.W)
                   - self.logetat[self.A])
-            self.wgts = rs.Weights(lw=lw)
+            self.wgts = self.fk.weights_obj(lw=lw)
         else:
-            self.wgts = rs.Weights()
+            self.wgts = self.fk.weights_obj()
 
     def setup_auxiliary_weights(self):
         """Compute auxiliary weights (for APF).
@@ -336,9 +339,9 @@ class SMC(object):
         self.wgts = self.wgts.add(self.fk.logG(self.t, self.Xp, self.X))
 
     def resample_move(self):
-        self.rs_flag = self.aux.ESS < self.N * self.ESSrmin
+        self.rs_flag = bool(self.aux.ESS < self.N * self.ESSrmin)
         if self.rs_flag:  # if resampling
-            self.A = rs.resampling(self.resampling, self.aux.W)
+            self.A = self.aux.resample(self.resampling)
             self.Xp = self.X[self.A]
             self.reset_weights()
             self.X = self.fk.M(self.t, self.Xp)
@@ -361,8 +364,8 @@ class SMC(object):
 
     def compute_summaries(self):
         if self.t > 0:
-            prec_log_mean_w = self.log_mean_w
-        self.log_mean_w = rs.log_mean_exp(self.wgts.lw)
+            prec_log_mean_w = self.log_mean
+        self.log_mean_w = self.wgts.mean()
         if self.t == 0 or self.rs_flag:
             self.loglt = self.log_mean_w
         else:

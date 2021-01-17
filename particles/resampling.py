@@ -213,7 +213,11 @@ class Weights(object):
         self.lw = lw
         if lw is not None:
             self.lw[np.isnan(self.lw)] = - np.inf
-            self.W = exp_and_normalise(lw)
+            lwmax = self.lw.max()
+            w = np.exp(lw - lwmax)
+            ws = w.sum()
+            self.W = w / ws
+            self.log_mean = lwmax + np.log(ws) - np.log(len(lw))
             self.ESS = 1. / np.sum(self.W ** 2)
 
     def add(self, delta):
@@ -226,9 +230,12 @@ class Weights(object):
 
         """
         if self.lw is None:
-            return Weights(lw=delta)
+            return self.__class__(lw=delta)
         else:
-            return Weights(lw=self.lw + delta)
+            return self.__class__(lw=self.lw + delta)
+
+    def resample(self, scheme='systematic', M=None):
+        return resampling(scheme, self.W, M=M)
 
 def log_sum_exp(v):
     """Log of the sum of the exp of the arguments.
