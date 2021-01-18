@@ -42,8 +42,8 @@ prior = dists.StructDist(dict_prior)
 # State-space model 
 class ReparamLinGauss(kalman.LinearGauss):
     def __init__(self, varX=1., varY=1., rho=0.):
-        sigmaX = np.sqrt(varX)
-        sigmaY = np.sqrt(varY)
+        sigmaX = np.sqrt(varX) if varX > 0 else 0.
+        sigmaY = np.sqrt(varY) if varY > 0 else 0.
         sigma0 = sigmaX
         # Note: We take X_0 ~ N(0, sigmaX^2) so that Gibbs step is tractable
         kalman.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,

@@ -205,7 +205,7 @@ class FeynmanKac(object):
 
 
 class SMC(object):
-    """Metaclass for SMC algorithms. 
+    """Metaclass for SMC algorithms.
 
        Parameters
        ----------
@@ -226,11 +226,8 @@ class SMC(object):
            whether and when history should be saved; see module `smoothing`
        verbose: bool, optional
            whether to print basic info at every iteration (default=False)
-       summaries: bool, optional (default=True)
-           whether summaries should be collected at every time.
-       **summaries_opts: dict
-           options that determine which summaries collected at each iteration
-           (e.g. moments, on-line smoothing estimates); see module `collectors`.
+       collect: list of collectors, or 'off' (for turning off summary collections)
+           see module ``collectors``
 
        Attributes
        ----------
@@ -277,8 +274,7 @@ class SMC(object):
                  ESSrmin=0.5,
                  store_history=False,
                  verbose=False,
-                 summaries=True,
-                 **sum_options):
+                 collect=None):
 
         self.fk = fk
         self.N = N
@@ -296,11 +292,11 @@ class SMC(object):
         self.X, self.Xp, self.A = None, None, None
 
         # summaries computed at every t
-        if summaries:
-            self.summaries = collectors.Summaries(**sum_options)
-        else:
+        if collect == 'off':
             self.summaries = None
-        self.hist = smoothing.generate_hist_obj(store_history, fk, qmc)
+        else:
+            self.summaries = collectors.Summaries(collect)
+        self.hist = smoothing.generate_hist_obj(store_history, self)
 
     def __str__(self):
         return self.fk.summary_format(self)
@@ -428,7 +424,7 @@ class SMC(object):
 ####################################################
 
 
-class _pickleable_f(object):
+class _picklable_f(object):
 
     def __init__(self, fun):
         self.fun = fun
@@ -439,12 +435,12 @@ class _pickleable_f(object):
         return self.fun(pf)
 
 
-@_pickleable_f
+@_picklable_f
 def _identity(x):
     return x
 
 
-def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
+def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
     """Run SMC algorithms in parallel, for different combinations of parameters.
 
 
@@ -483,11 +479,20 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     arguments::
 
         results = multiSMC(fk=my_fk_model, N=[100, 1000], resampling=['multinomial',
-                             'residual'], nruns=20)
+                           'residual'], nruns=20)
 
     In that case we run our algorithm 80 times: 20 times with N=100 and
     resampling set to multinomial, 20 times with N=100 and resampling set to
     residual and so on.
+
+    Finally, if one uses a dictionary instead of a list, e.g.::
+
+        results = multiSMC(fk={'bootstrap': fk_boot, 'guided': fk_guided}, N=100)
+
+    then, in the output dictionaries, the values of the parameters will be replaced
+    by corresponding keys; e.g. in the example above, {'fk': 'bootstrap'}. This is
+    convenient in cases such like this where the parameter value is some non-standard
+    object.
 
     Parameters
     ----------
@@ -499,8 +504,11 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     * out_func: callable, optional
         function to transform the output of each SMC run. (If not given, output
         will be the complete SMC object).
+    * collect: list of collectors, or 'off'
+        this particular argument of class SMC may be a list, hence it is "protected"
+        from Cartesianisation
     * args: dict
-        arguments passed to SMC class
+        arguments passed to SMC class (except collect)
 
     Returns
     -------
@@ -510,10 +518,7 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, **args):
     --------
     `utils.multiplexer`: for more details on the syntax.
     """
-
-
-    if out_func is None:
-        return utils.multiplexer(f=_identity, nruns=nruns, nprocs=nprocs, seeding=True,
-                                 **args)
-    return utils.multiplexer(f=_pickleable_f(out_func), nruns=nruns, nprocs=nprocs, seeding=True,
+    f = _identity if out_func is None else _picklable_f(out_func)
+    return utils.multiplexer(f=f, nruns=nruns, nprocs=nprocs, seeding=True,
+                             protected_args={'collect': collect},
                              **args)

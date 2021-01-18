@@ -34,6 +34,7 @@ from scipy import stats
 import particles
 from particles import kalman
 from particles import state_space_models as ssms
+from particles.collectors import Moments
 
 #parameter values 
 alpha0 = 0.3
@@ -55,8 +56,8 @@ for d in dims:
 
 # Get results 
 N = 10**4 
-results = particles.multiSMC(fk=models, qmc=[False, True], N=N, moments=True,
-                          nruns=100, nprocs=1) 
+results = particles.multiSMC(fk=models, qmc=[False, True], N=N,
+                             collect=[Moments], nruns=100, nprocs=1) 
 
 # Format results 
 results_mse = []

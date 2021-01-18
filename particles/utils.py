@@ -214,7 +214,8 @@ class seeder(object):
         return self.func(**kwargs)
 
 
-def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
+def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
+                **args):
     """Evaluate a function for different parameters, optionally in parallel.
 
     Parameters
@@ -230,6 +231,8 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     seeding: bool (default: True if nruns > 1, False otherwise)
         whether to seed the pseudo-random generator (with distinct
         seeds) before each evaluation of function f.
+    protected_args: dict
+        args protected from cartesian product (even if they are lists)
     **args:
         keyword arguments for function f.
 
@@ -241,7 +244,8 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
     if not callable(f):
         raise ValueError('multiplexer: function f missing, or not callable')
     # extra arguments (meant to be arguments for f)
-    fixedargs, listargs, dictargs = {}, {}, {}
+    fixedargs = {} if protected_args is None else protected_args
+    listargs, dictargs = {}, {}
     listargs['run'] = list(range(nruns))
     for k, v in args.items():
         if isinstance(v, list):
@@ -265,3 +269,4 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, **args):
             op['seed'] = seed
     # the actual work happens here
     return distribute_work(f, inputs, outputs, nprocs=nprocs)
+

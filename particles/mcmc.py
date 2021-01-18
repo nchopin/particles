@@ -327,7 +327,7 @@ class PMMH(GenericRWHM):
         self.prior = prior
         self.data = data
         # do not collect summaries, no need
-        self.smc_options = {'summaries': False}
+        self.smc_options = {'collect': 'off'}
         if smc_options is not None:
             self.smc_options.update(smc_options)
         self.Nx = Nx
@@ -354,7 +354,7 @@ class CSMC(particles.SMC):
     def __init__(self, fk=None, N=100, ESSrmin=0.5, xstar=None):
         particles.SMC.__init__(self, fk=fk, N=N,
                             resampling="multinomial", ESSrmin=ESSrmin,
-                            store_history=True, summaries=False)
+                            store_history=True, collect='off')
         self.xstar = xstar
 
     def generate_particles(self):

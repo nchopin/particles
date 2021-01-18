@@ -12,6 +12,8 @@ Module summary
     :toctree: _autosummary
 
     ParticleHistory
+    PartialParticleHistory
+    RollingParticleHistory
     smoothing_worker
 
 

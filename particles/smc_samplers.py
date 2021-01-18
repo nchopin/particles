@@ -738,7 +738,7 @@ class SMC2(FKSMCsampler):
                  fk_cls=None, mh_options=None, init_Nx=100, ar_to_increase_Nx=-1.):
         FKSMCsampler.__init__(self, None, mh_options=mh_options)
         # switch off collection of basic summaries (takes too much memory)
-        self.smc_options = {'summaries': False}
+        self.smc_options = {'collect': 'off'}
         if smc_options is not None:
             self.smc_options.update(smc_options)
         self.fk_cls = Bootstrap if fk_cls is None else fk_cls

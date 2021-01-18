@@ -65,7 +65,7 @@ savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
 
 plt.figure()
-plt.plot(algos.keys(), [alg.cpu_time for alg in algos.values()], 'k')
+plt.plot(list(algos.keys()), [alg.cpu_time for alg in algos.values()], 'k')
 plt.xlabel(r'$N$')
 plt.ylim(bottom=0.)
 plt.ylabel('CPU time (s)')

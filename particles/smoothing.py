@@ -143,9 +143,9 @@ from particles import hilbert
 from particles import qmc
 from particles import resampling as rs
 
-def generate_hist_obj(option, fk, qmc):
+def generate_hist_obj(option, smc):
     if option is True:
-        return ParticleHistory(fk, qmc)
+        return ParticleHistory(smc.fk, smc.qmc)
     elif option is False:
         return None
     elif callable(option):
@@ -207,7 +207,7 @@ class RollingParticleHistory(object):
         at time t of particle X_T^n, where T is the current length of history.
         """
         Bs = [np.arange(self.N)]
-        for A in list(self.A)[-1:0:-1]: # list in case self.A is a deque
+        for A in list(self.A)[-1:0:-1]:  # list in case self.A is a deque
             Bs.append(A[Bs[-1]])
         Bs.reverse()
         return np.array(Bs)
@@ -273,8 +273,8 @@ class ParticleHistory(RollingParticleHistory):
         smoothing algorithms, which generate smoothing trajectories constructed
         from the history of a particle filter.
 
-        Arguments
-        ---------
+        Parameters
+        ----------
         M: int
             number of trajectories we want to generate
         linear_cost: bool
@@ -419,9 +419,9 @@ class ParticleHistory(RollingParticleHistory):
 #               (M * (self.T - 1) / nattempts))
 #         return [self.X[t][idx[t, :]] for t in range(self.T)]
 
-    def twofilter_smoothing(self, t, info, phi, loggamma, linear_cost=False,
-                            return_ess=False, modif_forward=None,
-                            modif_info=None):
+    def two_filter_smoothing(self, t, info, phi, loggamma, linear_cost=False,
+                             return_ess=False, modif_forward=None,
+                             modif_info=None):
         """Two-filter smoothing.
 
         Parameters
@@ -446,16 +446,16 @@ class ParticleHistory(RollingParticleHistory):
                 'two-filter smoothing: t must be in range 0,...,T-2')
         lwinfo = info.hist.wgts[ti].lw - loggamma(info.hist.X[ti])
         if linear_cost:
-            return self._twofilter_smoothing_ON(t, ti, info, phi, lwinfo,
+            return self._two_filter_smoothing_ON(t, ti, info, phi, lwinfo,
                                                return_ess,
                                                modif_forward, modif_info)
         else:
-            return self._twofilter_smoothing_ON2(t, ti, info, phi, lwinfo)
+            return self._two_filter_smoothing_ON2(t, ti, info, phi, lwinfo)
 
-    def _twofilter_smoothing_ON2(self, t, ti, info, phi, lwinfo):
+    def _two_filter_smoothing_ON2(self, t, ti, info, phi, lwinfo):
         """O(N^2) version of two-filter smoothing.
 
-        This method should not be called directly, see twofilter_smoothing.
+        This method should not be called directly, see two_filter_smoothing.
         """
         sp, sw = 0., 0.
         upb = lwinfo.max() + self.wgts[t].lw.max()
@@ -470,11 +470,11 @@ class ParticleHistory(RollingParticleHistory):
             sw += np.sum(omegan)
         return sp / sw
 
-    def _twofilter_smoothing_ON(self, t, ti, info, phi, lwinfo, return_ess,
+    def _two_filter_smoothing_ON(self, t, ti, info, phi, lwinfo, return_ess,
                                modif_forward, modif_info):
         """O(N) version of two-filter smoothing.
 
-        This method should not be called directly, see twofilter_smoothing.
+        This method should not be called directly, see two_filter_smoothing.
         """
         if modif_info is not None:
             lwinfo += modif_info
@@ -553,7 +553,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
         for t in range(T - 1):
             psi = lambda x, xf: add_func(t, x, xf)
             if method == 'two-filter_ON2':
-                est[t] = pf.hist.twofilter_smoothing(t, infopf, psi, log_gamma)
+                est[t] = pf.hist.two_filter_smoothing(t, infopf, psi, log_gamma)
             else:
                 ti = T - 2 - t  # t+1 for info filter
                 if method == 'two-filter_ON_prop':
@@ -565,7 +565,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
                                            scale=np.std(pf.hist.X[t + 1]))
                 else:
                     modif_fwd, modif_info = None, None
-                est[t] = pf.hist.twofilter_smoothing(t, infopf, psi, log_gamma,
+                est[t] = pf.hist.two_filter_smoothing(t, infopf, psi, log_gamma,
                                                      linear_cost=True,
                                                      modif_forward=modif_fwd,
                                                      modif_info=modif_info)

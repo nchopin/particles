@@ -1,4 +1,4 @@
-"""Datasets module.
+"""Where datasets live.
 
 This module gives access to several useful datasets. A dataset is represented
 as a class that inherits from base class `Dataset`. When instantiating such a
@@ -25,21 +25,19 @@ Here a quick example::
 And here is a table of the available datasets; see the documentation of each
 sub-class for more details on the preprocessing step.
 
-================= ===================== =========================
-    Dataset            parent class          typical use/model
-================= ===================== =========================
+================= ===================== =======================
+Dataset           parent class          typical use/model
+================= ===================== =======================
+`Boston`          `RegressionDataset`   regression
+`Eeg`             `BinaryRegDataset`    logistic regression
+`GBP_vs_USD_9798` `LogReturnsDataset`   stochastic volatility
+`Nutria`          `Dataset`             population ecology
+`Pima`            `BinaryRegDataset`    logistic regression
+`Sonar`           `BinaryRegDataset`    logistic regression
+`Neuro`           `Dataset`             neuroscience ssm
+================= ===================== =======================
 
-Boston            `RegressionDataset`    regression
-Eeg               `BinaryRegDataset`     logistic regression
-GBP_vs_USD_9798   `LogReturnsDataset`    stochastic volatility
-Nutria            `Dataset`              population ecology
-Pima              `BinaryRegDataset`     logistic regression
-Sonar             `BinaryRegDataset`     logistic regression
-Neuro             `Dataset`              neuroscience ssm
-
-================= ===================== =========================
-
-See also utility function ``prepare_predictors``, which prepares (rescales,
+See also utility function `prepare_predictors`, which prepares (rescales,
 adds an intercept) predictors/features for a regression or classification task.
 
 """
@@ -83,7 +81,7 @@ class Nutria(Dataset):
     Reference
     ---------
     * Peters et al. (2010). Ecological  non-linear  state  space  model
-    selection  via  adaptive particle Markov chain Monte Carlo, arXiv:1005.2238
+      selection  via  adaptive particle Markov chain Monte Carlo, arXiv:1005.2238
 
     """
     file_name = 'nutria.txt'
@@ -205,11 +203,11 @@ class BinaryRegDataset(Dataset):
         3. optionally, appling the "flip sign" trick.
 
     Point 3 refers to the fact that the likelihood of a binary regression
-    models depends only on the vectors::
+    models depends only on the vectors:
 
     .. math:: y_i * x_i
 
-    where :math:`y_i=-1/1` is the response, and :math: `x_i` is the vector of p
+    where :math:`y_i=-1/1` is the response, and :math:`x_i` is the vector of p
     predictors.
 
     Hence, by default, the pre-processing steps returns a single array,
@@ -252,12 +250,14 @@ class Pima(BinaryRegDataset):
 class Eeg(BinaryRegDataset):
     """EEG dataset from UCI repository.
 
-    Response: alcohic vs control
-    predictors: EEG measurements (64)
+    A dataset with 122 observations and 64 predictors. 
+
+    * Response: alcohic vs control
+    * predictors: EEG measurements 
 
     Reference
     ---------
-    * `UCI: <https://archive.ics.uci.edu/ml/datasets/eeg+database>`__
+    `UCI: <https://archive.ics.uci.edu/ml/datasets/eeg+database>`__
     """
     file_name = 'eeg_eye_state.data'
     load_opts = {'delimiter': ',', 'skiprows': 19}
@@ -267,9 +267,9 @@ class Sonar(BinaryRegDataset):
 
     A dataset with 110 observations and 60 predictors.
 
-    Response: rock vs mine
-    predictors: numbers in range [0, 1] representing the energy within a
-    particular frequency band.
+    * Response: rock vs mine
+    * predictors: numbers in range [0, 1] representing the energy within a
+      particular frequency band.
 
     `Link <https://archive.ics.uci.edu/ml/datasets/connectionist+bench+(sonar,+mines+vs.+rocks)>`__
 

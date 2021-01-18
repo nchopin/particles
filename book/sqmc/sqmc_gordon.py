@@ -17,6 +17,7 @@ from scipy import stats
 
 import particles
 from particles import state_space_models as ssms
+from particles.collectors import Moments
 
 # instantiate model
 T = 100
@@ -29,8 +30,9 @@ if __name__ == "__main__":
     Ns = [2**k for k in range(6, 21)]
     of = lambda pf: {'ll': pf.logLt,
                      'EXt': [m['mean'] for m in pf.summaries.moments]}
-    results = particles.multiSMC(fk=fk, qmc={'smc': False, 'sqmc': True}, N=Ns, 
-                                 moments=True, nruns=200, nprocs=0, out_func=of)
+    results = particles.multiSMC(fk=fk, qmc={'smc': False, 'sqmc': True}, N=Ns,
+                                 collect=[Moments], nruns=200, nprocs=0,
+                                 out_func=of)
     drez = {'smc': [r for r in results if r['qmc'] == 'smc'], 
             'sqmc': [r for r in results if r['qmc'] == 'sqmc']
            }
