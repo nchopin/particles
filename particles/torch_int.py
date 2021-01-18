@@ -22,16 +22,20 @@ class TorchWeights(rs.Weights):
             self.log_mean = m + log(sw) - log(len(lw))
             self.ESS = float(1. / torch.sum(self.W ** 2))
 
+    @staticmethod
+    def arange(N):
+        return torch.arange(N, device=cuda)
+
     def resample(self, scheme='multinomial', M=None):
         if scheme != 'multinomial':
             raise ValueError('torch: only multinomial resampling available')
         if M is None:
-            M = len(self.lw)  #  TODO what if self.lw is None
+            M = len(self.lw)  
+        #  TODO what if self.lw is None
         return torch.multinomial(self.W, M, replacement=True)
 
 class TorchFeynmanKac(particles.FeynmanKac):
-    def weights_obj(self, lw=None):
-        return TorchWeights(lw=lw)
+    weights_cls = TorchWeights
 
 class ToyGPUFK(TorchFeynmanKac):
     def __init__(self, T=10, d=10):

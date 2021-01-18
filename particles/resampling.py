@@ -220,6 +220,10 @@ class Weights(object):
             self.log_mean = lwmax + np.log(ws) - np.log(len(lw))
             self.ESS = 1. / np.sum(self.W ** 2)
 
+    @staticmethod
+    def arange(N):
+        return np.arange(N)
+
     def add(self, delta):
         """Increment weights: lw <-lw + delta.
 

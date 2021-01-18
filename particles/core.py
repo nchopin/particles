@@ -142,6 +142,7 @@ class FeynmanKac(object):
     documentation.
     """
     mutate_only_after_resampling = False
+    weights_cls = rs.Weights
 
     # by default, we mutate at every time t
 
@@ -202,9 +203,6 @@ class FeynmanKac(object):
         return 't=%i: resample:%s, ESS (end of iter)=%.2f' % (smc.t,
                                                               smc.rs_flag,
                                                               smc.wgts.ESS)
-
-    def weights_obj(self, lw=None):
-        return rs.Weights(lw=lw)
 
 
 class SMC(object):
@@ -290,7 +288,7 @@ class SMC(object):
         self.t = 0
         self.rs_flag = False  # no resampling at time 0, by construction
         self.logLt = 0.
-        self.wgts = fk.weights_obj()
+        self.wgts = fk.weights_cls()
         self.aux = None
         self.X, self.Xp, self.A = None, None, None
 
@@ -314,9 +312,9 @@ class SMC(object):
         if self.fk.isAPF:
             lw = (rs.log_mean_exp(self.logetat, W=self.W)
                   - self.logetat[self.A])
-            self.wgts = self.fk.weights_obj(lw=lw)
+            self.wgts = self.fk.weights_cls(lw=lw)
         else:
-            self.wgts = self.fk.weights_obj()
+            self.wgts = self.fk.weights_cls()
 
     def setup_auxiliary_weights(self):
         """Compute auxiliary weights (for APF).
@@ -346,7 +344,7 @@ class SMC(object):
             self.reset_weights()
             self.X = self.fk.M(self.t, self.Xp)
         elif not self.fk.mutate_only_after_resampling:
-            self.A = np.arange(self.N)
+            self.A = self.fk.weights_cls.arange(N)
             self.Xp = self.X
             self.X = self.fk.M(self.t, self.Xp)
 
@@ -365,7 +363,7 @@ class SMC(object):
     def compute_summaries(self):
         if self.t > 0:
             prec_log_mean_w = self.log_mean
-        self.log_mean_w = self.wgts.mean()
+        self.log_mean_w = self.wgts.mean
         if self.t == 0 or self.rs_flag:
             self.loglt = self.log_mean_w
         else:
@@ -375,8 +373,8 @@ class SMC(object):
             print(self)
         if self.hist:
             self.hist.save(self)
-        # must collect summaries *after* history, because a collector (e.g.
-        # FixedLagSmoother) may needs to access history
+        # collect summaries *after* history, because a collector (e.g.
+        # FixedLagSmoother) may need to access history
         if self.summaries:
             self.summaries.collect(self)
 
