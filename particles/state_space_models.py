@@ -621,7 +621,7 @@ class MVStochVol(StateSpaceModel):
         return self.mu - np.dot(self.F, self.mu)
 
     def PX0(self):
-        return dists.MvNormal(loc=self.mu, cov=self.corX)
+        return dists.MvNormal(loc=self.mu, cov=self.covX)
 
     def PX(self, t, xp):
         return dists.MvNormal(loc=np.dot(xp, self.F.T) + self.offset(),
