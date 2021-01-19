@@ -1,4 +1,5 @@
 from math import log
+import numpy as np
 from numpy import random
 import torch
 

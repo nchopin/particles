@@ -362,7 +362,7 @@ class SMC(object):
 
     def compute_summaries(self):
         if self.t > 0:
-            prec_log_mean_w = self.wgts.log_mean
+            prec_log_mean_w = self.log_mean_w
         self.log_mean_w = self.wgts.log_mean
         if self.t == 0 or self.rs_flag:
             self.loglt = self.log_mean_w
