@@ -31,7 +31,7 @@ To define a specific linear Gaussian model, we instantiate class
                                covY=.3)
 
 where the parameters have the same meaning as above. It is also possible to
-specify `mu0`and  `cov0` (the mean and covariance of the initial state $X_0$).
+specify `mu0`and  `cov0` (the mean and covariance of the initial state X_0).
 (See the documentation of the class for more details.)
 
 Class `MVLinearGauss` is a sub-class of `StateSpaceModel` in module
@@ -82,7 +82,7 @@ stored as lists of `MeanAndCov` objects, that is, named tuples with attributes
     kf.filt[3].mean  # mean of the filtering distribution at time 3
     kf.pred[7].cov  # cov matrix of the predictive distribution at time 7
 
-The forward pass also computes the log-likelihood of the data:
+The forward pass also computes the log-likelihood of the data::
 
     kf.logpyt[5]  # log-density of Y_t | Y_{0:t-1} at time t=5
 
