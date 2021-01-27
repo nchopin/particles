@@ -15,7 +15,7 @@ with open('README.md') as f:
 
 METADATA = dict(
     name=NAME, 
-    version='0.1', 
+    version='0.2', 
     url='http://github.com/nchopin/particles/',
     license='MIT', 
     author='Nicolas Chopin',

@@ -1,7 +1,21 @@
-version 0.2
-===========
+# Changelog
+All notable changes to this project will be documented in this file.
 
-* collectors module: new implementation of collectors
-* datasets module: new
-* variance_estimators module: new
-* utils module: performance improvements (multi-processing, distinct seeds)
+
+## [Unreleased]
+
+- distributions: multivariate_normal supports for varying cov
+
+## [0.2] - 2021-01-27
+### Added 
+ - new module: datasets (cleaner way to load standard datasets)
+ - new module: variance_estimators (single-run genealogy based estimators à la
+   Lee and Whiteley)
+
+### Changed
+ - collectors: new implementation (breaks compatibility)
+ - utils: performance improvements (multi-processing, distinct seeds)
+
+## [0.1] - 2020-04-15
+
+- Initial release 
