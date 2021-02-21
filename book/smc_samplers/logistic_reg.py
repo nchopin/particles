@@ -23,7 +23,7 @@ import particles
 from particles import datasets as dts
 from particles import distributions as dists
 from particles import resampling as rs
-from particles import smc_samplers
+from particles import smc_samplers as ssps
 from particles.collectors import Moments
 
 datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
@@ -53,7 +53,7 @@ elif dataset_name == 'eeg':
 prior = dists.StructDist({'beta':dists.MvNormal(scale=5.,
                                                 cov=np.eye(p))})
 
-class LogisticRegression(smc_samplers.StaticModel):
+class LogisticRegression(ssps.StaticModel):
     def logpyt(self, theta, t):
         # log-likelihood factor t, for given theta
         lin = np.matmul(theta['beta'], data[t, :])
@@ -74,12 +74,12 @@ for M in Ms:
         model = LogisticRegression(data=data, prior=prior)
         for alg_type in ['tempering', 'ibis']:
             if alg_type=='ibis':
-                fk = smc_samplers.IBIS(model, mh_options={'nsteps': M})
+                fk = ssps.IBIS(model=model, move=ssps.ArrayMCMCMove(nsteps=M))
                 pf = particles.SMC(N=N, fk=fk, ESSrmin=ESSrmin,
                                 collect=[Moments], verbose=False)
             else:
-                fk = smc_samplers.AdaptiveTempering(model, ESSrmin=ESSrmin,
-                                                    mh_options={'nsteps': M})
+                fk = ssps.AdaptiveTempering(model=model, ESSrmin=ESSrmin,
+                                            move=ssps.ArrayMCMCMove(nsteps=M))
                 pf = particles.SMC(N=N, fk=fk, ESSrmin=1., collect=[Moments],
                                 verbose=True)
                 # must resample at every time step when doing adaptive
@@ -95,8 +95,8 @@ for M in Ms:
                                            pf.summaries.rs_flags[t]]))
             else:
                 n_eval = N * T * (1. + M * (len(pf.summaries.ESSs) - 1))
-                res['path_sampling'] = pf.X.path_sampling[-1]
-                res['exponents'] = pf.X.exponents
+                res['path_sampling'] = pf.X.shared['path_sampling'][-1]
+                res['exponents'] = pf.X.shared['exponents']
             res['n_eval'] = n_eval
             results.append(res)
 

@@ -141,8 +141,6 @@ class FeynmanKac(object):
     e.g. module `smc_samplers` and the corresponding tutorial in the on-line
     documentation.
     """
-    mutate_only_after_resampling = False
-
     # by default, we mutate at every time t
 
     def __init__(self, T):
@@ -190,6 +188,11 @@ class FeynmanKac(object):
     def done(self, smc):
         """Time to stop the algorithm"""
         return smc.t >= self.T
+
+    def time_to_resample(self, smc):
+        """When to resample.
+        """
+        return (smc.aux.ESS < smc.N * smc.ESSrmin)
 
     def default_moments(self, W, X):
         """Default moments (see module ``collectors``).
@@ -336,13 +339,13 @@ class SMC(object):
         self.wgts = self.wgts.add(self.fk.logG(self.t, self.Xp, self.X))
 
     def resample_move(self):
-        self.rs_flag = self.aux.ESS < self.N * self.ESSrmin
+        self.rs_flag = self.fk.time_to_resample(self)
         if self.rs_flag:  # if resampling
             self.A = rs.resampling(self.resampling, self.aux.W)
             self.Xp = self.X[self.A]
             self.reset_weights()
             self.X = self.fk.M(self.t, self.Xp)
-        elif not self.fk.mutate_only_after_resampling:
+        else:
             self.A = np.arange(self.N)
             self.Xp = self.X
             self.X = self.fk.M(self.t, self.Xp)
@@ -362,7 +365,7 @@ class SMC(object):
     def compute_summaries(self):
         if self.t > 0:
             prec_log_mean_w = self.log_mean_w
-        self.log_mean_w = rs.log_mean_exp(self.wgts.lw)
+        self.log_mean_w = self.wgts.log_mean
         if self.t == 0 or self.rs_flag:
             self.loglt = self.log_mean_w
         else:

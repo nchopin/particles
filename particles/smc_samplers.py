@@ -22,6 +22,23 @@ For more information and examples, see the following notebook tutorial_.
 
 .. _tutorial: notebooks/SMC_samplers_tutorial.ipynb
 
+TODO:
+
+* wastefree: implement method concatenate
+* deepcopy: no more, but is it a good idea? (lists in shared)
+* non-adaptive tempering has disappeared
+* references xout
+* acc rates
+* adaptive number of steps? 
+* Langevin? 
+* core.time_to_resample: DONE
+* core.mutate_only_after_resampling DONE
+* resampling.wmean_and_cov: DONE, but 
+    + not documented 
+    + transpose? 
+    + inconsistent with wmean_and_var ?
+* SMC2 (e.g. mutate_only_after_resampling)
+
 """
 
 from __future__ import absolute_import, division, print_function
@@ -29,8 +46,8 @@ from __future__ import absolute_import, division, print_function
 from collections import namedtuple
 import copy as cp
 import numpy as np
-from scipy import optimize, stats
-from scipy.linalg import cholesky, LinAlgError, solve_triangular
+from numpy import random
+from scipy import optimize, stats, linalg
 import time
 
 import particles
@@ -185,9 +202,9 @@ class FancyList(object):
                 self.l[n] = src.l[n]  # not a copy
 
 
-def as_2d_array(theta):
-    """ returns a view to record array theta which behaves
-    like a (N,d) float array
+def view_2d_array(theta):
+    """Returns a view to record array theta which behaves
+    like a (N,d) float array.
     """
     v = theta.view(np.float)
     N = theta.shape[0]
@@ -219,34 +236,35 @@ class ThetaParticles(object):
         # returns a new instance that contains particles 3, 5 and 10 (twice)
 
     """
-    shared = []  # put here the name of shared attributes
+    def __init__(self, shared=None, **fields):
+        self.shared = {} if shared is None else shared
+        self.__dict__.update(fields)
 
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            self.__dict__[k] = v
-        self.containers = [k for k in kwargs if k not in self.shared]
-        if 'theta' in kwargs:
-            self.arr = as_2d_array(self.theta)
-            self.N, self.dim = self.arr.shape
+    @property
+    def N(self):
+        return self.theta.shape[0]
+
+    @property
+    def dict_fields(self):
+        return {k: v for k, v in self.__dict__.items() if k != 'shared'}
 
     def __getitem__(self, key):
-        attrs = {k: self.__dict__[k][key] for k in self.containers}
+        fields = {k: v[key] for k, v in self.dict_fields.items()}
         if isinstance(key, int):
-            return attrs
+            return fields
         else:
-            attrs.update({k: cp.deepcopy(self.__dict__[k])
-                          for k in self.shared})
-            return self.__class__(**attrs)
+            shared = self.shared.copy()
+            return self.__class__(shared=shared, **fields)
 
     def __setitem__(self, key, value):
-        for k in self.containers:
-            self.__dict__[k][key] = value.__dict__[k]
+        for k, v in self.dict_fields.item(): 
+            v[key] = getattr(value, k)
 
     def copy(self):
         """Returns a copy of the object."""
-        attrs = {k: self.__dict__[k].copy() for k in self.containers}
-        attrs.update({k: cp.deepcopy(self.__dict__[k]) for k in self.shared})
-        return self.__class__(**attrs)
+        fields = {k: v.copy() for k, v in self.dict_fields.items()}
+        shared = self.shared.copy()
+        return self.__class__(shared=shared, **fields)
 
     def copyto(self, src, where=None):
         """Emulates function `copyto` in NumPy.
@@ -262,12 +280,11 @@ class ThetaParticles(object):
        for each n such that where[n] is True, copy particle n in src
        into self (at location n)
         """
-        for k in self.containers:
-            v = self.__dict__[k]
+        for k, v in self.dict_fields.items():
             if isinstance(v, np.ndarray):
-                np.copyto(v, src.__dict__[k], where=where)
+                np.copyto(v, getattr(src, k), where=where)
             else:
-                v.copyto(src.__dict__[k], where=where)
+                v.copyto(getattr(src, k), where=where)
 
     def copyto_at(self, n, src, m):
         """Copy to at a given location.
@@ -285,137 +302,8 @@ class ThetaParticles(object):
         ----
         Basically, does self[n] <- src[m]
         """
-        for k in self.containers:
-            self.__dict__[k][n] = src.__dict__[k][m]
-
-
-class MetroParticles(ThetaParticles):
-    """Particles that may be moved through a Metropolis step.
-
-    The following attributes are required:
-        * `theta`: a (N,) record array; the parameter values
-        * `lpost`: a (N,) float array; log-posterior density at the parameter
-          values
-
-    An instance has the following shared attribute:
-        * acc_rates: list; acceptance rates of the previous Metropolis steps
-
-    This class implements generic methods to move all the particle
-    according to a Metropolis step.
-    """
-
-    shared = ['acc_rates']
-
-    def __init__(self, theta=None, lpost=None, acc_rates=None, **extra_kwargs):
-        ThetaParticles.__init__(self, theta=theta, lpost=lpost,
-                                **extra_kwargs)
-        self.acc_rates = [] if acc_rates is None else acc_rates
-
-    def mcmc_iterate(self, nsteps, xstart, xend, delta_dist):
-        if nsteps == 0:
-            prev_dist = 0.
-            yield
-            while True:
-                mean_dist = np.mean(np.sqrt(np.sum((xend - xstart)**2, axis=1)))
-                if np.abs(mean_dist - prev_dist) < delta_dist * prev_dist:
-                    break
-                prev_dist = mean_dist
-                yield
-        else:
-            for _ in range(nsteps):
-                yield
-
-    class RandomWalkProposal(object):
-
-        def __init__(self, x, scale=None, adaptive=True):
-            if adaptive:
-                if scale is None:
-                    scale = 2.38 / np.sqrt(x.shape[1])
-                cov = np.cov(x.T)
-                try:
-                    self.L = scale * cholesky(cov, lower=True)
-                except LinAlgError:
-                    self.L = scale * np.diag(np.sqrt(np.diag(cov)))
-                    print('Warning: could not compute Cholesky decomposition, using diag matrix instead')
-            else:
-                if scale is None:
-                    scale = 1.
-                self.L = scale * np.eye(x.shape[1])
-
-        def step(self, x):
-            y = x + np.dot(stats.norm.rvs(size=x.shape), self.L.T)
-            return y, 0.
-
-    class IndependentProposal(object):
-
-        def __init__(self, x, scale=1.1):
-            self.L = scale * cholesky(np.cov(x.T), lower=True)
-            self.mu = np.mean(x, axis=0)
-
-        def step(self, x):
-            z = stats.norm.rvs(size=x.shape)
-            y = self.mu + np.dot(z, self.L.T)
-            zx = solve_triangular(self.L, np.transpose(x - self.mu),
-                                  lower=True)
-            delta_lp = (0.5 * np.sum(z * z, axis=1)
-                        - 0.5 * np.sum(zx * zx, axis=0))
-            return y, delta_lp
-
-    def choose_proposal(self, type_prop='random walk', rw_scale=None,
-                        adaptive=True, indep_scale=1.1):
-        if type_prop == 'random walk':
-            return MetroParticles.RandomWalkProposal(self.arr,
-                                                     scale=rw_scale,
-                                                     adaptive=adaptive)
-        if type_prop == 'independent':
-            return MetroParticles.IndependentProposal(self.arr,
-                                                      scale=indep_scale)
-        raise ValueError('Unknown type for Metropolis proposal')
-
-    def Metropolis(self, compute_target, mh_options):
-        """Performs a certain number of Metropolis steps.
-
-        Parameters
-        ----------
-        compute_target: function
-            computes the target density for the proposed values
-        mh_options: dict
-            + 'type_prop': {'random walk', 'independent'}
-              type of proposal: either Gaussian random walk, or independent Gaussian
-            + 'adaptive': bool
-              If True, the covariance matrix of the random walk proposal is
-              set to a `rw_scale` times the weighted cov matrix of the particle
-              sample (ignored if proposal is independent)
-            + 'rw_scale': float (default=None)
-              see above (ignored if proposal is independent)
-            + 'indep_scale': float (default=1.1)
-              for an independent proposal, the proposal distribution is
-              Gaussian with mean set to the particle mean, cov set to
-              `indep_scale` times particle covariance
-            + 'nsteps': int (default: 0)
-              number of steps; if 0, the number of steps is chosen adaptively
-              as follows: we stop when the average distance between the
-              starting points and the stopping points increase less than a
-              certain fraction
-            + 'delta_dist': float (default: 0.1)
-              threshold for when nsteps = 0
-        """
-        opts = mh_options.copy()
-        nsteps = opts.pop('nsteps', 0)
-        delta_dist = opts.pop('delta_dist', 0.1)
-        proposal = self.choose_proposal(**opts)
-        xout = self.copy()
-        xp = self.__class__(theta=np.empty_like(self.theta))
-        step_ars = []
-        for _ in self.mcmc_iterate(nsteps, self.arr, xout.arr, delta_dist):
-            xp.arr[:, :], delta_lp = proposal.step(xout.arr)
-            compute_target(xp)
-            lp_acc = xp.lpost - xout.lpost + delta_lp
-            accept = (np.log(stats.uniform.rvs(size=self.N)) < lp_acc)
-            xout.copyto(xp, where=accept)
-            step_ars.append(np.mean(accept))
-        xout.acc_rates = self.acc_rates + [step_ars]
-        return xout
+        for k, v in self.dict_fields.items():
+            v[n] = getattr(src, k)[m]
 
 #############################
 # Basic importance sampler
@@ -446,26 +334,154 @@ class ImportanceSampler(object):
         N: int
             number of particles
 
-        Returns
+        Returns (as attributes)
         -------
         wgts: Weights object
             The importance weights (with attributes lw, W, and ESS)
         X: ThetaParticles object
             The N particles (with attributes theta, logpost)
-        norm_cst: float
-            Estimate of the normalising constant of the target
+        log_norm_cst: float
+            Estimate of the log normalising constant of the target
         """
         th = self.proposal.rvs(size=N)
-        self.X = ThetaParticles(theta=th, lpost=None)
+        self.X = ThetaParticles(theta=th)
         self.X.lpost = self.model.logpost(th)
         lw = self.X.lpost - self.proposal.logpdf(th)
         self.wgts = rs.Weights(lw=lw)
-        self.norm_cst = rs.log_mean_exp(lw)
+        self.log_norm_cst = self.wgts.log_mean
+
+#################################
+# MCMC steps (within SMC samplers
+
+class ArrayMCMC(object):
+    """Base class for a (single) MCMC step applied to an array. 
+
+    Note: array is modified in-place. 
+    """
+    def __init__(self):
+        pass
+
+    def step(self, x, target=None):
+        raise NotImplementedError
+
+class ArrayMetropolis(ArrayMCMC):
+    """Base class for Metropolis steps (whatever the proposal).
+    """
+    def proposal(self, x, xprop):
+        raise NotImplementedError
+
+    def calibrate(self, W, x):
+        raise NotImplementedError
+
+    def step(self, x, target=None):
+        """
+
+        Parameters
+        ----------
+        x:   particles object
+            current particle system (will be modified in-place)
+        target: callable
+            compute fields such as x.logpost (log target density)
+
+        Returns
+        -------
+        mean acceptance probability
+
+        """
+        xprop = x.__class__(theta=np.empty_like(x.theta))
+        delta_lp = self.proposal(x, xprop)
+        target(xprop)
+        lp_acc = xprop.lpost - x.lpost + delta_lp  
+        pb_acc = np.exp(np.clip(lp_acc, None, 0.))
+        mean_acc = np.mean(pb_acc)
+        accept = (random.rand(x.N) < pb_acc)
+        x.copyto(xprop, where=accept)
+        return mean_acc
+
+class ArrayRandomWalk(ArrayMetropolis):
+    def calibrate(self, W, x):
+        arr = view_2d_array(x.theta)
+        N, d = arr.shape
+        m, cov = rs.wmean_and_cov(W, arr)
+        scale = 2.38 / np.sqrt(d)
+        x.shared['chol_cov'] = scale * linalg.cholesky(cov, lower=True)
+
+    def proposal(self, x, xprop):
+        L = x.shared['chol_cov']
+        arr = view_2d_array(x.theta)
+        arr_prop = view_2d_array(xprop.theta)
+        arr_prop[:, :] = (arr + stats.norm.rvs(size=arr.shape) @ L.T)
+        return 0.
+
+class ArrayIndependentMetropolis(ArrayMetropolis):
+    def __init__(self, scale=1.):
+        self.scale = scale
+
+    def calibrate(self, W, x): 
+        m, cov = rs.wmean_and_cov(W, view_2d_array(x.theta))
+        x.shared['mean'] = m 
+        x.shared['chol_cov'] = self.scale * linalg.cholesky(cov, lower=True)
+    
+    def proposal(self, x, xprop):
+        mu = x.shared['mean']
+        L = x.shared['chol_cov']
+        arr = view_2d_array(x.theta)
+        arr_prop = view_2d_array(xprop_theta)
+        z = stats.norm.rvs(size=arr.shape)
+        zx = linalg.solve_triangular(L, np.transpose(arr - mu), lower=True)
+        delta_lp = 0.5 * (np.sum(z * z, axis=1) - np.sum(zx * zx, axis=0))
+        arr_prop[:, :] = mu + z @ L.T
+        return delta_lp
+
+class ArrayMCMCMove:
+    def __init__(self, mcmc=None, adaptive=False, nsteps=1, delta_dist=0.1):
+        self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
+        self.adaptive = adaptive
+        self.nsteps = nsteps
+        self.delta_dist = delta_dist
+
+    def calibrate(self, W, x):
+        self.mcmc.calibrate(W, x)
+
+    def __call__(self, x, target):
+        xout = x.copy()
+        ars = []
+        dist = 0.
+        for _ in range(self.nsteps):  # if adaptive, nsteps is max nb of steps
+            ar = self.mcmc.step(xout, target)
+            ars.append(ar)
+            if self.adaptive:
+                prev_dist = dist
+                diff = view_2d_array(xout.theta) - view_2d_array(x.theta)
+                dist = np.mean(linalg.norm(diff, axis=1))
+                if np.abs(dist - prev_dist) < self.delta_dist * prev_dist:
+                    break
+        prev_ars = x.shared.get('acc_rates', [])
+        xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
+        return xout
+
+class WasteFreeMCMCMove(ArrayMCMCMove):
+    def __init__(self, mcmc=None, nsteps=1):
+        self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
+        self.nsteps = nsteps
+
+    def __call__(self, x):
+        xs = [x]
+        xprev = x
+        ars = []
+        for _ in range(self.nsteps):
+            x = x.copy()
+            ar = self.step(x)
+            ars.append(ar)
+            xs.append(x)
+        xout = x.concatenate(*xs)  # TODO
+        prev_ars = x.shared.get('acc_rates', [])
+        xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
+        return xout
+
 
 #############################
 # FK classes for SMC samplers
-
-
 class FKSMCsampler(particles.FeynmanKac):
     """Base FeynmanKac class for SMC samplers.
 
@@ -473,31 +489,13 @@ class FKSMCsampler(particles.FeynmanKac):
     ----------
     model: `StaticModel` object
         The static model that defines the target posterior distribution(s)
-    mh_options: dict
-        + 'type_prop': {'random walk', 'independent'}
-          type of proposal: either Gaussian random walk, or independent Gaussian
-        + 'adaptive': bool
-          If True, the covariance matrix of the random walk proposal is
-          set to a `rw_scale` times the weighted cov matrix of the particle
-          sample (ignored if proposal is independent)
-        + 'rw_scale': float (default=None)
-          see above (ignored if proposal is independent)
-        + 'indep_scale': float (default=1.1)
-          for an independent proposal, the proposal distribution is
-          Gaussian with mean set to the particle mean, cov set to
-          `indep_scale` times particle covariance
-        + 'nsteps': int (default: 0)
-          number of steps; if 0, the number of steps is chosen adaptively
-          as follows: we stop when the average distance between the
-          starting points and the stopping points increase less than a
-          certain fraction
-        + 'delta_dist': float (default: 0.1)
-          threshold for when nsteps = 0
-    """
+    move:   TODO
 
-    def __init__(self, model, mh_options=None):
+    """
+    def __init__(self, model=None, move=None):
         self.model = model
-        self.mh_options = {} if mh_options is None else mh_options
+        self.move = ArrayMCMCMove(nsteps=10) if move is None else move
+        #TODO better default? or raise an error?
 
     @property
     def T(self):
@@ -508,121 +506,62 @@ class FKSMCsampler(particles.FeynmanKac):
 
     def summary_format(self, smc):
         if smc.rs_flag:
-            ars = np.array(smc.X.acc_rates[-1])
+            ars = np.array(smc.X.shared['acc_rates'][-1])
             to_add = ', Metropolis acc. rate (over %i steps): %.3f' % (
                 ars.size, ars.mean())
         else:
             to_add = ''
         return 't=%i%s, ESS=%.2f' % (smc.t, to_add, smc.wgts.ESS)
 
+    def time_to_resample(self, smc):
+        rs_flag = (smc.aux.ESS < smc.X.N * smc.ESSrmin)
+        smc.X.shared['rs_flag'] = rs_flag  # TODO only for IBIS?
+        if rs_flag:
+            self.move.calibrate(smc.W, smc.X)
+        return rs_flag
 
-class IBIS(FKSMCsampler):
-    """FeynmanKac class for IBIS algorithm.
 
-    see base class `FKSMCsampler` for parameters.
-    """
-    mutate_only_after_resampling = True  # override default value of FKclass
+class FKWasteFree(FKSMCsampler):
+    def __init__(self, model=None, P=100, move=None):
+        self.model = model
+        self.P = P
+        self.move = WasteFreeMCMCMove(nsteps=P) if move is None else move
 
+
+class IBISMixin:
     def logG(self, t, xp, x):
         lpyt = self.model.logpyt(x.theta, t)
         x.lpost += lpyt
         return lpyt
 
-    def compute_post(self, x, t):
-        x.lpost = self.model.logpost(x.theta, t=t)
+    def current_target(self, t):
+        def func(x):
+            x.lpost = self.model.logpost(x.theta, t=t)
+        return func
 
     def M0(self, N):
-        x0 = MetroParticles(theta=self.model.prior.rvs(size=N))
-        self.compute_post(x0, 0)
+        N0 = N * self.P if hasattr(self, 'P') else N
+        # self.P exists => waste-free
+        x0 = ThetaParticles(theta=self.model.prior.rvs(size=N0))
+        self.current_target(0)(x0)
         return x0
 
-    def M(self, t, Xp):
-        # in IBIS, M_t leaves invariant p(theta|y_{0:t-1})
-        comp_target = lambda x: self.compute_post(x, t-1)
-        return Xp.Metropolis(comp_target, mh_options=self.mh_options)
+    def M(self, t, xp):
+        if xp.shared['rs_flag']:
+            return self.move(xp, target=self.current_target(t))
+        else:
+            return xp
 
 
-class TemperingParticles(MetroParticles):
-    shared = ['acc_rates', 'path_sampling']
-
-    def __init__(self, theta=None, lprior=None, llik=None,
-                 lpost=None, acc_rates=None, path_sampling=None):
-        MetroParticles.__init__(self, theta=theta, lprior=lprior, llik=llik,
-                                lpost=lpost, acc_rates=acc_rates)
-        self.path_sampling = [0.] if path_sampling is None else path_sampling
-
-class AdaptiveTemperingParticles(TemperingParticles):
-    shared = ['acc_rates', 'exponents', 'path_sampling']
-
-    def __init__(self, theta=None, lprior=None, llik=None,
-                 lpost=None, acc_rates=None, exponents=None,
-                 path_sampling=None):
-        TemperingParticles.__init__(self, theta=theta, lprior=lprior, llik=llik,
-                                    lpost=lpost, acc_rates=acc_rates,
-                                    path_sampling=path_sampling)
-        self.exponents = [0.] if exponents is None else exponents
+class IBIS(IBISMixin, FKSMCsampler):
+    pass
 
 
-class Tempering(FKSMCsampler):
-    """FeynmanKac class for tempering SMC.
-
-    Parameters
-    ----------
-    exponents: list-like
-        Tempering exponents (must starts with 0., and ends with 1.)
-
-    See base class for other parameters.
-    """
-    def __init__(self, model, mh_options=None, exponents=None):
-        FKSMCsampler.__init__(self, model, mh_options=mh_options)
-        self.exponents = exponents
-        self.deltas = np.diff(exponents)
-
-    @property
-    def T(self):
-        return self.deltas.shape[0]
-
-    def logG(self, t, xp, x):
-        delta = self.deltas[t]
-        return self.logG_tempering(x, delta)
-
-    def logG_tempering(self, x, delta):
-        dl = delta * x.llik
-        x.lpost += dl
-        self.update_path_sampling_est(x, delta)
-        return dl
-
-    def update_path_sampling_est(self, x, delta):
-        grid_size = 10
-        binwidth = delta / (grid_size - 1)
-        new_ps_est = x.path_sampling[-1]
-        for i, e in enumerate(np.linspace(0., delta, grid_size)):
-            mult = 0.5 if i==0 or i==grid_size-1 else 1.
-            new_ps_est += (mult * binwidth *
-                           np.average(x.llik,
-                                      weights=rs.exp_and_normalise(e * x.llik)))
-        x.path_sampling.append(new_ps_est)
-
-    def compute_post(self, x, epn):
-        x.lprior = self.model.prior.logpdf(x.theta)
-        x.llik = self.model.loglik(x.theta)
-        if epn > 0.:
-            x.lpost = x.lprior + epn * x.llik
-        else:  # avoid having 0 x Nan
-            x.lpost = x.lprior.copy()
-
-    def M0(self, N):
-        x0 = TemperingParticles(theta=self.model.prior.rvs(size=N))
-        self.compute_post(x0, 0.)
-        return x0
-
-    def M(self, t, Xp):
-        epn = self.exponents[t]
-        compute_target = lambda x: self.compute_post(x, epn)
-        return Xp.Metropolis(compute_target, self.mh_options)
+class WasteFreeIBIS(IBISMixin, FKWasteFree):
+    pass
 
 
-class AdaptiveTempering(Tempering):
+class AdaptiveTempering(FKSMCsampler):
     """Feynman-Kac class for adaptive tempering SMC.
 
     Parameters
@@ -632,53 +571,87 @@ class AdaptiveTempering(Tempering):
         each step
 
     See base class for other parameters.
-
-    Note
-    ----
-    Since the successive temperatures are chosen so that the ESS
-    drops to a certain value, it is highly recommended that you
-    set option ESSrmin in SMC to 1., so that resampling is triggered
-    at every iteration.
     """
-
-    def __init__(self, model, mh_options=None, ESSrmin=0.5):
-        FKSMCsampler.__init__(self, model, mh_options=mh_options)
+    def __init__(self, model=None, move=None, ESSrmin=0.5):
+        super().__init__(model=model, move=move)
         self.ESSrmin = ESSrmin
+
+    def time_to_resample(self, smc):
+        self.move.calibrate(smc.W, smc.X)
+        return True  # We *always* resample in tempering
 
     def done(self, smc):
         if smc.X is None:
-            return False  # We have not even started yet
+            return False  # We have not started yet
         else:
-            return smc.X.exponents[-1] >= 1.
+            return smc.X.shared['exponents'][-1] >= 1.
+
+    def update_path_sampling_est(self, x, delta):
+        grid_size = 10
+        binwidth = delta / (grid_size - 1)
+        new_ps_est = x.shared['path_sampling'][-1]
+        for i, e in enumerate(np.linspace(0., delta, grid_size)):
+            mult = 0.5 if i==0 or i==grid_size-1 else 1.
+            new_ps_est += (mult * binwidth *
+                           np.average(x.llik,
+                                      weights=rs.exp_and_normalise(e * x.llik)))
+            x.shared['path_sampling'].append(new_ps_est)
+
+    def logG_tempering(self, x, delta):
+        dl = delta * x.llik
+        x.lpost += dl
+        self.update_path_sampling_est(x, delta)
+        return dl
 
     def logG(self, t, xp, x):
-        ESSmin = self.ESSrmin * x.N
+        ESSmin = self.ESSrmin * x.N 
         f = lambda e: rs.essl(e * x.llik) - ESSmin
-        epn = x.exponents[-1]
+        epn = x.shared['exponents'][-1]
         if f(1. - epn) > 0:  # we're done (last iteration)
             delta = 1. - epn
             new_epn = 1.
-            # put 1. manually so that we can safely test == 1.
+            # set 1. manually so that we can safely test == 1.
         else:
             delta = optimize.brentq(f, 1.e-12, 1. - epn)  # secant search
             # left endpoint is >0, since f(0.) = nan if any likelihood = -inf
             new_epn = epn + delta
-        x.exponents.append(new_epn)
+        x.shared['exponents'].append(new_epn)
         return self.logG_tempering(x, delta)
 
+    def current_target(self, epn):
+        def func(x):
+            x.lprior = self.model.prior.logpdf(x.theta)
+            x.llik = self.model.loglik(x.theta)
+            if epn > 0.:
+                x.lpost = x.lprior + epn * x.llik
+            else:  # avoid having 0 x Nan
+                x.lpost = x.lprior.copy()
+        return func
+
     def M0(self, N):
-        x0 = AdaptiveTemperingParticles(theta=self.model.prior.rvs(size=N))
-        self.compute_post(x0, 0.)
+        x0 = ThetaParticles(theta=self.model.prior.rvs(size=N))
+        x0.shared['exponents'] = [0.]
+        x0.shared['path_sampling'] = [0.]
+        self.current_target(0.)(x0)
         return x0
 
-    def M(self, t, Xp):
-        epn = Xp.exponents[-1]
-        compute_target = lambda x: self.compute_post(x, epn)
-        return Xp.Metropolis(compute_target, self.mh_options)
+    def M(self, t, xp):
+        epn = xp.shared['exponents'][-1]
+        target = self.current_target(epn)
+        return self.move(xp, target)
 
     def summary_format(self, smc):
         msg = FKSMCsampler.summary_format(self, smc)
-        return msg + ', tempering exponent=%.3g' % smc.X.exponents[-1]
+        return msg + ', tempering exponent=%.3g' % smc.X.shared['exponents'][-1]
+
+
+class WasteFreeTempering(AdaptiveTempering):
+    def __init__(self, model=None, P=100, move=None, ESSrmin=0.5):
+        self.model = model
+        self.ESSrmin = ESSrmin
+        self.P = P
+        self.move = WasteFreeMCMCMove(nsteps=P) if move is None else move
+
 
 
 #####################################
@@ -690,7 +663,7 @@ def rec_to_dict(arr):
     return dict(zip(arr.dtype.names, arr))
 
 
-class ThetaWithPFsParticles(MetroParticles):
+class ThetaWithPFsParticles(ThetaParticles):
     """ class for a SMC^2 particle system """
     shared = ['acc_rates', 'just_moved', 'Nxs']
 

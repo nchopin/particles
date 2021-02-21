@@ -213,8 +213,16 @@ class Weights(object):
         self.lw = lw
         if lw is not None:
             self.lw[np.isnan(self.lw)] = - np.inf
-            self.W = exp_and_normalise(lw)
+            m = self.lw.max()
+            w = np.exp(self.lw - m)
+            s = w.sum()
+            self.log_mean = m + np.log(s / self.N)
+            self.W = w / s
             self.ESS = 1. / np.sum(self.W ** 2)
+
+    @property
+    def N(self):
+        return 0 if self.lw is None else self.lw.shape[0]
 
     def add(self, delta):
         """Increment weights: lw <-lw + delta.
@@ -226,9 +234,9 @@ class Weights(object):
 
         """
         if self.lw is None:
-            return Weights(lw=delta)
+            return self.__class__(lw=delta)
         else:
-            return Weights(lw=self.lw + delta)
+            return self.__class__(lw=self.lw + delta)
 
 def log_sum_exp(v):
     """Log of the sum of the exp of the arguments.
@@ -322,6 +330,25 @@ def wmean_and_var(W, x):
     m2 = np.average(x**2, weights=W, axis=0)
     v = m2 - m**2
     return {'mean': m, 'var': v}
+
+def wmean_and_cov(W, x):
+    """Weighted mean and covariance matrix.
+
+    Parameters
+    ----------
+    W: (N,) ndarray
+        normalised weights (must be >=0 and sum to one).
+    x: ndarray (such that shape[0]==N)
+        data
+
+    Returns
+    -------
+    tuple
+        (mean, cov)
+    """
+    m = np.average(x, weights=W, axis=0)
+    cov = np.cov(x.T, aweights=W, ddof=0)
+    return m, cov
 
 def wmean_and_var_str_array(W, x):
     """Weighted mean and variance of each component of a structured array.
