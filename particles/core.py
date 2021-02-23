@@ -341,14 +341,15 @@ class SMC(object):
     def resample_move(self):
         self.rs_flag = self.fk.time_to_resample(self)
         if self.rs_flag:  # if resampling
-            self.A = rs.resampling(self.resampling, self.aux.W)
+            self.A = rs.resampling(self.resampling, self.aux.W, M=self.N)
+            # we always resample self.N particles, even if smc.X has a
+            # different size (example: waste-free)
             self.Xp = self.X[self.A]
             self.reset_weights()
-            self.X = self.fk.M(self.t, self.Xp)
         else:
             self.A = np.arange(self.N)
             self.Xp = self.X
-            self.X = self.fk.M(self.t, self.Xp)
+        self.X = self.fk.M(self.t, self.Xp)
 
     def resample_move_qmc(self):
         self.rs_flag = True  # we *always* resample in SQMC
@@ -359,8 +360,8 @@ class SMC(object):
         self.Xp = self.X[self.A]
         v = u[tau, 1:].squeeze()
         #  v is (N,) if du=1, (N,d) otherwise
-        self.X = self.fk.Gamma(self.t, self.Xp, v)
         self.reset_weights()
+        self.X = self.fk.Gamma(self.t, self.Xp, v)
 
     def compute_summaries(self):
         if self.t > 0:

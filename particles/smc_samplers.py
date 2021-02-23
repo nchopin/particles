@@ -24,7 +24,9 @@ For more information and examples, see the following notebook tutorial_.
 
 TODO:
 
-* wastefree: implement method concatenate
+* concatenate:
+    + shared from first element of the list, is that kosher? 
+    + what if np.concatenate does not work for that object? see SMC2
 * deepcopy: no more, but is it a good idea? (lists in shared)
 * non-adaptive tempering has disappeared
 * references xout
@@ -253,8 +255,7 @@ class ThetaParticles(object):
         if isinstance(key, int):
             return fields
         else:
-            shared = self.shared.copy()
-            return self.__class__(shared=shared, **fields)
+            return self.__class__(shared=self.shared.copy(), **fields)
 
     def __setitem__(self, key, value):
         for k, v in self.dict_fields.item(): 
@@ -263,8 +264,13 @@ class ThetaParticles(object):
     def copy(self):
         """Returns a copy of the object."""
         fields = {k: v.copy() for k, v in self.dict_fields.items()}
-        shared = self.shared.copy()
-        return self.__class__(shared=shared, **fields)
+        return self.__class__(shared=self.shared.copy(), **fields)
+
+    @classmethod
+    def concatenate(cls, *xs):
+        fields = {k: np.concatenate([getattr(x, k) for x in xs])
+                  for k in xs[0].dict_fields.keys()}
+        return cls(shared=xs[0].shared.copy(), **fields)
 
     def copyto(self, src, where=None):
         """Emulates function `copyto` in NumPy.
@@ -465,16 +471,16 @@ class WasteFreeMCMCMove(ArrayMCMCMove):
         self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
         self.nsteps = nsteps
 
-    def __call__(self, x):
+    def __call__(self, x, target):
         xs = [x]
         xprev = x
         ars = []
         for _ in range(self.nsteps):
             x = x.copy()
-            ar = self.step(x)
+            ar = self.mcmc.step(x, target=target)
             ars.append(ar)
             xs.append(x)
-        xout = x.concatenate(*xs)  # TODO
+        xout = x.concatenate(*xs)
         prev_ars = x.shared.get('acc_rates', [])
         xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
         return xout
@@ -548,7 +554,8 @@ class IBISMixin:
 
     def M(self, t, xp):
         if xp.shared['rs_flag']:
-            return self.move(xp, target=self.current_target(t))
+            return self.move(xp, self.current_target(t - 1))  
+            # in IBIS, target at time t is posterior given y_0:t-1
         else:
             return xp
 
