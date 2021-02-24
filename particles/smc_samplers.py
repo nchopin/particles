@@ -191,6 +191,9 @@ class FancyList(object):
     def __setitem__(self, key, value):
         self.l[key] = value
 
+    def __len__(self):
+        return len(self.l)
+
     def copy(self):
         return cp.deepcopy(self)
 
@@ -244,7 +247,7 @@ class ThetaParticles(object):
 
     @property
     def N(self):
-        return self.theta.shape[0]
+        return len(self.dict_fields.values()[0])
 
     @property
     def dict_fields(self):
@@ -439,7 +442,9 @@ class ArrayIndependentMetropolis(ArrayMetropolis):
         arr_prop[:, :] = mu + z @ L.T
         return delta_lp
 
-class ArrayMCMCMove:
+class MCMCSequence:
+    """Base class for a (fixed length or adaptive) sequence of mcmc steps.
+    """
     def __init__(self, mcmc=None, adaptive=False, nsteps=1, delta_dist=0.1):
         self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
         self.adaptive = adaptive
@@ -466,10 +471,10 @@ class ArrayMCMCMove:
         xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
         return xout
 
-class WasteFreeMCMCMove(ArrayMCMCMove):
-    def __init__(self, mcmc=None, nsteps=1):
+class WasteFreeMCMCSequence(MCMCSequence):
+    def __init__(self, mcmc=None, P=10):
         self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
-        self.nsteps = nsteps
+        self.nsteps = P - 1
 
     def __call__(self, x, target):
         xs = [x]
@@ -500,7 +505,7 @@ class FKSMCsampler(particles.FeynmanKac):
     """
     def __init__(self, model=None, move=None):
         self.model = model
-        self.move = ArrayMCMCMove(nsteps=10) if move is None else move
+        self.move = MCMCSequence(nsteps=10) if move is None else move
         #TODO better default? or raise an error?
 
     @property
@@ -531,7 +536,7 @@ class FKWasteFree(FKSMCsampler):
     def __init__(self, model=None, P=100, move=None):
         self.model = model
         self.P = P
-        self.move = WasteFreeMCMCMove(nsteps=P) if move is None else move
+        self.move = WasteFreeMCMCSequence(P=P) if move is None else move
 
 
 class IBISMixin:
@@ -657,7 +662,7 @@ class WasteFreeTempering(AdaptiveTempering):
         self.model = model
         self.ESSrmin = ESSrmin
         self.P = P
-        self.move = WasteFreeMCMCMove(nsteps=P) if move is None else move
+        self.move = WasteFreeMCMCSequence(nsteps=P) if move is None else move
 
 
 
