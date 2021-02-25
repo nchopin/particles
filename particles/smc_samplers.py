@@ -247,7 +247,7 @@ class ThetaParticles(object):
 
     @property
     def N(self):
-        return len(self.dict_fields.values()[0])
+        return len(next(iter(self.dict_fields.values())))
 
     @property
     def dict_fields(self):
@@ -435,7 +435,7 @@ class ArrayIndependentMetropolis(ArrayMetropolis):
         mu = x.shared['mean']
         L = x.shared['chol_cov']
         arr = view_2d_array(x.theta)
-        arr_prop = view_2d_array(xprop_theta)
+        arr_prop = view_2d_array(xprop.theta)
         z = stats.norm.rvs(size=arr.shape)
         zx = linalg.solve_triangular(L, np.transpose(arr - mu), lower=True)
         delta_lp = 0.5 * (np.sum(z * z, axis=1) - np.sum(zx * zx, axis=0))

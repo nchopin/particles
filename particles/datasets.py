@@ -167,7 +167,7 @@ def prepare_predictors(predictors, add_intercept=True, scale=0.5):
 class RegressionDataset(Dataset):
     """Regression dataset.
 
-    Such a dataset contains p predictors, and one scalar response.
+    A regression dataset contains p predictors, and one scalar response.
     The pre-processing step consists of:
         1. rescaling the predictors (mean=0, std dev=0.5)
         2. adding an intercept (constant predictor)
