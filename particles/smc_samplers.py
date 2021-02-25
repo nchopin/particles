@@ -29,8 +29,6 @@ TODO:
     + what if np.concatenate does not work for that object? see SMC2
 * deepcopy: no more, but is it a good idea? (lists in shared)
 * non-adaptive tempering has disappeared
-* references xout
-* acc rates
 * adaptive number of steps? 
 * Langevin? 
 * core.time_to_resample: DONE
@@ -472,9 +470,9 @@ class MCMCSequence:
         return xout
 
 class WasteFreeMCMCSequence(MCMCSequence):
-    def __init__(self, mcmc=None, P=10):
+    def __init__(self, mcmc=None, nsteps=9):
         self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
-        self.nsteps = P - 1
+        self.nsteps = nsteps
 
     def __call__(self, x, target):
         xs = [x]
@@ -500,13 +498,25 @@ class FKSMCsampler(particles.FeynmanKac):
     ----------
     model: `StaticModel` object
         The static model that defines the target posterior distribution(s)
-    move:   TODO
+    wastefree: bool (default: True)
+        whether to run a waste-free or standard SMC sampler
+    nsteps: int (default=9)
+        number of MCMC steps (9 steps => P = 10 in waste-free SMC)
+    move:   MCMCSequence object
+        type of move (a sequence of MCMC steps applied after resampling)
 
     """
-    def __init__(self, model=None, move=None):
+    def __init__(self, model=None, wastefree=True, nsteps=9, move=None):
         self.model = model
-        self.move = MCMCSequence(nsteps=10) if move is None else move
-        #TODO better default? or raise an error?
+        self.wastefree = wastefree
+        self.nsteps = nsteps
+        if move is None:
+            if wastefree:
+                self.move = WasteFreeMCMCSequence(nsteps=nsteps)
+            else:
+                self.move = MCMCSequence(nsteps=nsteps)
+        else:
+            self.move = move
 
     @property
     def T(self):
@@ -531,15 +541,12 @@ class FKSMCsampler(particles.FeynmanKac):
             self.move.calibrate(smc.W, smc.X)
         return rs_flag
 
-
-class FKWasteFree(FKSMCsampler):
-    def __init__(self, model=None, P=100, move=None):
-        self.model = model
-        self.P = P
-        self.move = WasteFreeMCMCSequence(P=P) if move is None else move
+    def M0(self, N):
+        N0 = N * (1 + self.nsteps) if self.wastefree else N
+        return self._M0(N0)
 
 
-class IBISMixin:
+class IBIS(FKSMCsampler):
     def logG(self, t, xp, x):
         lpyt = self.model.logpyt(x.theta, t)
         x.lpost += lpyt
@@ -550,10 +557,8 @@ class IBISMixin:
             x.lpost = self.model.logpost(x.theta, t=t)
         return func
 
-    def M0(self, N):
-        N0 = N * self.P if hasattr(self, 'P') else N
-        # self.P exists => waste-free
-        x0 = ThetaParticles(theta=self.model.prior.rvs(size=N0))
+    def _M0(self, N):
+        x0 = ThetaParticles(theta=self.model.prior.rvs(size=N))
         self.current_target(0)(x0)
         return x0
 
@@ -563,14 +568,6 @@ class IBISMixin:
             # in IBIS, target at time t is posterior given y_0:t-1
         else:
             return xp
-
-
-class IBIS(IBISMixin, FKSMCsampler):
-    pass
-
-
-class WasteFreeIBIS(IBISMixin, FKWasteFree):
-    pass
 
 
 class AdaptiveTempering(FKSMCsampler):
@@ -584,8 +581,10 @@ class AdaptiveTempering(FKSMCsampler):
 
     See base class for other parameters.
     """
-    def __init__(self, model=None, move=None, ESSrmin=0.5):
-        super().__init__(model=model, move=move)
+    def __init__(self, model=None, wastefree=True, nsteps=9, move=None,
+                 ESSrmin=0.5):
+        super().__init__(model=model, wastefree=wastefree,
+                         nsteps=nsteps, move=move)
         self.ESSrmin = ESSrmin
 
     def time_to_resample(self, smc):
@@ -640,7 +639,7 @@ class AdaptiveTempering(FKSMCsampler):
                 x.lpost = x.lprior.copy()
         return func
 
-    def M0(self, N):
+    def _M0(self, N):
         x0 = ThetaParticles(theta=self.model.prior.rvs(size=N))
         x0.shared['exponents'] = [0.]
         x0.shared['path_sampling'] = [0.]
@@ -655,15 +654,6 @@ class AdaptiveTempering(FKSMCsampler):
     def summary_format(self, smc):
         msg = FKSMCsampler.summary_format(self, smc)
         return msg + ', tempering exponent=%.3g' % smc.X.shared['exponents'][-1]
-
-
-class WasteFreeTempering(AdaptiveTempering):
-    def __init__(self, model=None, P=100, move=None, ESSrmin=0.5):
-        self.model = model
-        self.ESSrmin = ESSrmin
-        self.P = P
-        self.move = WasteFreeMCMCSequence(nsteps=P) if move is None else move
-
 
 
 #####################################
