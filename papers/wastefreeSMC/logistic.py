@@ -4,7 +4,7 @@
 """
 First numerical experiment in Waste-Free SMC paper (TODO)
 
-Compare IBIS and SMC tempering for approximating:
+Compare standard and waste-free SMC for 
 
 * the normalising constant (marginal likelihood)
 * the posterior expectation of the p coefficients
@@ -27,7 +27,7 @@ from particles import smc_samplers as ssps
 from particles.collectors import Moments
 
 datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
-dataset_name = 'pima'  # choose one of the three
+dataset_name = 'sonar'  # choose one of the three
 data = datasets[dataset_name]().data
 T, p = data.shape
 
@@ -37,20 +37,25 @@ T, p = data.shape
 # All of the runs are such that N*K or M*P equal 10^5
 
 if dataset_name == 'sonar':
-    N0 = 10**5
-    Ks = [10, 40, 160]
-    Ms = [50, 200, 800]
+    alg_type = 'tempering'
+    N0 = 5 * 10**5
+    Ks = [5, 20, 100, 500, 1000]
+    Ms = [50, 100, 200, 400, 800]
 elif dataset_name == 'pima':
+    alg_type = 'ibis'
     N0 = 10**4
     Ks = [1, 4, 16]
     Ms = [25, 100, 400]
 elif dataset_name == 'eeg':
+    alg_type = 'ibis'
     N0 = 10 ** 4
     Ks = [1, 4, 16]
     Ms = [25, 100, 400]
 
 # prior & model
-prior = dists.StructDist({'beta':dists.MvNormal(scale=5.,
+scales = 5. * np.ones(p)
+scales[0] = 20.  # intercept
+prior = dists.StructDist({'beta':dists.MvNormal(scale=scales,
                                                 cov=np.eye(p))})
 
 class LogisticRegression(ssps.StaticModel):
@@ -61,7 +66,7 @@ class LogisticRegression(ssps.StaticModel):
 
 # algorithms
 # N and values of M set above according to dataset
-nruns = 50  # TODO
+nruns = 16  # TODO
 results = []
 
 # runs
@@ -71,32 +76,31 @@ for M, K in zip(Ms, Ks):
         # need to shuffle the data for IBIS
         random.shuffle(data)
         model = LogisticRegression(data=data, prior=prior)
-        for alg_type in ['tempering', 'ibis']:
-            for waste in [True, False]:
-                if waste:
-                    P = N0 // M
-                    N, nsteps = M, P - 1
-                    res = {'M': M, 'P': P}
-                else:
-                    N = N0 // K
-                    nsteps = K
-                    res = {'N': N, 'K': K}
-                if alg_type == 'ibis':
-                    fk = ssps.IBIS(model=model, nsteps=nsteps, wastefree=waste)
-                else:
-                    fk = ssps.AdaptiveTempering(model=model, nsteps=nsteps, 
-                                                wastefree=waste)
-                pf = particles.SMC(fk=fk, N=N, collect=[Moments], verbose=False)
-                print('%s, waste:%i, nsteps=%i, run %i' % (alg_type, waste,
-                                                           nsteps, i))
-                pf.run()
-                print('CPU time (min): %.2f' % (pf.cpu_time / 60))
-                print('loglik: %f' % pf.logLt)
-                res.update({'type': alg_type, 
-                            'out': pf.summaries,
-                            'waste': waste,
-                            'cpu': pf.cpu_time})
-                results.append(res)
+        for waste in [True, False]:
+            if waste:
+                P = N0 // M
+                N, nsteps = M, P - 1
+                res = {'M': M, 'P': P}
+            else:
+                N = N0 // K
+                nsteps = K
+                res = {'N': N, 'K': K}
+            if alg_type == 'ibis':
+                fk = ssps.IBIS(model=model, nsteps=nsteps, wastefree=waste)
+            else:
+                fk = ssps.AdaptiveTempering(model=model, nsteps=nsteps, 
+                                            wastefree=waste)
+            pf = particles.SMC(fk=fk, N=N, collect=[Moments], verbose=False)
+            print('%s, waste:%i, nsteps=%i, run %i' % (alg_type, waste,
+                                                       nsteps, i))
+            pf.run()
+            print('CPU time (min): %.2f' % (pf.cpu_time / 60))
+            print('loglik: %f' % pf.logLt)
+            res.update({'type': alg_type, 
+                        'out': pf.summaries,
+                        'waste': waste,
+                        'cpu': pf.cpu_time})
+            results.append(res)
 
 
 # plots
@@ -108,8 +112,8 @@ pal = sb.dark_palette('white', n_colors=2)
 
 titles = ['standard SMC', 'waste-free SMC']
 plots = {'log marginal likelihood': lambda rout: rout.logLts[-1],
-         'post expectation first pred': 
-         lambda rout: rout.moments[-1]['mean']['beta'][1]
+         'post expectation average pred': 
+         lambda rout: np.mean(rout.moments[-1]['mean']['beta'])
         }
 
 for plot, func in plots.items():
