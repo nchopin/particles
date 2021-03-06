@@ -2,16 +2,17 @@
 # -*- coding: utf-8 -*-
 
 """
-First numerical experiment in Waste-Free SMC paper (TODO)
+Reproduces first numerical experiment of the paper.
 
-Compare standard and waste-free SMC for 
+Compare standard and waste-free tempering SMC for a logistic 
+posterior. Plot the boxplots (over 100 runs) of the following
+estimates: 
 
-* the normalising constant (marginal likelihood)
-* the posterior expectation of the p coefficients
+* log normalising constant (marginal likelihood)
+* posterior expectation of the average of the p coefficients
 
-for a logistic regression model.
+Considered dataset: sonar (but see below for other options).
 
-See below for how to select the dataset.
 """
 
 from matplotlib import pyplot as plt
@@ -34,11 +35,11 @@ T, p = data.shape
 # Standard SMC: N is number of particles, K is number of MCMC steps
 # Waste-free SMC: M is number of resampled particles, P is length of MCMC
 # chains (same notations as in the paper)
-# All of the runs are such that N*K or M*P equal 10^5
+# All of the runs are such that N*K or M*P equal N0
 
 if dataset_name == 'sonar':
     alg_type = 'tempering'
-    N0 = 5 * 10**5
+    N0 = 2 * 10**5
     Ks = [5, 20, 100, 500, 1000]
     Ms = [50, 100, 200, 400, 800]
 elif dataset_name == 'pima':
@@ -54,7 +55,7 @@ elif dataset_name == 'eeg':
 
 # prior & model
 scales = 5. * np.ones(p)
-scales[0] = 20.  # intercept
+scales[0] = 20.  # intercept has a larger scale
 prior = dists.StructDist({'beta':dists.MvNormal(scale=scales,
                                                 cov=np.eye(p))})
 
@@ -64,9 +65,7 @@ class LogisticRegression(ssps.StaticModel):
         lin = np.matmul(theta['beta'], data[t, :])
         return - np.logaddexp(0., -lin)
 
-# algorithms
-# N and values of M set above according to dataset
-nruns = 16  # TODO
+nruns = 100
 results = []
 
 # runs
@@ -129,7 +128,7 @@ for plot, func in plots.items():
             ylab = plot
         sb.boxplot(x=[r[xlab] for r in rez],
                    y=[func(r['out']) for r in rez],
-                   hue=[r['type'] for r in rez],
+                   hue=[r['waste'] for r in rez],
                    palette=pal, ax=ax)
         ax.set(xlabel=xlab, title=title, ylabel=ylab)
         fig.tight_layout()
