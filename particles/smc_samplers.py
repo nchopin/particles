@@ -290,7 +290,7 @@ class ThetaParticles(object):
         for k, v in self.dict_fields.items():
             if isinstance(v, np.ndarray):
                 # takes care of arrays with ndims > 1
-                wh = np.expand_dims(where, list(range(1, v.ndim)))
+                wh = np.expand_dims(where, tuple(range(1, v.ndim)))
                 np.copyto(v, getattr(src, k), where=wh)
             else:
                 v.copyto(getattr(src, k), where=where)
