@@ -19,7 +19,7 @@ METADATA = dict(
     url='http://github.com/nchopin/particles/',
     license='MIT', 
     author='Nicolas Chopin',
-    install_requires=['numpy',
+    install_requires=['numpy>=1.18',
                       'scipy',
                       'numba'
                       ],

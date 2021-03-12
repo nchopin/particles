@@ -190,8 +190,27 @@ class Boston(RegressionDataset):
     `UCI archive <https://archive.ics.uci.edu/ml/machine-learning-databases/housing/>`__
 
     """
+    predictor_names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS',
+                       'RAD', 'TAX', 'PTRATIO', 'B', 'LST', 'AT']
+    response_name = ['MEDV']
     file_name = 'boston_house_prices.csv'
     load_opts = {'delimiter': ',', 'skiprows': 2}
+
+class Concrete(RegressionDataset):
+    """Concrete compressive strength data of Yeh (1998). 
+
+    A dataset with 1030 observations and 9 predictors. 
+
+    Reference
+    ---------
+    `UCI archive <https://archive.ics.uci.edu/ml/machine-learning-databases/concrete/compressive/>`__
+
+    """
+    predictor_names = ['cement', 'blast', 'fly ash', 'water', 'superplasticizer', 
+                       'coarse aggregate', 'fine aggregate', 'age']
+    response_name = ['strength']
+    file_name = 'concrete.csv'
+    load_opts = {'delimiter': ',', 'skiprows': 1}
 
 class BinaryRegDataset(Dataset):
     """Binary regression (classification) dataset.
