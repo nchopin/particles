@@ -191,7 +191,7 @@ class Boston(RegressionDataset):
 
     """
     predictor_names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS',
-                       'RAD', 'TAX', 'PTRATIO', 'B', 'LST', 'AT']
+                       'RAD', 'TAX', 'PTRATIO', 'B', 'LSAT']
     response_name = ['MEDV']
     file_name = 'boston_house_prices.csv'
     load_opts = {'delimiter': ',', 'skiprows': 2}
