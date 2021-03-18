@@ -808,7 +808,7 @@ class ThetaWithPFsParticles(ThetaParticles):
         return self.pfs[0].N
 
 
-class SMC2(FKSMCsampler):
+class SMC2(IBIS):  # TODO correct?
     """ Feynman-Kac subclass for the SMC^2 algorithm.
 
     Parameters
@@ -822,22 +822,28 @@ class SMC2(FKSMCsampler):
     smc_options: dict
         options to be passed to each SMC algorithm
     fk_cls: Feynman-Kac class (default: Bootstrap)
-    mh_options: dict
-        options for the Metropolis steps
     init_Nx: int
         initial value for N_x
     ar_to_increase_Nx: float
         Nx is increased (using an exchange step) each time
         the acceptance rate is above this value (if negative, Nx stays
         constant)
+    wastefree:  bool 
+        whether to use the waste-free version (default: True)
+    len_chain:  int 
+        length of MCMC chain (default: 10)
+    move:   MCMCSequence object
+        TODO
     """
     mutate_only_after_resampling = True  # override default value of FKclass
 
     def __init__(self, ssm_cls=None, prior=None, data=None, smc_options=None,
-                 fk_cls=None, mh_options=None, init_Nx=100, ar_to_increase_Nx=-1.):
-        FKSMCsampler.__init__(self, None, mh_options=mh_options)
+                 fk_cls=None, init_Nx=100, ar_to_increase_Nx=-1.,
+                 wastefree=True, len_chain=10, move=None):
+        @super().__init__(self, wastefree=wastefree, len_chain=len_chain,
+                          move=move)
         # switch off collection of basic summaries (takes too much memory)
-        self.smc_options = {'collect': 'off'}
+        self.smc_options = {'collect': 'off'}  # TODO
         if smc_options is not None:
             self.smc_options.update(smc_options)
         self.fk_cls = Bootstrap if fk_cls is None else fk_cls
@@ -853,11 +859,11 @@ class SMC2(FKSMCsampler):
 
     def logG(self, t, xp, x):
         # exchange step (should occur only immediately after a move step)
-        we_increase_Nx = (
-            x.just_moved and np.mean(x.acc_rates[-1]) < self.ar_to_increase_Nx)
+        ar = x.shared['acc_rates'][-1] if x.shared['acc_rates'] else 1.
+        low_ar = ar < self.ar_to_increase_Nx
+        we_increase_Nx = low_ar & x.shared['rs_flag']
         if we_increase_Nx:
             liw_Nx = self.exchange_step(x, t, 2 * x.Nx)
-            x.just_moved = False
         # compute (estimate of) log p(y_t|\theta,y_{0:t-1})
         lpyt = np.empty(shape=x.N)
         for m, pf in enumerate(x.pfs):
@@ -875,29 +881,24 @@ class SMC2(FKSMCsampler):
                                             data=self.data),
                           N=N, **self.smc_options)
 
-    def compute_post(self, x, t, Nx):
-        x.pfs = FancyList([self.alg_instance(rec_to_dict(theta), Nx) for theta in
-                           x.theta])
-        x.lpost = self.prior.logpdf(x.theta)
-        is_finite = np.isfinite(x.lpost)
-        if t >= 0:
-            for m, pf in enumerate(x.pfs):
-                if is_finite[m]:
-                    for _ in range(t + 1):
-                        next(pf)
-                    x.lpost[m] += pf.logLt
+    def current_target(self, t):
+        def func(x):
+            x.pfs = FancyList([self.alg_instance(rec_to_dict(theta), Nx) 
+                               for theta in x.theta])
+            x.lpost = self.prior.logpdf(x.theta)
+            is_finite = np.isfinite(x.lpost)
+            if t >= 0:
+                for m, pf in enumerate(x.pfs):
+                    if is_finite[m]:
+                        for _ in range(t + 1):
+                            next(pf)
+                        x.lpost[m] += pf.logLt
+        return func
 
-    def M0(self, N):
+    def _M0(self, N):
         x0 = ThetaWithPFsParticles(theta=self.prior.rvs(size=N))
-        self.compute_post(x0, -1, self.init_Nx)
+        self.compute_post(x0, -1, self.init_Nx)  # TODO
         return x0
-
-    def M(self, t, xp):
-        # Like in IBIS, M_t leaves invariant theta | y_{0:t-1}
-        comp_target = lambda x: self.compute_post(x, t-1, xp.Nx)
-        out = xp.Metropolis(comp_target, mh_options=self.mh_options)
-        out.just_moved = True
-        return out
 
     def exchange_step(self, x, t, new_Nx):
         old_lpost = x.lpost.copy()
