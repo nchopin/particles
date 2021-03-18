@@ -1,6 +1,9 @@
 """
 SMC samplers for binary spaces.
 
+Overview
+========
+
 This module implements SMC tempering samplers for target distributions defined
 with respect to a binary space, {0, 1}^d.  This is based on Schäfer & Chopin
 (2014). Note however the version here also implements the waste-free version of
@@ -12,33 +15,31 @@ components of the SMC sampler (e.g. the MCMC steps) operate on such arrays.
 
 More precisely, this module implements: 
 
-* NestedLogistic: the proposal distribution used in Schäfer and Chopin
+* `NestedLogistic`: the proposal distribution used in Schäfer and Chopin
   (2014), which amounts to fit a logistic regression to each component i, based
   on the (i-1) previous components. This is sub-class of
   `distributions.DiscreteDist`.
 
-* BinaryMetropolis: Independent Metropolis step based on a NestedLogistic
+* `BinaryMetropolis`: Independent Metropolis step based on a NestedLogistic
   proposal. This is sub-class of `smc_samplers.ArrayMetropolis`. 
 
 * Various sub-classes of `smc_samplers.StaticModel` that implements Bayesian
-variable selection: BayesianVS_gprior, BayesianVS_gprior.
+variable selection. 
 
-See the script in papers/binary for numerical experiments. 
+See also the script in papers/binary for numerical experiments. 
+
 
 TODO:
-    * make jitted version works? 
     * check logistic reg *really* needed
-    * concrete
 
 """
 
 import numba
 import numpy as np
+import scipy as sp
 from numpy import random
-from scipy import linalg
 from scipy.special import expit, logit
 from sklearn.linear_model import LinearRegression, LogisticRegression
-import warnings
 
 from particles import distributions as dists
 from particles import smc_samplers as ssps
@@ -53,10 +54,7 @@ def all_binary_words(p):
 def log_no_warn(x):
     """log without the warning about x <= 0.
     """
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        out = np.log(x)
-    return out
+    return np.log(np.clip(x, 1e-300, None))
 
 class Bernoulli(dists.ProbDist):
     dtype = 'bool'  # TODO only dist to have this dtype
@@ -155,15 +153,47 @@ class BinaryMetropolis(ssps.ArrayMetropolis):
               - prop_dist.logpdf(xprop.theta))
         return lp
 
+def chol_and_friends(gamma, xtx, xty, vm2):
+    N, d = gamma.shape
+    len_gam = np.sum(gamma, axis=1)
+    ldet = np.zeros(N)
+    wtw = np.zeros(N)
+    for n in range(N):
+        if len_gam[n] > 0:
+            gam = gamma[n, :]
+            xtxg = xtx[:, gam][gam, :] + vm2 * np.eye(len_gam[n])
+            C = sp.linalg.cholesky(xtxg, lower=True, overwrite_a=True,
+                                   check_finite=False)
+            w = sp.linalg.solve_triangular(C, xty[gam], lower=True,
+                                           check_finite=False)
+            ldet[n] = np.sum(np.log(np.diag(C)))
+            wtw[n] = w.T @ w
+    return len_gam, ldet, wtw
 
-def vhat_and_chol(xtx, xty, yty, n):
-    C = linalg.cholesky(xtx, lower=True)
-    bhat = linalg.solve_triangular(C, xty, lower=True)
-    vhat = (yty - np.sum(bhat**2)) / n
-    return vhat, C
+@numba.njit(parallel=True)
+def jitted_chol_and_fr(gamma, xtx, xty, vm2):
+    N, d = gamma.shape
+    len_gam = np.sum(gamma, axis=1)
+    ldet = np.zeros(N)
+    wtw = np.zeros(N)
+    for n in range(N):
+        gam = gamma[n, :]
+        if len_gam[n] > 0:
+            xtxg = xtx[:, gam][gam, :] + vm2 * np.eye(len_gam[n])
+            C = np.linalg.cholesky(xtxg)
+            b = np.linalg.solve(C, xty[gam])  # not solve_triangular
+            ldet[n] = np.sum(np.log(np.diag(C)))
+            wtw[n] = b.T @ b
+    return len_gam, ldet, wtw
 
 class VariableSelection(ssps.StaticModel):
     """Meta-class for variable selection. 
+
+    Represents a Bayesian (or pseudo-Bayesian) posterior where:
+        * the prior is wrt a vector of gamma of indicator variables (whether to
+        include a variable or not)
+        * the likelihood is typically the marginal likelihood of gamma, where
+        the coefficient parameters have been integrated out.
     """
     def __init__(self, data=None):
         self.x, self.y = data
@@ -177,22 +207,35 @@ class VariableSelection(ssps.StaticModel):
         l = self.logpost(gammas)
         return gammas, l
 
+    def chol_intermediate(self, gamma):
+        if self.jitted:
+            return  jitted_chol_and_fr(gamma, self.xtx, self.xty, self.iv2)
+        else:
+            return chol_and_friends(gamma, self.xtx, self.xty, self.iv2)
+
+    def sig2_full(self):
+        gamma_full = np.ones((1, self.p), dtype=np.bool)
+        _, _, btb = chol_and_friends(gamma_full, self.xtx, self.xty, 0.)
+        return (self.yty - btb) / self.n
+
+
 class BIC(VariableSelection):
     """Likelihood is exp{ - lambda * BIC(gamma)}
     """
     def __init__(self, data=None, lamb=10.):
         super().__init__(data=data)
         self.lamb = lamb
+        self.coef_len = np.log(self.n) * self.lamb
+        self.coef_log = self.n * self.lamb
+        self.coef_in_log = self.yty
+        self.iv2 = 0.
 
     def loglik(self, gamma, t=None):
-        l = np.sum(gamma, axis=1) * np.log(self.n)
-        N, d = gamma.shape
-        for n in range(N):
-            gam = gamma[n, :]
-            xtxg = self.xtx[:, gam][gam, :]
-            vh, _ = vhat_and_chol(xtxg, self.xty[gam], self.yty, self.n)
-            l[n] += self.n * np.log(vh)
-        return - self.lamb * l 
+        len_gam, ldet, wtw = self.chol_intermediate(gamma)
+        l = - (self.coef_len * len_gam
+               + self.coef_log * np.log(self.coef_in_log - wtw))
+        return l
+
 
 class BayesianVS(VariableSelection):
     """Marginal likelihood for the following hierarchical model:
@@ -200,58 +243,31 @@ class BayesianVS(VariableSelection):
     sigma^2 ~ IG(nu / 2, lambda*nu / 2)
     beta | sigma^2 ~ N(0, v2 sigma^2 I_p)
 
+    Note: iv2 is inverse of v2
+
     """
-    def __init__(self, data=None, prior=None, nu=4., lamb=None, v2=None):
+    def __init__(self, data=None, prior=None, nu=4., lamb=None, iv2=None,
+                 jitted=False):
         super().__init__(data=data)
         self.prior = prior
+        self.jitted = jitted
         self.nu = nu
-        if lamb is None:
-            self.lamb, _ = vhat_and_chol(self.xtx, self.xty, self.yty, self.n)
-        else:
-            self.lamb = lamb
-        self.v2 = 10. / self.lamb if v2 is None else v2
-        self.logv = 0.5 * np.log(self.v2)
-        self.coef1 = 0.5 * (self.nu + self.n)
-        self.coef2 = self.nu * self.lamb / self.n
+        self.lamb = self.sig2_full() if lamb is None else lamb
+        self.iv2 = float(self.lamb / 10.) if iv2 is None else iv2
+        self.set_constants()
+
+    def set_constants(self):
+        self.coef_len = - 0.5 * np.log(self.iv2) 
+        # minus above because log(iv2) = - log(v2)
+        self.coef_log = 0.5 * (self.nu + self.n)
+        self.coef_in_log = self.nu * self.lamb + self.yty
 
     def loglik(self, gamma, t=None):
-        N = gamma.shape[0]
-        len_gam = np.sum(gamma, axis=1)
-        l = - self.logv * len_gam
-        for n in range(N):
-            gam = gamma[n]
-            if len_gam[n] > 0:
-                xtxg = (self.xtx[gam, :][:, gam] 
-                        + (1. / self.v2) * np.eye(len_gam[n]))
-                vh, C = vhat_and_chol(xtxg, self.xty[gam], self.yty, self.n)
-                cii = np.sum(np.log(np.diag(C)))
-            else:
-                cii = 0.
-                vh = self.yty / self.n
-            l[n] -= (cii + self.coef1 * np.log(self.coef2 + vh))
+        len_gam, ldet, wtw = self.chol_intermediate(gamma)
+        l = - (self.coef_len * len_gam + ldet
+               + self.coef_log * np.log(self.coef_in_log - wtw))
         return l
 
-    def loglik_fast(self, gamma, t=None):
-        return jitted_loglik(gamma, self.xtx, self.yty, self.xty, self.n,
-                             self.logv, self.v2, self.coef1, self.coef2)
-
-@numba.jit(parallel=True)
-def jitted_loglik(gamma, xtx, yty, xty, n, logv, v2, coef1, coef2):
-    N = gamma.shape[0]
-    len_gam = np.sum(gamma, axis=1)
-    l = - len_gam * logv
-    for n in range(N):
-        gam = gamma[n]
-        if len_gam[n] > 0:
-            xtxg = (xtx[gam, :][:, gam] + (1. / v2) *
-                    np.eye(len_gam[n]))
-            vh, C = vhat_and_chol(xtxg, xty[gam], yty, n)
-            cii = np.sum(np.log(np.diag(C)))
-        else:
-            cii = 0.
-            vh = yty / n
-        l[n] -= (cii + coef1 * np.log(coef2 + vh))
-    return l
 
 class BayesianVS_gprior(BayesianVS):
     """
@@ -259,27 +275,22 @@ class BayesianVS_gprior(BayesianVS):
     beta | sigma^2 ~ N(0, g sigma^2 (X'X)^-1)
 
     """
-    def __init__(self, data=None, prior=None, nu=4., lamb=None, g=None):
-        super().__init__(data=data, prior=prior, nu=nu, lamb=lamb, v2=None)
+    def __init__(self, data=None, prior=None, nu=4., lamb=None, g=None,
+                 jitted=False):
         self.g = self.n if g is None else g 
-        # constants
-        self.cst_lg = - 0.5 * np.log(1 + self.g)
-        self.nulayty = nu * self.lamb + self.yty
-        self.gogp1 = self.g / (self.g + 1.)
+        super().__init__(data=data, prior=prior, nu=nu, lamb=lamb, iv2=0.,
+                         jitted=jitted)
+
+        def set_constants(self):
+            self.coef_len = 0.5 * np.log(1 + self.g)
+            self.coef_log = 0.5 * (self.n + self.nu)
+            self.coef_in_log = nu * self.lamb + self.yty
+            self.gogp1 = self.g / (self.g + 1.)
 
     def loglik(self, gamma, t=None):
-        N, d = gamma.shape
-        l = self.cst_lg * np.sum(gamma, axis=1)
-        for n in range(N):
-            gam = gamma[n]
-            if np.any(gam):
-                xtxg = self.xtx[gam, :][:, gam]
-                C = linalg.cholesky(xtxg, lower=True)
-                W = linalg.solve_triangular(C, self.xty[gam], lower=True)
-                WtW = W.T @ W
-            else:
-                WtW = 0.
-            l[n] -= self.coef1 * np.log(self.nulayty - self.gogp1 * WtW)
+        len_gam, _, wtw = self.chol_intermediate(gamma)
+        l = - (self.coef_len * len_gam
+               + self.coef_log * np.log(self.coef_in_log - self.gogp1 * wtw))
         return l
         
 
