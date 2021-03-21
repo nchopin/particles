@@ -22,7 +22,9 @@ More precisely, the module implements:
     * IBIS: where the target distribution at time t is the posterior of the
       parameters given data Y_{0:t}. 
 
-    * SMC^2: TODO
+    * SMC^2: an algorithm for sequential inference in state-space models, where
+    each particle theta_t^n comes with a local particle filter that
+    approximates the likelihood up to time t; see Chapter 18 in the book.
 
 SMC samplers for binary distributions (and variable selection) are implemented
 elsewhere, in module `binary_smc`.
@@ -150,7 +152,7 @@ TODO:
     + not documented 
     + transpose? 
     + inconsistent with wmean_and_var ?
-* SMC2 (e.g. mutate_only_after_resampling)
+* SMC2: DONE, TO TEST
 
 """
 
@@ -808,7 +810,7 @@ class ThetaWithPFsParticles(ThetaParticles):
         return self.pfs[0].N
 
 
-class SMC2(IBIS):  # TODO correct?
+class SMC2(IBIS):
     """ Feynman-Kac subclass for the SMC^2 algorithm.
 
     Parameters
@@ -833,25 +835,26 @@ class SMC2(IBIS):  # TODO correct?
     len_chain:  int 
         length of MCMC chain (default: 10)
     move:   MCMCSequence object
-        TODO
+        MCMC sequence
     """
-    mutate_only_after_resampling = True  # override default value of FKclass
-
     def __init__(self, ssm_cls=None, prior=None, data=None, smc_options=None,
                  fk_cls=None, init_Nx=100, ar_to_increase_Nx=-1.,
                  wastefree=True, len_chain=10, move=None):
-        @super().__init__(self, wastefree=wastefree, len_chain=len_chain,
-                          move=move)
+        super().__init__(self, wastefree=wastefree, len_chain=len_chain,
+                         move=move)
         # switch off collection of basic summaries (takes too much memory)
-        self.smc_options = {'collect': 'off'}  # TODO
+        self.smc_options = {'collect': 'off'}
         if smc_options is not None:
             self.smc_options.update(smc_options)
         self.fk_cls = Bootstrap if fk_cls is None else fk_cls
         if 'model' in self.smc_options or 'data' in self.smc_options:
             raise ValueError(
                 'SMC2: options model and data are not allowed in smc_options')
-        for k in ['ssm_cls', 'prior', 'data', 'init_Nx', 'ar_to_increase_Nx']:
-            self.__dict__[k] = locals()[k]
+        self.ssm_cls = ssm_cls
+        self.prior = prior
+        self.data = data
+        self.init_Nx = init_Nx
+        self.ar_to_increase_Nx = ar_to_increase_Nx
 
     @property
     def T(self):
@@ -897,7 +900,7 @@ class SMC2(IBIS):  # TODO correct?
 
     def _M0(self, N):
         x0 = ThetaWithPFsParticles(theta=self.prior.rvs(size=N))
-        self.compute_post(x0, -1, self.init_Nx)  # TODO
+        self.current_target(0)(x0)
         return x0
 
     def exchange_step(self, x, t, new_Nx):

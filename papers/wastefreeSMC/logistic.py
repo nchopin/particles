@@ -2,16 +2,24 @@
 # -*- coding: utf-8 -*-
 
 """
-Reproduces first numerical experiment of the paper.
 
-Compare standard and waste-free tempering SMC for a logistic 
-posterior. Plot the boxplots (over 100 runs) of the following
-estimates: 
+Reproduces the first numerical experiment of Dau & Chopin (2020). 
+
+
+Compares standard SMC and waste-free SMC when applied to a tempering sequence
+to sample from the posterior distribution of a logistic regression. Plots
+the boxplots (over 100 runs) of the following estimates: 
 
 * log normalising constant (marginal likelihood)
 * posterior expectation of the average of the p coefficients
 
 Considered dataset: sonar (but see below for other options).
+
+Reference
+=========
+
+Dau, Hai-Dang, and Nicolas Chopin. "Waste-free Sequential Monte Carlo." arXiv
+preprint arXiv:2011.02328 (2020).  
 
 """
 
@@ -77,17 +85,15 @@ for M, K in zip(Ms, Ks):
         model = LogisticRegression(data=data, prior=prior)
         for waste in [True, False]:
             if waste:
-                P = N0 // M
-                N, nsteps = M, P - 1
-                res = {'M': M, 'P': P}
+                N, lc = M, N0 // M
+                res = {'M': M, 'P': lc}
             else:
-                N = N0 // K
-                nsteps = K
+                N, lc = N0 // K, K + 1
                 res = {'N': N, 'K': K}
             if alg_type == 'ibis':
-                fk = ssps.IBIS(model=model, nsteps=nsteps, wastefree=waste)
+                fk = ssps.IBIS(model=model, len_chain=lc, wastefree=waste)
             else:
-                fk = ssps.AdaptiveTempering(model=model, nsteps=nsteps, 
+                fk = ssps.AdaptiveTempering(model=model, len_chain=lc, 
                                             wastefree=waste)
             pf = particles.SMC(fk=fk, N=N, collect=[Moments], verbose=False)
             print('%s, waste:%i, nsteps=%i, run %i' % (alg_type, waste,
