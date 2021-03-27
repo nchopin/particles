@@ -3,7 +3,7 @@
 
 """
 Plot the contours of the log-likelihood of a stochastic volatility model;
-see Figure 13.1 in the MLE Chapter for more details.
+see Figure 14.1 in the MLE Chapter for more details.
 
 Notes: this script uses multi-processing to speed things up; this may not work
 on certain OSes (see documentation). Replace 0 by 1 in line 41 below to discard
