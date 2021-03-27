@@ -1,3 +1,4 @@
+joblib==1.0.1
 numba
 numpy
 scipy
