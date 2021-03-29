@@ -558,17 +558,17 @@ def residual(W, M):
 def ssp(W, M):
     N = W.shape[0]
     MW = M * W
-    nb_children = np.floor(MW).astype(np.int64)
-    xi = MW - nb_children
+    nr_children = np.floor(MW).astype(np.int64)
+    xi = MW - nr_children
     u = random.rand(N - 1)
     i, j = 0, 1
     for k in range(N - 1):
         delta_i = min(xi[j], 1. - xi[i])  # increase i, decr j
         delta_j = min(xi[i], 1. - xi[j])  # the opposite
         sum_delta = delta_i + delta_j
-        if sum_delta <= 0.:
-            break  # avoid division by zero
-        pj = delta_i / (delta_i + delta_j) # prob we should inc j, dec i
+        # prob we increase xi[i], decrease xi[j]
+        pj = delta_i / sum_delta if sum_delta > 0. else 0. 
+        # sum_delta = 0. => xi[i] = xi[j] = 0.
         if u[k] < pj:  # swap i, j, so that we always inc i
             j, i = i, j
             delta_i = delta_j
@@ -577,9 +577,18 @@ def ssp(W, M):
             j = k + 2
         else:
             xi[j] -= delta_i
-            nb_children[i] += 1
+            nr_children[i] += 1
             i = k + 2
-    return np.arange(N).repeat(nb_children)
+    # due to round-off error accumulation, we may be missing one particle
+    if np.sum(nr_children) == M - 1:
+        last_ij = i if j == k + 2 else j
+        if xi[last_ij] > 0.99:
+            nr_children[last_ij] += 1
+    if np.sum(nr_children) != M:
+        # file a bug report with the vector of weights that causes this
+        raise ValueError('ssp resampling: wrong size for output, file a bug
+                         report')
+    return np.arange(N).repeat(nr_children)
 
 
 class MultinomialQueue(object):
