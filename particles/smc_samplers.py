@@ -6,21 +6,21 @@ Classical and waste-free SMC samplers.
 Overview
 ========
 
-This module implements SMC samplers, that is, SMC algorithms that sample from a
-sequence of arbitrary probability distributions (and compute their normalising
-constants).  Applications include sequential and non-sequential Bayesian
-inference, rare-event simulation, etc.  For more background on (standard) SMC
-samplers, see Chapter 17 (and references therein). For the waste-free variant,
-see Dau & Chopin (2020). 
+This module implements SMC samplers, that is, SMC algorithms that may sample
+from a sequence of arbitrary probability distributions (and approximate their
+normalising constants).  Applications include sequential and non-sequential
+Bayesian inference, rare-event simulation, etc.  For more background on
+(standard) SMC samplers, see Chapter 17 (and references therein). For the
+waste-free variant, see Dau & Chopin (2020).
 
 More precisely, the module implements:
 
     * SMC tempering: where the target distribution at time t as a density of
     the form mu(theta) L(theta)^{gamma_t}, and exponent gamma_t is increasing
-    with time. 
+    with time.
 
     * IBIS: where the target distribution at time t is the posterior of the
-      parameters given data Y_{0:t}. 
+      parameters given data Y_{0:t}.
 
     * SMC^2: an algorithm for sequential inference in state-space models, where
     each particle theta_t^n comes with a local particle filter that
@@ -29,7 +29,7 @@ More precisely, the module implements:
 SMC samplers for binary distributions (and variable selection) are implemented
 elsewhere, in module `binary_smc`.
 
-Before reading the documentation below, you might want to have a look at the 
+Before reading the documentation below, you might want to have a look at the
 following notebook tutorial_, which may be a more friendly introduction.
 
 .. _tutorial: notebooks/SMC_samplers_tutorial.ipynb
@@ -62,12 +62,12 @@ Then you can instantiate the class as follows::
     data = np.random.randn(20)  # simulated data
     my_toy_model = ToyModel(prior=prior, data=data)
 
-This object may be passed as an argument to the FeynmanKac classes that
-define SMC samplers, see below. 
+This object may be passed as an argument to the `FeynmanKac` classes that
+define SMC samplers, see below.
 
 Under the hood, class `StaticModel` defines methods `loglik` and `logpost`
 which computes respectively the log-likelihood and the log posterior density of
-the model at a certain time. 
+the model at a certain time.
 
 What if I don't want to do Bayesian inference
 =============================================
@@ -85,10 +85,10 @@ and then define::
     toy_bridge = ToyBridge(base_dist=base_dist)
 
 Note that, this time, we went for standard, bi-dimensional numpy arrays for
-argument theta. This is fine because we use a prior object that also uses 
+argument theta. This is fine because we use a prior object that also uses
 standard numpy arrays.
 
-TODO check this really works. 
+TODO check this really works.
 
 FeynmanKac objects
 ==================
@@ -112,27 +112,39 @@ This piece of code will run a tempering SMC algorithm such that:
   (set parameter wastefree=False to run a standard SMC sampler)
 * the default MCMC strategy is random walk Metropolis, with a covariance
   proposal set to a fraction of the empirical covariance of the current
-  particle sample. See next section for how to use a different MCMC kernel. 
+  particle sample. See next section for how to use a different MCMC kernel.
 
 To run IBIS instead, you may do::
 
     fk_ibis = IBIS(model=toy_model, len_chain=100)
     alg = SMC(fk=fk_ibis, N=200)
 
-Currently two types of SMC samplers are implemented:
-
-    * IBIS, where the target at time t is the posterior distribution given the
-    data up to time t
-
-    * Tempering, where the target at time is TODO
 
 Under the hood
 ==============
 
-ThetaParticles
+In a SMC sampler, a particle sample is represented as a `ThetaParticles`
+object  ``X``, which contains several attributes such as, e.g.:
 
-TODO
+    * ``X.theta`` is a structured array of length N, representing the N
+    particles (or alternatively a numpy arrray of shape (N,d))
 
+    * ``X.lpost`` is a numpy float array of length N, which stores the
+    log-target density of the N particles.
+
+    * ``X.shared`` is a dictionary that contains meta-information on the N
+    particles; for instance it may be used to record the successive acceptance
+    rates of the Metropolis steps.
+
+Details may vary in a given algorithm; the common idea is that attribute
+``shared`` is the only one which not behave like an array of length N.
+The main point of ``ThetaParticles`` is to implement fancy indexing, which is
+convenient for e.g. resampling::
+
+    from particles import resampling as rs
+
+    A = rs.resampling('multinomial', W)  # an array of N ints
+    Xp = X[A]  # fancy indexing
 
 
 References
@@ -143,14 +155,13 @@ arxiv:2011.02328.
 
 TODO:
 
-* concatenate:
-    + what if np.concatenate does not work for that object? see SMC2
+* concatenate: TEST
 * non-adaptive tempering has disappeared
-* adaptive number of steps? 
-* Langevin? 
-* resampling.wmean_and_cov: DONE, but 
-    + not documented 
-    + transpose? 
+* adaptive number of steps?
+* Langevin?
+* resampling.wmean_and_cov: DONE, but
+    + not documented
+    + transpose?
     + inconsistent with wmean_and_var ?
 * SMC2: DONE, TO TEST
 
@@ -277,7 +288,7 @@ def all_distinct(l, idx):
     """
     Returns the list [l[i] for i in idx] 
     When needed, objects l[i] are replaced by a copy, to make sure that
-    the elements of the list are all distinct
+    the elements of the list are all distinct.
 
     Parameters
     ---------
@@ -297,7 +308,14 @@ def all_distinct(l, idx):
     return out
 
 
-class FancyList(object):
+class FancyList:
+    """A list that implements fancy indexing, and forces elements to be
+    distinct.
+    """
+
+    @classmethod
+    def concatenate(cls, *ls):
+        return cls(sum(ls))
 
     def __init__(self, l):
         self.l = l
@@ -339,6 +357,12 @@ def view_2d_array(theta):
     v.shape = (N, - 1)
     # raise an error if v cannot be reshaped without creating a copy
     return v
+
+def gen_concatenate(*xs):
+    if isinstance(xs, numpy.ndarray):
+        return np.concatenate(xs)
+    else:
+        return xs[0].concatenate(*xs)
 
 
 class ThetaParticles(object):
@@ -384,7 +408,7 @@ class ThetaParticles(object):
             return self.__class__(shared=self.shared.copy(), **fields)
 
     def __setitem__(self, key, value):
-        for k, v in self.dict_fields.item(): 
+        for k, v in self.dict_fields.item():
             v[key] = getattr(value, k)
 
     def copy(self):
@@ -394,7 +418,7 @@ class ThetaParticles(object):
 
     @classmethod
     def concatenate(cls, *xs):
-        fields = {k: np.concatenate([getattr(x, k) for x in xs])
+        fields = {k: gen_concatenate([getattr(x, k) for x in xs])
                   for k in xs[0].dict_fields.keys()}
         return cls(shared=xs[0].shared.copy(), **fields)
 
@@ -488,9 +512,9 @@ class ImportanceSampler(object):
 # MCMC steps (within SMC samplers
 
 class ArrayMCMC(object):
-    """Base class for a (single) MCMC step applied to an array. 
+    """Base class for a (single) MCMC step applied to an array.
 
-    Note: array is modified in-place. 
+    Note: array is modified in-place.
     """
     def __init__(self):
         pass
@@ -524,7 +548,7 @@ class ArrayMetropolis(ArrayMCMC):
         xprop = x.__class__(theta=np.empty_like(x.theta))
         delta_lp = self.proposal(x, xprop)
         target(xprop)
-        lp_acc = xprop.lpost - x.lpost + delta_lp  
+        lp_acc = xprop.lpost - x.lpost + delta_lp
         pb_acc = np.exp(np.clip(lp_acc, None, 0.))
         mean_acc = np.mean(pb_acc)
         accept = (random.rand(x.N) < pb_acc)
@@ -550,11 +574,11 @@ class ArrayIndependentMetropolis(ArrayMetropolis):
     def __init__(self, scale=1.):
         self.scale = scale
 
-    def calibrate(self, W, x): 
+    def calibrate(self, W, x):
         m, cov = rs.wmean_and_cov(W, view_2d_array(x.theta))
-        x.shared['mean'] = m 
+        x.shared['mean'] = m
         x.shared['chol_cov'] = self.scale * linalg.cholesky(cov, lower=True)
-    
+
     def proposal(self, x, xprop):
         mu = x.shared['mean']
         L = x.shared['chol_cov']
@@ -690,7 +714,7 @@ class IBIS(FKSMCsampler):
 
     def M(self, t, xp):
         if xp.shared['rs_flag']:
-            return self.move(xp, self.current_target(t - 1))  
+            return self.move(xp, self.current_target(t - 1))
             # in IBIS, target at time t is posterior given y_0:t-1
         else:
             return xp
@@ -741,7 +765,7 @@ class AdaptiveTempering(FKSMCsampler):
         return dl
 
     def logG(self, t, xp, x):
-        ESSmin = self.ESSrmin * x.N 
+        ESSmin = self.ESSrmin * x.N
         f = lambda e: rs.essl(e * x.llik) - ESSmin
         epn = x.shared['exponents'][-1]
         if f(1. - epn) > 0:  # we're done (last iteration)
@@ -791,24 +815,6 @@ def rec_to_dict(arr):
     return dict(zip(arr.dtype.names, arr))
 
 
-class ThetaWithPFsParticles(ThetaParticles):
-    """ class for a SMC^2 particle system """
-    shared = ['acc_rates', 'just_moved', 'Nxs']
-
-    def __init__(self, theta=None, lpost=None, acc_rates=None, pfs=None,
-                 just_moved=False, Nxs=None):
-        if pfs is None:
-            pfs = FancyList([])
-        if Nxs is None:
-            Nxs = []
-        MetroParticles.__init__(self, theta=theta, lpost=lpost, pfs=pfs,
-                                acc_rates=acc_rates, just_moved=just_moved,
-                                Nxs=Nxs)
-
-    @property
-    def Nx(self):  # for cases where Nx vary over time
-        return self.pfs[0].N
-
 
 class SMC2(IBIS):
     """ Feynman-Kac subclass for the SMC^2 algorithm.
@@ -830,9 +836,9 @@ class SMC2(IBIS):
         Nx is increased (using an exchange step) each time
         the acceptance rate is above this value (if negative, Nx stays
         constant)
-    wastefree:  bool 
+    wastefree:  bool
         whether to use the waste-free version (default: True)
-    len_chain:  int 
+    len_chain:  int
         length of MCMC chain (default: 10)
     move:   MCMCSequence object
         MCMC sequence
@@ -862,18 +868,20 @@ class SMC2(IBIS):
 
     def logG(self, t, xp, x):
         # exchange step (should occur only immediately after a move step)
-        ar = x.shared['acc_rates'][-1] if x.shared['acc_rates'] else 1.
+        try:
+            ar = x.shared['acc_rates'][-1]
+        except:  # either list does not exist or is of length 0
+            ar = 1.
         low_ar = ar < self.ar_to_increase_Nx
-        we_increase_Nx = low_ar & x.shared['rs_flag']
+        we_increase_Nx = low_ar & x.shared.get('rs_flag', False)
         if we_increase_Nx:
-            liw_Nx = self.exchange_step(x, t, 2 * x.Nx)
+            liw_Nx = self.exchange_step(x, t, 2 * x.shared['Nx'])
         # compute (estimate of) log p(y_t|\theta,y_{0:t-1})
         lpyt = np.empty(shape=x.N)
         for m, pf in enumerate(x.pfs):
             next(pf)
             lpyt[m] = pf.loglt
         x.lpost += lpyt
-        x.Nxs.append(x.Nx)
         if we_increase_Nx:
             return lpyt + liw_Nx
         else:
@@ -884,9 +892,11 @@ class SMC2(IBIS):
                                             data=self.data),
                           N=N, **self.smc_options)
 
-    def current_target(self, t):
+    def current_target(self, t, Nx=None):
         def func(x):
-            x.pfs = FancyList([self.alg_instance(rec_to_dict(theta), Nx) 
+            print(x.shared)
+            ze_Nx = x.pfs[0].N if Nx is None else Nx
+            x.pfs = FancyList([self.alg_instance(rec_to_dict(theta), ze_Nx)
                                for theta in x.theta])
             x.lpost = self.prior.logpdf(x.theta)
             is_finite = np.isfinite(x.lpost)
@@ -899,16 +909,16 @@ class SMC2(IBIS):
         return func
 
     def _M0(self, N):
-        x0 = ThetaWithPFsParticles(theta=self.prior.rvs(size=N))
-        self.current_target(0)(x0)
+        x0 = ThetaParticles(theta=self.prior.rvs(size=N))
+        self.current_target(0, Nx=self.init_Nx)(x0)
         return x0
 
     def exchange_step(self, x, t, new_Nx):
         old_lpost = x.lpost.copy()
         # exchange step occurs at beginning of step t, so y_t not processed yet
-        self.compute_post(x, t - 1, new_Nx)
+        self.current_target(t - 1, Nx=new_Nx)(x)
         return x.lpost - old_lpost
 
     def summary_format(self, smc):
         msg = FKSMCsampler.summary_format(self, smc)
-        return msg + ', Nx=%i' % smc.X.Nx
+        return msg + ', Nx=%i' % smc.X.pfs[0].N

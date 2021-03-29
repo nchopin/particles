@@ -54,8 +54,8 @@ def qtiles(W, x):
 N = 10 ** 3  # re-run with N= 10^4 for the second CDF plots
 fks = {}
 fk_opts = {'ssm_cls': state_space_models.StochVolLeverage, 'prior': prior,
-           'data': data, 'init_Nx': 100, 'mh_options': {'nsteps': 5},
-           'smc_options': {'qmc': False}, 'ar_to_increase_Nx': 0.1}
+           'data': data, 'init_Nx': 100, 'smc_options': {'qmc': False},
+           'ar_to_increase_Nx': 0.1, 'wastefree': False, 'len_chain': 6}
 fks['smc2'] = ssp.SMC2(**fk_opts)
 fk_opts['smc_options']['qmc'] = True
 fks['smc2_qmc'] = ssp.SMC2(**fk_opts)
@@ -64,7 +64,7 @@ fks['smc2_sv'] = ssp.SMC2(**fk_opts)
 
 if __name__ == '__main__':
     runs = particles.multiSMC(fk=fks, N=N, collect=[Moments(mom_func=qtiles)],
-                              verbose=True, nprocs=0, nruns=25)
+                              verbose=True, nprocs=1, nruns=25)  # TODO nprocs
 
     # plots
     #######
