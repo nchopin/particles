@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 - distributions: multivariate_normal supports for varying cov
+- utils: multiprocessing now based on joblib library (works better on Windows)
 
 ## [0.2] - 2021-01-27
 ### Added 
