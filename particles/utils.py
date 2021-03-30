@@ -173,7 +173,7 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
     delayed_f = joblib.delayed(f)
 
     # multiprocessing
-    pool = joblib.Parallel(n_jobs=nprocs, backend="loky")  # this backend is very
+    pool = joblib.Parallel(n_jobs=nprocs, backend="loky")
     results = pool(delayed_f(**ip) for ip in inputs)
     for i, r in enumerate(results):
         add_to_dict(outputs[i], r)
