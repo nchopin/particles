@@ -586,8 +586,7 @@ def ssp(W, M):
             nr_children[last_ij] += 1
     if np.sum(nr_children) != M:
         # file a bug report with the vector of weights that causes this
-        raise ValueError('ssp resampling: wrong size for output, file a bug
-                         report')
+        raise ValueError('ssp resampling: wrong size for output')
     return np.arange(N).repeat(nr_children)
 
 
