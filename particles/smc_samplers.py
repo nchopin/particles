@@ -359,7 +359,7 @@ def view_2d_array(theta):
     return v
 
 def gen_concatenate(*xs):
-    if isinstance(xs, numpy.ndarray):
+    if isinstance(xs, np.ndarray):
         return np.concatenate(xs)
     else:
         return xs[0].concatenate(*xs)
