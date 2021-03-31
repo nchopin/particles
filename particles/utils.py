@@ -72,9 +72,9 @@ from __future__ import division, print_function
 
 import functools
 import itertools
-import multiprocessing
 import time
 
+import joblib
 import numpy as np
 from numpy import random
 
@@ -163,26 +163,20 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
     if outputs is None:
         outputs = [ip.copy() for ip in inputs]
     if nprocs <= 0:
-        nprocs += multiprocessing.cpu_count()
+        nprocs += joblib.cpu_count()
 
     # no multiprocessing
     if nprocs <= 1:
         return [add_to_dict(op, f(**ip), key=out_key)
                 for ip, op in zip(inputs, outputs)]
 
+    delayed_f = joblib.delayed(f)
+
     # multiprocessing
-    queue_in = multiprocessing.Queue()
-    queue_out = multiprocessing.Queue()
-    procs = [multiprocessing.Process(target=worker,
-                                     args=(queue_in, queue_out, f))
-             for _ in range(nprocs)]
-    sent = [queue_in.put((i, args)) for i, args in enumerate(inputs)]
-    [queue_in.put((None, None)) for _ in range(nprocs)] # signalling the end of queue
-    [p.start() for p in procs]
-    results = [queue_out.get() for _ in sent]
-    for i, r in results:
+    pool = joblib.Parallel(n_jobs=nprocs, backend="loky")
+    results = pool(delayed_f(**ip) for ip in inputs)
+    for i, r in enumerate(results):
         add_to_dict(outputs[i], r)
-    [p.join() for p in procs]
 
     return outputs
 
@@ -269,4 +263,3 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
             op['seed'] = seed
     # the actual work happens here
     return distribute_work(f, inputs, outputs, nprocs=nprocs)
-
