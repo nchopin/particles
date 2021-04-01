@@ -103,7 +103,7 @@ for method in methods:
     print(long_names[method])
 
     runs[method] = particles.multiSMC(fk= fkmod, N=Ns[method],
-                      collect=[col], nruns=nruns, nprocs=1,
+                      collect=[col], nruns=nruns, nprocs=0,
                       out_func=partial(outf, method=col.summary_name))
     avg_cpu[method] = np.mean([r['cpu'] for r in runs[method]])
     print('average cpu time (across %i runs): %f' % 
