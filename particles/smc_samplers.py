@@ -13,18 +13,17 @@ Bayesian inference, rare-event simulation, etc.  For more background on
 (standard) SMC samplers, see Chapter 17 (and references therein). For the
 waste-free variant, see Dau & Chopin (2020).
 
-More precisely, the module implements:
+The following type of sequences of distributions are implemented: 
 
-    * SMC tempering: where the target distribution at time t as a density of
-    the form mu(theta) L(theta)^{gamma_t}, and exponent gamma_t is increasing
-    with time.
+    * SMC tempering: target distribution at time t as a density of the form
+    mu(theta) L(theta)^{gamma_t}, with gamma_t increasing from 0 to 1. 
 
-    * IBIS: where the target distribution at time t is the posterior of the
-      parameters given data Y_{0:t}.
+    * IBIS: target distribution at time t is the posterior of parameter theta
+    given data Y_{0:t}, for a given model. 
 
-    * SMC^2: an algorithm for sequential inference in state-space models, where
-    each particle theta_t^n comes with a local particle filter that
-    approximates the likelihood up to time t; see Chapter 18 in the book.
+    * SMC^2: same as IBIS, but a for state-space model. For each
+    theta-particle, a local particle filter is run to approximate the
+    likelihood up to time t; see Chapter 18 in the book.
 
 SMC samplers for binary distributions (and variable selection) are implemented
 elsewhere, in module `binary_smc`.
@@ -109,7 +108,7 @@ This piece of code will run a tempering SMC algorithm such that:
 * the waste-free version is implemented; that is, the actual number of
   particles is 100 * 200, but only 200 particles are resampled at each time,
   and then moved through 100 MCMC steps (parameter len_chain)
-  (set parameter wastefree=False to run a standard SMC sampler)
+  (set parameter wastefree=False to run a standard SMC sampler).
 * the default MCMC strategy is random walk Metropolis, with a covariance
   proposal set to a fraction of the empirical covariance of the current
   particle sample. See next section for how to use a different MCMC kernel.
@@ -119,20 +118,24 @@ To run IBIS instead, you may do::
     fk_ibis = IBIS(model=toy_model, len_chain=100)
     alg = SMC(fk=fk_ibis, N=200)
 
+Again see the notebook tutorials for more details and examples. 
 
 Under the hood
 ==============
 
+`ThetaParticles`
+----------------
+
 In a SMC sampler, a particle sample is represented as a `ThetaParticles`
 object  ``X``, which contains several attributes such as, e.g.:
 
-    * ``X.theta`` is a structured array of length N, representing the N
+    * ``X.theta``: a structured array of length N, representing the N
     particles (or alternatively a numpy arrray of shape (N,d))
 
-    * ``X.lpost`` is a numpy float array of length N, which stores the
+    * ``X.lpost``: a numpy float array of length N, which stores the
     log-target density of the N particles.
 
-    * ``X.shared`` is a dictionary that contains meta-information on the N
+    * ``X.shared``: a dictionary that contains meta-information on the N
     particles; for instance it may be used to record the successive acceptance
     rates of the Metropolis steps.
 
@@ -146,6 +149,22 @@ convenient for e.g. resampling::
     A = rs.resampling('multinomial', W)  # an array of N ints
     Xp = X[A]  # fancy indexing
 
+MCMC schemes
+------------
+
+A MCMC scheme (e.g. random walk Metropolis) is represented as an
+`ArrayMCMC` object, which has two methods: 
+
+    * ``self.calibrate(W, x)``: calibrate (tune the hyper-parameters of)
+    the MCMC kernel to the weighted sample (W, x).
+
+    * ``self.step(x)``: apply a single step to the `ThetaParticles` object
+    ``x``, in place. 
+
+Furthermore, the different ways one may repeat a given MCMC kernel (for a fixed
+number of steps, or adaptively based on the performance of the kernel) is
+represented by a `MCMCSequence` object. 
+
 
 References
 ==========
@@ -155,7 +174,6 @@ arxiv:2011.02328.
 
 TODO:
 
-* concatenate: TEST
 * non-adaptive tempering has disappeared
 * adaptive number of steps?
 * Langevin?
@@ -359,7 +377,7 @@ def view_2d_array(theta):
     return v
 
 def gen_concatenate(*xs):
-    if isinstance(xs, np.ndarray):
+    if isinstance(xs[0], np.ndarray):
         return np.concatenate(xs)
     else:
         return xs[0].concatenate(*xs)
@@ -418,7 +436,7 @@ class ThetaParticles(object):
 
     @classmethod
     def concatenate(cls, *xs):
-        fields = {k: gen_concatenate([getattr(x, k) for x in xs])
+        fields = {k: gen_concatenate(*[getattr(x, k) for x in xs])
                   for k in xs[0].dict_fields.keys()}
         return cls(shared=xs[0].shared.copy(), **fields)
 
@@ -508,28 +526,33 @@ class ImportanceSampler(object):
         self.wgts = rs.Weights(lw=lw)
         self.log_norm_cst = self.wgts.log_mean
 
-#################################
-# MCMC steps (within SMC samplers
+##################################
+# MCMC steps (within SMC samplers)
 
 class ArrayMCMC(object):
     """Base class for a (single) MCMC step applied to an array.
 
-    Note: array is modified in-place.
+    To implement a particular MCMC scheme, subclass ArrayMCMC and define method
+    `step(self, x, target=None)`, which applies one step to all the particles
+    in object ``xx``, for a given target distribution ``target``).
+    Additionally, you may also define method `calibrate(self, W, x)` which will
+    be called before resampling in order to tune the MCMC step on the weighted
+    sample (W, x).
+
     """
     def __init__(self):
         pass
 
-    def step(self, x, target=None):
-        raise NotImplementedError
-
-class ArrayMetropolis(ArrayMCMC):
-    """Base class for Metropolis steps (whatever the proposal).
-    """
-    def proposal(self, x, xprop):
-        raise NotImplementedError
-
     def calibrate(self, W, x):
-        raise NotImplementedError
+        """
+        Parameters
+        ----------
+        W:  (N,) numpy array
+            weights
+        x:  ThetaParticles object
+            particles
+        """
+        pass
 
     def step(self, x, target=None):
         """
@@ -545,6 +568,15 @@ class ArrayMetropolis(ArrayMCMC):
         mean acceptance probability
 
         """
+        raise NotImplementedError
+
+class ArrayMetropolis(ArrayMCMC):
+    """Base class for Metropolis steps (whatever the proposal).
+    """
+    def proposal(self, x, xprop):
+        raise NotImplementedError
+
+    def step(self, x, target=None):
         xprop = x.__class__(theta=np.empty_like(x.theta))
         delta_lp = self.proposal(x, xprop)
         target(xprop)
@@ -556,6 +588,8 @@ class ArrayMetropolis(ArrayMCMC):
         return mean_acc
 
 class ArrayRandomWalk(ArrayMetropolis):
+    """Gaussian random walk Metropolis.
+    """
     def calibrate(self, W, x):
         arr = view_2d_array(x.theta)
         N, d = arr.shape
@@ -571,6 +605,8 @@ class ArrayRandomWalk(ArrayMetropolis):
         return 0.
 
 class ArrayIndependentMetropolis(ArrayMetropolis):
+    """Independent Metropolis (Gaussian proposal).
+    """
     def __init__(self, scale=1.):
         self.scale = scale
 
@@ -590,17 +626,46 @@ class ArrayIndependentMetropolis(ArrayMetropolis):
         arr_prop[:, :] = mu + z @ L.T
         return delta_lp
 
+
 class MCMCSequence:
     """Base class for a (fixed length or adaptive) sequence of MCMC steps.
     """
-    def __init__(self, mcmc=None, adaptive=False, len_chain=2, delta_dist=0.1):
+    def __init__(self, mcmc=None, len_chain=10):
         self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
-        self.adaptive = adaptive
         self.nsteps = len_chain - 1
-        self.delta_dist = delta_dist
 
     def calibrate(self, W, x):
         self.mcmc.calibrate(W, x)
+
+    def __call__(self, x, target):
+        raise NotImplementedError
+
+
+class MCMCSequenceWF(MCMCSequence):
+    """MCMC sequence for a waste-free SMC sampler (keep all intermediate states).
+    """
+    def __call__(self, x, target):
+        xs = [x]
+        xprev = x
+        ars = []
+        for _ in range(self.nsteps):
+            x = x.copy()
+            ar = self.mcmc.step(x, target=target)
+            ars.append(ar)
+            xs.append(x)
+        xout = x.concatenate(*xs)
+        prev_ars = x.shared.get('acc_rates', [])
+        xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
+        return xout
+
+
+class AdaptiveMCMCSequence(MCMCSequence):
+    """MCMC sequence for a standard SMC sampler (keep only final states).
+    """
+    def __init__(self, mcmc=None, len_chain=2, adaptive=False, delta_dist=0.1):
+        super().__init__(mcmc=mcmc, len_chain=len_chain)
+        self.adaptive = adaptive
+        self.delta_dist = delta_dist
 
     def __call__(self, x, target):
         xout = x.copy()
@@ -615,25 +680,6 @@ class MCMCSequence:
                 dist = np.mean(linalg.norm(diff, axis=1))
                 if np.abs(dist - prev_dist) < self.delta_dist * prev_dist:
                     break
-        prev_ars = x.shared.get('acc_rates', [])
-        xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
-        return xout
-
-class WasteFreeMCMCSequence(MCMCSequence):
-    def __init__(self, mcmc=None, len_chain=10):
-        self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
-        self.nsteps = len_chain - 1
-
-    def __call__(self, x, target):
-        xs = [x]
-        xprev = x
-        ars = []
-        for _ in range(self.nsteps):
-            x = x.copy()
-            ar = self.mcmc.step(x, target=target)
-            ars.append(ar)
-            xs.append(x)
-        xout = x.concatenate(*xs)
         prev_ars = x.shared.get('acc_rates', [])
         xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
         return xout
@@ -662,9 +708,9 @@ class FKSMCsampler(particles.FeynmanKac):
         self.len_chain = len_chain
         if move is None:
             if wastefree:
-                self.move = WasteFreeMCMCSequence(len_chain=len_chain)
+                self.move = MCMCSequenceWF(len_chain=len_chain)
             else:
-                self.move = MCMCSequence(len_chain=len_chain)
+                self.move = AdaptiveMCMCSequence(len_chain=len_chain)
         else:
             self.move = move
 
@@ -816,7 +862,7 @@ def rec_to_dict(arr):
 
 
 
-class SMC2(IBIS):
+class SMC2(FKSMCsampler):
     """ Feynman-Kac subclass for the SMC^2 algorithm.
 
     Parameters
@@ -869,7 +915,7 @@ class SMC2(IBIS):
     def logG(self, t, xp, x):
         # exchange step (should occur only immediately after a move step)
         try:
-            ar = x.shared['acc_rates'][-1]
+            ar = np.mean(x.shared['acc_rates'][-1])
         except:  # either list does not exist or is of length 0
             ar = 1.
         low_ar = ar < self.ar_to_increase_Nx
@@ -892,11 +938,9 @@ class SMC2(IBIS):
                                             data=self.data),
                           N=N, **self.smc_options)
 
-    def current_target(self, t, Nx=None):
+    def current_target(self, t, Nx):
         def func(x):
-            print(x.shared)
-            ze_Nx = x.pfs[0].N if Nx is None else Nx
-            x.pfs = FancyList([self.alg_instance(rec_to_dict(theta), ze_Nx)
+            x.pfs = FancyList([self.alg_instance(rec_to_dict(theta), Nx)
                                for theta in x.theta])
             x.lpost = self.prior.logpdf(x.theta)
             is_finite = np.isfinite(x.lpost)
@@ -910,13 +954,20 @@ class SMC2(IBIS):
 
     def _M0(self, N):
         x0 = ThetaParticles(theta=self.prior.rvs(size=N))
-        self.current_target(0, Nx=self.init_Nx)(x0)
+        self.current_target(0, self.init_Nx)(x0)
         return x0
+
+    def M(self, t, xp):
+        if xp.shared['rs_flag']:
+            return self.move(xp, self.current_target(t - 1, xp.pfs[0].N))
+            # in IBIS, target at time t is posterior given y_0:t-1
+        else:
+            return xp
 
     def exchange_step(self, x, t, new_Nx):
         old_lpost = x.lpost.copy()
         # exchange step occurs at beginning of step t, so y_t not processed yet
-        self.current_target(t - 1, Nx=new_Nx)(x)
+        self.current_target(t - 1, new_Nx)(x)
         return x.lpost - old_lpost
 
     def summary_format(self, smc):

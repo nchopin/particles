@@ -17,20 +17,16 @@ More precisely, this module implements:
 
 * `NestedLogistic`: the proposal distribution used in Schäfer and Chopin
   (2014), which amounts to fit a logistic regression to each component i, based
-  on the (i-1) previous components. This is sub-class of
+  on the (i-1) previous components. This is a sub-class of
   `distributions.DiscreteDist`.
 
 * `BinaryMetropolis`: Independent Metropolis step based on a NestedLogistic
-  proposal. This is sub-class of `smc_samplers.ArrayMetropolis`. 
+  proposal. This is a sub-class of `smc_samplers.ArrayMetropolis`. 
 
 * Various sub-classes of `smc_samplers.StaticModel` that implements Bayesian
-variable selection. 
+  variable selection. 
 
-See also the script in papers/binary for numerical experiments. 
-
-
-TODO:
-    * check logistic reg *really* needed
+See also the script in papers/binarySMC for numerical experiments. 
 
 """
 

@@ -1,3 +1,9 @@
+"""Attempt at reproducing the numerical experiment of Griffin et al (2018). 
+
+
+"""
+
+
 import numpy as np
 import sklearn.linear_model as lin
 
@@ -43,13 +49,6 @@ data = preds, response
 # compare with full regression
 reg = lin.LinearRegression(fit_intercept=False)
 reg.fit(preds, response)
-
-# n, p = 30, 5
-# preds = np.random.randn(n, p)
-# preds[:, 0] = 1. # intercept
-# noise = np.random.randn(n)
-# response = np.sum(preds[:, :3], axis=1) + 0.8 * noise
-# data = preds, response
 
 prior = dists.IID(bin.Bernoulli(0.05), npreds)
 model = bin.BayesianVS(data=data, prior=prior, nu=0., iv2=0.01, jitted=True)
