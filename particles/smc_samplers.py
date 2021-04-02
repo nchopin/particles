@@ -87,8 +87,6 @@ Note that, this time, we went for standard, bi-dimensional numpy arrays for
 argument theta. This is fine because we use a prior object that also uses
 standard numpy arrays.
 
-TODO check this really works.
-
 FeynmanKac objects
 ==================
 
@@ -161,9 +159,24 @@ A MCMC scheme (e.g. random walk Metropolis) is represented as an
     * ``self.step(x)``: apply a single step to the `ThetaParticles` object
     ``x``, in place. 
 
-Furthermore, the different ways one may repeat a given MCMC kernel (for a fixed
-number of steps, or adaptively based on the performance of the kernel) is
-represented by a `MCMCSequence` object. 
+Furthermore, the different ways one may repeat a given MCMC kernel  is
+represented by a `MCMCSequence` object, which you may pass as an argument 
+when instantiating the `FeynmanKac` object that represents the algorithm you
+want to run::
+
+    move = MCMCSequenceWF(mcmc=ArrayRandomWalk(), len_chain=100)
+    fk_tpr = AdaptiveTempering(model=toy_bridge, len_chain=100, move=move)
+    # run a waste-free SMC sampler where the particles are moved through 99
+    # iterations of a random walk Metropolis kernel
+
+Such objects may either keep all intermediate states (as in waste-free SMC, see
+sub-class `MCMCSequenceWF`) or only the states of the last iteration (as in
+standard SMC, see sub-class `AdaptiveMCMCSequence`).  
+
+The bottom line is: if you wish to implement a different MCMC scheme to move
+the particles, you should sub-class `ArrayMCMC`. If you wish to implement a new
+strategy to repeat several MCMC steps, you should sub-cass MCMCSequence (or one
+of its sub-classes). 
 
 
 References
@@ -172,16 +185,6 @@ References
 Dau, H.D. and Chopin, N (2020). Waste-free Sequential Monte Carlo,
 arxiv:2011.02328.
 
-TODO:
-
-* non-adaptive tempering has disappeared
-* adaptive number of steps?
-* Langevin?
-* resampling.wmean_and_cov: DONE, but
-    + not documented
-    + transpose?
-    + inconsistent with wmean_and_var ?
-* SMC2: DONE, TO TEST
 
 """
 
@@ -732,7 +735,7 @@ class FKSMCsampler(particles.FeynmanKac):
 
     def time_to_resample(self, smc):
         rs_flag = (smc.aux.ESS < smc.X.N * smc.ESSrmin)
-        smc.X.shared['rs_flag'] = rs_flag  # TODO only for IBIS?
+        smc.X.shared['rs_flag'] = rs_flag
         if rs_flag:
             self.move.calibrate(smc.W, smc.X)
         return rs_flag
@@ -921,13 +924,15 @@ class SMC2(FKSMCsampler):
         low_ar = ar < self.ar_to_increase_Nx
         we_increase_Nx = low_ar & x.shared.get('rs_flag', False)
         if we_increase_Nx:
-            liw_Nx = self.exchange_step(x, t, 2 * x.shared['Nx'])
+            liw_Nx = self.exchange_step(x, t, 2 * x.pfs[0].N)
         # compute (estimate of) log p(y_t|\theta,y_{0:t-1})
         lpyt = np.empty(shape=x.N)
         for m, pf in enumerate(x.pfs):
             next(pf)
             lpyt[m] = pf.loglt
         x.lpost += lpyt
+        if t > 0:
+            x.shared['Nxs'].append(x.pfs[0].N)
         if we_increase_Nx:
             return lpyt + liw_Nx
         else:
@@ -953,7 +958,8 @@ class SMC2(FKSMCsampler):
         return func
 
     def _M0(self, N):
-        x0 = ThetaParticles(theta=self.prior.rvs(size=N))
+        x0 = ThetaParticles(theta=self.prior.rvs(size=N),
+                            shared={'Nxs': [self.init_Nx]})
         self.current_target(0, self.init_Nx)(x0)
         return x0
 
