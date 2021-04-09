@@ -190,8 +190,8 @@ arxiv:2011.02328.
 
 from __future__ import absolute_import, division, print_function
 
-from collections import namedtuple
 import copy as cp
+import itertools
 import numpy as np
 from numpy import random
 from scipy import optimize, stats, linalg
@@ -333,28 +333,27 @@ class FancyList:
     """A list that implements fancy indexing, and forces elements to be
     distinct.
     """
-
-    @classmethod
-    def concatenate(cls, *ls):
-        return cls(sum(ls))
-
-    def __init__(self, l):
-        self.l = l
+    def __init__(self, data):
+        self.data = [] if data is None else data
 
     def __iter__(self):
-        return iter(self.l)
+        return iter(self.data)
+
+    def __len__(self):
+        return len(self.data)
 
     def __getitem__(self, key):
         if isinstance(key, np.ndarray):
-            return FancyList(all_distinct(self.l, key))
+            return self.__class__(all_distinct(self.data, key))
         else:
-            return self.l[key]
+            return self.data[key]
 
-    def __setitem__(self, key, value):
-        self.l[key] = value
+    def __add__(self, other):
+        return self.__class__(self.data + other.data)
 
-    def __len__(self):
-        return len(self.l)
+    @classmethod
+    def concatenate(cls, *ls):
+        return cls(list(itertools.chain(*[l.data for l in ls])))
 
     def copy(self):
         return cp.deepcopy(self)
@@ -364,9 +363,9 @@ class FancyList:
         Same syntax and functionality as numpy.copyto
 
         """
-        for n, _ in enumerate(self.l):
+        for n, _ in enumerate(self.data):
             if where[n]:
-                self.l[n] = src.l[n]  # not a copy
+                self.data[n] = src.data[n]  # not a copy
 
 
 def view_2d_array(theta):
