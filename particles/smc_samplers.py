@@ -195,7 +195,6 @@ import itertools
 import numpy as np
 from numpy import random
 from scipy import optimize, stats, linalg
-import time
 
 import particles
 from particles import resampling as rs
@@ -664,7 +663,7 @@ class MCMCSequenceWF(MCMCSequence):
 class AdaptiveMCMCSequence(MCMCSequence):
     """MCMC sequence for a standard SMC sampler (keep only final states).
     """
-    def __init__(self, mcmc=None, len_chain=2, adaptive=False, delta_dist=0.1):
+    def __init__(self, mcmc=None, len_chain=10, adaptive=False, delta_dist=0.1):
         super().__init__(mcmc=mcmc, len_chain=len_chain)
         self.adaptive = adaptive
         self.delta_dist = delta_dist
@@ -861,7 +860,6 @@ def rec_to_dict(arr):
     """ Turns record array *arr* into a dict """
 
     return dict(zip(arr.dtype.names, arr))
-
 
 
 class SMC2(FKSMCsampler):
