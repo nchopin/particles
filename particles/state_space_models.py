@@ -658,3 +658,30 @@ class ThetaLogistic(StateSpaceModel):
 
     def proposal(self, t, xp, data):
         return self.PX(t, xp).posterior(data[t], sigma=self.sigmaY)
+
+class LinearGauss(StateSpaceModel):
+    '''
+    LinearGauss Model
+    '''
+    default_params = {'sigmaY': .2, 'rho': 0.9, 'sigmaX': 1.}
+    
+    def PX0(self):
+        return dists.Normal(scale=self.sigmaX)
+    
+    def PX(self, t, xp):
+        return dists.Normal(loc=self.rho*xp, scale=self.sigmaX)
+    
+    def PY(self, t, xp, x):
+        return dists.Normal(loc=x, scale=self.sigmaY)
+    
+    def proposal0(self, data):
+        sig2post = 1./ (1./self.sigmaX**2 + 1./self.sigmaY**2)
+        mupost = sig2post * (data[0]/self.sigmaY**2)
+        return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
+    
+    
+    def proposal(self, t, xp, data):
+        sig2post = 1./ (1./self.sigmaX**2 + 1./self.sigmaY**2)
+        mupost = sig2post * ( self.rho * xp / self.sigmaX**2 + data[0]/self.sigmaY**2)
+        return dists.Normal(loc=mupost, scale=np.sqrt(sig2post))
+        
