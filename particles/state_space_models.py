@@ -661,7 +661,17 @@ class ThetaLogistic(StateSpaceModel):
 
 class LinearGauss(StateSpaceModel):
     '''
-    LinearGauss Model
+    LinearGauss class defines
+    - a basic Linear Gaussian state-space model;
+    - additionally, a locally optimal proposal at time t=0 and t>=1.
+
+    math:
+        X_0 & \sim N(0, sigmaX^2) \\
+        X_t|X_{t-1} & \sim N(rho * X_{t-1}, sigmaX^2) \\
+        Y_t|X_t=x_t & \sim N(x_t, sigmaY^2) \\
+    
+    proposal0: returns distribution of \mathbf{M}_0(dx_0)
+    proposal: returns distribution of M_t(x_{t-1}, dx_t)
     '''
     default_params = {'sigmaY': .2, 'rho': 0.9, 'sigmaX': 1.}
     
