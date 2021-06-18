@@ -271,6 +271,7 @@ class StaticModel(object):
         l = np.zeros(shape=theta.shape[0])
         for s in range(t + 1):
             l += self.logpyt(theta, s)
+        np.nan_to_num(l, copy=False, nan=-np.inf) 
         return l
 
     def logpost(self, theta, t=None):
@@ -586,6 +587,8 @@ class ArrayMetropolis(ArrayMCMC):
         mean_acc = np.mean(pb_acc)
         accept = (random.rand(x.N) < pb_acc)
         x.copyto(xprop, where=accept)
+        if np.isnan(mean_acc):
+            import pdb; pdb.set_trace()
         return mean_acc
 
 class ArrayRandomWalk(ArrayMetropolis):
