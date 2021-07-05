@@ -185,7 +185,7 @@ class FeynmanKac(object):
     @property
     def isAPF(self):
         """Returns true if model is an APF"""
-        return 'logetat' in dir(self)
+        return 'logeta' in dir(self)
 
     def done(self, smc):
         """Time to stop the algorithm"""
