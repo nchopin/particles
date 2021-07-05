@@ -123,7 +123,7 @@ functions, that is the (log of) functions :math:`\eta_t` that modify the
 resampling probabilities (see Section 10.3.3 in the book)::
 
     class StochVol_with_prop_and_aux_func(StochVol_with_prop):
-        def logetat(self, t, x, data):
+        def logeta(self, t, x, data):
             "Log of auxiliary function eta_t at time t"
             return -(x-data[t])**2
 

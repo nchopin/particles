@@ -24,10 +24,10 @@ import seaborn as sb
 import particles
 from particles import distributions as dists
 from particles import kalman
-from particles import state_space_models
+from particles import state_space_models as ssms
 from particles.collectors import Moments
 
-class NeuralDecoding(state_space_models.StateSpaceModel):
+class NeuralDecoding(ssms.StateSpaceModel):
     """
 
     X_t is position (3D) plus velocity (3D); in each dimension,
@@ -71,13 +71,13 @@ class NeuralDecoding(state_space_models.StateSpaceModel):
         return dists.IndepProd(*[dists.Dirac(loc=self.x0[i])
                                  for i in range(6)])
 
-    def PX(self,t,xp):
+    def PX(self, t, xp):
         return dists.MvNormal(loc=self.predmean(xp), cov=self.SigX)
 
     def PY(self, t, xp, x):
-        return dists.IndepProd( *[dists.Poisson(np.exp(self.a[k] +
-                                                np.sum(x*self.b[k], axis=1)))
-                                  for k in range(self.dy)] )
+        return dists.IndepProd(*[dists.Poisson(np.exp(self.a[k] +
+                                                      np.sum(x*self.b[k], axis=1)))
+                                 for k in range(self.dy)])
 
     def diff_ft(self, xt, yt):
         """First and second derivatives (wrt x_t) of log-density of Y_t|X_t=xt
@@ -123,10 +123,11 @@ class NeuralDecoding(state_space_models.StateSpaceModel):
     def proposal0(self, data):
         return self.PX0()
 
-    def logeta(self, t, x):
+    def logeta(self, t, x, data):
         print('yo apf')
-        _, _, logpyt = self.approx_post(t+1, x)
+        _, _, logpyt = self.approx_post(x, data[t+1])
         # when running the APF, the approx is computed twice
+        # not great, but expedient
         return logpyt
 
 # parameters
@@ -144,9 +145,9 @@ x0 = np.zeros(dx)
 chosen_ssm = NeuralDecoding(a=a0, b=b0, x0=x0, delta=delta0, tau=tau0)
 _, data = chosen_ssm.simulate(T)
 models = OrderedDict()
-models['boot'] = state_space_models.Bootstrap(ssm=chosen_ssm, data=data)
-models['guided'] = state_space_models.GuidedPF(ssm=chosen_ssm, data=data)
-# models['apf'] = state_space_models.AuxiliaryPF(ssm=chosen_ssm, data=data)
+models['boot'] = ssms.Bootstrap(ssm=chosen_ssm, data=data)
+models['guided'] = ssms.GuidedPF(ssm=chosen_ssm, data=data)
+# models['apf'] = ssms.AuxiliaryPF(ssm=chosen_ssm, data=data)
 # Uncomment this if you want to include the APF in the comparison
 
 N = 10**4; nruns = 50
