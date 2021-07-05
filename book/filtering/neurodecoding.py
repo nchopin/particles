@@ -85,7 +85,7 @@ class NeuralDecoding(state_space_models.StateSpaceModel):
         a, b = self.a, self.b
         ex = np.exp(a + np.matmul(b, xt))  # shape = (dy,)
         grad = (-np.sum(ex[:, np.newaxis] * b, axis=0)
-                + np.sum(yt.flatten()[:, np.newaxis] * b, axis=0)) #TODO flatten
+                + np.sum(yt.flatten()[:, np.newaxis] * b, axis=0))
         hess = np.zeros((self.dx, self.dx))
         for k in range(self.dy):
             hess -= ex[k] * np.outer(b[k,:], b[k,:])
@@ -121,10 +121,10 @@ class NeuralDecoding(state_space_models.StateSpaceModel):
         return dists.MvNormal(loc=filt.mean, cov=filt.cov)
 
     def proposal0(self, data):
-        # TODO same treatment for X_0???
         return self.PX0()
 
     def logeta(self, t, x):
+        print('yo apf')
         _, _, logpyt = self.approx_post(t+1, x)
         # when running the APF, the approx is computed twice
         return logpyt
@@ -133,12 +133,12 @@ class NeuralDecoding(state_space_models.StateSpaceModel):
 dy = 80  # number of neurons
 dx = 6 # 3 for position, 3 for velocity
 T = 25
-a0 = random.normal(loc=2.5, size=dy)  # from Kass' paper
-# the b's are generated uniformly on the unit sphere in R^6 (see Kass' paper)
+a0 = random.normal(loc=2.5, size=dy)  # from Koyama et al
+# the b's are generated uniformly on the unit sphere in R^6 (see Koyama et al)
 b0 = random.normal(size=(dy, dx))
 b0 = b0 / (linalg.norm(b0, axis=1)[:, np.newaxis])
 delta0 = 0.03; tau0 = 1.
-x0 = np.zeros(dx)  # TODO
+x0 = np.zeros(dx)
 
 # models
 chosen_ssm = NeuralDecoding(a=a0, b=b0, x0=x0, delta=delta0, tau=tau0)
