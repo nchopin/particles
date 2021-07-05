@@ -125,7 +125,7 @@ class NeuralDecoding(ssms.StateSpaceModel):
 
     def logeta(self, t, x, data):
         print('yo apf')
-        _, _, logpyt = self.approx_post(x, data[t+1])
+        _, logpyt = self.approx_post(x, data[t+1])
         # when running the APF, the approx is computed twice
         # not great, but expedient
         return logpyt
