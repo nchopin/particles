@@ -65,8 +65,8 @@ model = bin.BayesianVS(data=data, prior=prior)
 N = 10**5
 P = 1000
 M = N // P
-move = ssps.WasteFreeMCMCSequence(mcmc=bin.BinaryMetropolis(), nsteps=P - 1)
-fk = ssps.AdaptiveTempering(model, nsteps=P - 1, move=move)
-results = particles.multiSMC(fk=fk, N=M, verbose=True, nruns=3, nprocs=1)
+move = ssps.MCMCSequenceWF(mcmc=bin.BinaryMetropolis(), len_chain=P)
+fk = ssps.AdaptiveTempering(model, len_chain=P, move=move)
+results = particles.multiSMC(fk=fk, N=M, verbose=True, nruns=3, nprocs=0)
 # pf = particles.SMC(fk=fk, N=1000, verbose=True)
 # pf.run()

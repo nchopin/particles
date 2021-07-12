@@ -65,7 +65,7 @@ if waste:
     ESSrmin = 0.5
     lc = 500
     N = 200
-    move = ssps.WasteFreeMCMCSequence(mcmc=bin.BinaryMetropolis(),
+    move = ssps.MCMCSequenceWF(mcmc=bin.BinaryMetropolis(),
                                       len_chain=lc)
 else:
     ESSrmin = 0.9
