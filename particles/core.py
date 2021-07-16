@@ -103,6 +103,7 @@ from scipy import stats
 from particles import collectors
 from particles import hilbert
 from particles import resampling as rs
+from particles import rqmc
 from particles import smoothing
 from particles import utils
 
@@ -110,14 +111,6 @@ err_msg_missing_trans = """
     Feynman-Kac class %s is missing method logpt, which provides the log-pdf
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
-
-def sobol(N, d):
-    while(True):
-        eng = stats.qmc.Sobol(d)
-        x = eng.random(N)
-        if x.min() > 0. and x.max() < 1.:
-            break
-    return x
 
 class FeynmanKac(object):
     """Abstract base class for Feynman-Kac models.
@@ -334,7 +327,7 @@ class SMC(object):
 
     def generate_particles(self):
         if self.qmc:
-            u = sobol(self.N, self.fk.du).squeeze()
+            u = rqmc.sobol(self.N, self.fk.du).squeeze()
             # squeeze: must be (N,) if du=1
             self.X = self.fk.Gamma0(u)
         else:
@@ -358,7 +351,7 @@ class SMC(object):
 
     def resample_move_qmc(self):
         self.rs_flag = True  # we *always* resample in SQMC
-        u = sobol(self.N, self.fk.du + 1)
+        u = rqmc.sobol(self.N, self.fk.du + 1)
         tau = np.argsort(u[:, 0])
         self.h_order = hilbert.hilbert_sort(self.X)
         self.A = self.h_order[rs.inverse_cdf(u[tau, 0], self.aux.W[self.h_order])]

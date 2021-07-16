@@ -141,7 +141,7 @@ import time
 import particles # worker
 from particles import hilbert
 from particles import resampling as rs
-from particles.core import sobol
+from particles import rqmc
 
 def generate_hist_obj(option, smc):
     if option is True:
@@ -372,7 +372,7 @@ class ParticleHistory(RollingParticleHistory):
         Use this only on the history of a SQMC algorithm.
         """
         self._check_h_orders()
-        u = sobol(M, self.T)
+        u = rqmc.sobol(M, self.T)
         # the final particles have not been sorted
         hT = hilbert.hilbert_sort(self.X[-1])
         # searchsorted to avoid having to sort in place u according to u[:,T-1]
