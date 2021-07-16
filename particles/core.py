@@ -97,13 +97,11 @@ See the documentation of `SMC` for more details.
 
 from __future__ import division, print_function
 
-from functools import wraps
-
 import numpy as np
+from scipy import stats
 
 from particles import collectors
 from particles import hilbert
-from particles import qmc
 from particles import resampling as rs
 from particles import smoothing
 from particles import utils
@@ -113,6 +111,13 @@ err_msg_missing_trans = """
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
 
+def sobol(N, d):
+    while(True):
+        eng = stats.qmc.Sobol(d)
+        x = eng.random(N)
+        if x.min() > 0. and x.max() < 1.:
+            break
+    return x
 
 class FeynmanKac(object):
     """Abstract base class for Feynman-Kac models.
@@ -329,7 +334,7 @@ class SMC(object):
 
     def generate_particles(self):
         if self.qmc:
-            u = qmc.sobol(self.N, self.fk.du).squeeze()
+            u = sobol(self.N, self.fk.du).squeeze()
             # squeeze: must be (N,) if du=1
             self.X = self.fk.Gamma0(u)
         else:
@@ -353,7 +358,7 @@ class SMC(object):
 
     def resample_move_qmc(self):
         self.rs_flag = True  # we *always* resample in SQMC
-        u = qmc.sobol(self.N, self.fk.du + 1)
+        u = sobol(self.N, self.fk.du + 1)
         tau = np.argsort(u[:, 0])
         self.h_order = hilbert.hilbert_sort(self.X)
         self.A = self.h_order[rs.inverse_cdf(u[tau, 0], self.aux.W[self.h_order])]
