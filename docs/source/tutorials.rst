@@ -19,4 +19,5 @@ with the recorded sessions.
     /notebooks/Bayes_estimation_ssm.ipynb
     /notebooks/SMC_samplers_tutorial.ipynb
     /notebooks/Defining_Feynman-Kac_models_manually.ipynb
+    /notebooks/complicated_state_space_models.ipynb
     /notebooks/variance_estimation.ipynb
