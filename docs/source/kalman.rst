@@ -13,6 +13,8 @@ Module summary
     :nosignatures: 
 
     Kalman
+    LinearGauss
+    MVLinearGauss
     predict_step
     filter_step
     filter_step_asarray
