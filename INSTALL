@@ -23,6 +23,7 @@ The long version: **particles** requires the following libraries:
 * `NumPy <http://www.numpy.org/>`_ 
 * `SciPy <http://www.scipy.org/>`_ 
 * `numba <https://numba.pydata.org/>`_
+* `joblib <https://joblib.readthedocs.io/>`_
 
 In addition, it is **strongly recommended** to install the following plotting
 libraries:  

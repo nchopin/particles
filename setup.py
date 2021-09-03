@@ -21,7 +21,8 @@ METADATA = dict(
     author='Nicolas Chopin',
     install_requires=['numpy>=1.18',
                       'scipy>=1.7',
-                      'numba'
+                      'numba',
+                      'joblib'
                       ],
     author_email='nicolas.chopin@ensae.fr',
     description=DESCRIPTION, 
