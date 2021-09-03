@@ -264,7 +264,6 @@ class SMC(object):
            run the algorithm until completion
        step()
            run the algorithm for one step (object self is an iterator)
-
     """
 
     def __init__(self,
@@ -445,7 +444,6 @@ def _identity(x):
 def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
     """Run SMC algorithms in parallel, for different combinations of parameters.
 
-
     `multiSMC` relies on the `multiplexer` utility, and obeys the same logic.
     A basic usage is::
 
@@ -454,7 +452,9 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
     This runs the same SMC algorithm 20 times, using all available CPU cores.
     The output, ``results``, is a list of 20 dictionaries; a given dict corresponds
     to a single run, and contains the following (key, value) pairs:
+
         + ``'run'``: a run identifier (a number between 0 and nruns-1)
+
         + ``'output'``: the corresponding SMC object (once method run was completed)
 
     Since a `SMC` object may take a lot of space in memory (especially when

@@ -1,5 +1,5 @@
 **collectors**
-*************
+**************
 
 .. automodule:: particles.collectors
 

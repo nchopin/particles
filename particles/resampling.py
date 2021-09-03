@@ -600,7 +600,9 @@ def residual(W, M):
 @resampling_scheme
 @jit(nopython=True)
 def ssp(W, M):
-    """SSP stands for Srinivasan Sampling Process. This resampling scheme is
+    """SSP resampling.
+
+    SSP stands for Srinivasan Sampling Process. This resampling scheme is
     discussed in Gerber et al (2019). Basically, it has similar properties as
     systematic resampling (number of off-springs is either k or k + 1, with 
     k <= N W^n < k +1), and in addition is consistent. See that paper for more

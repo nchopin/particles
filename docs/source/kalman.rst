@@ -1,5 +1,5 @@
 **kalman**
-********
+**********
 
 .. automodule:: particles.kalman
 

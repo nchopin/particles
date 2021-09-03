@@ -7,9 +7,13 @@ Overview
 ========
 
 This module contains various classes that implement MCMC samplers:
+
     * `MCMC`: the base class for all MCMC samplers;
+
     * `GenericRWHM`: base class for random-walk Hastings-Metropolis;
+
     * `GenericGibbs`: base class for Gibbs samplers;
+
     * `PMMH`, `ParticleGibbs`: base classes for the PMCMC (particle MCMC
       algorithms) with the same name.
 
@@ -23,10 +27,13 @@ sampler::
                         adaptive=True)
     my_mcmc.run()
 
+
 Upon completion, object ``my_mcmc`` have an attribute called ``chain``, which
 is a `ThetaParticles` object (see module `smc_samplers`). In particular,
 ``my_mcmc.chain`` has the following attributes:
+
     * ``theta``: a structured array that contains the 200 simulated parameters;
+
     * ``lpost``: an array that contains the log-posterior density at these 200
       parameters.
 

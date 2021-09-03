@@ -1,5 +1,5 @@
 **state_space_models**
-*********************
+**********************
 
 .. automodule:: particles.state_space_models
 

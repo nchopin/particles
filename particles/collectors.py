@@ -36,7 +36,8 @@ Default summaries
 =================
 
 By default, the following summaries are collected (even if argument `collect`
-is not used): 
+is not used):
+
     * ``ESSs``: ESS (effective sample size) at each iteration;
     * ``rs_flags``: whether resampling was triggered or not at each time t;
     * ``logLts``: log-likelihood estimates.
@@ -237,6 +238,7 @@ class Collector(object):
     """Base class for collectors.
 
     To subclass `Collector`:
+
     * implement method `fetch(self, smc)` which computes the summary that
       must be collected (from object smc, at each time).
     * (optionally) define class attribute `summary_name` (name of the collected summary;

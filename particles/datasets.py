@@ -4,9 +4,9 @@ This module gives access to several useful datasets. A dataset is represented
 as a class that inherits from base class `Dataset`. When instantiating such a
 class, you get an object with attributes:
 
-    * ``raw_data``: data in the original file;
-    * ``data`` : data obtained after a pre-processing step was applied to the raw
-      data.
+* ``raw_data``: data in the original file;
+* ``data`` : data obtained after a pre-processing step was applied to the raw
+  data.
 
 The pre-processing step is performed by method `preprocess` of the class. For
 instance, for a regression dataset, the pre-processing steps normalises the
@@ -98,9 +98,9 @@ class Neuro(Dataset):
 
     Reference
     ---------
+
     * Temereanca et al (2008).  Rapid changes in thalamic firing synchrony during
       repetitive whisker stimulation, J. of Neuroscience.
-
     """
     file_name = 'thaldata.csv'
 
@@ -217,6 +217,7 @@ class BinaryRegDataset(Dataset):
 
     Such a dataset contains p predictors, and one binary response.
     The pre-processing step consists of:
+
         1. rescaling the predictors (mean=0, std dev=0.5)
         2. adding an intercept (constant predictor)
         3. optionally, appling the "flip sign" trick.
