@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- resampling: added killing resampling
 - distributions: multivariate_normal supports for varying cov
 - smc_samplers: waste-free SMC 
 - qmc: now based on scipy.stats.qmc (remove Fortran code dependency)

@@ -30,7 +30,7 @@ by Nicolas Chopin and Omiros Papaspiliopoulos.
   and **forward-backward recursions** (for finite hidden Markov models).
 
 * **Standard and waste-free SMC samplers**: SMC tempering, IBIS (a.k.a. data
-  tempering). SMC samplers for binary words (Schäfer and Chopin, 2014°), with
+  tempering). SMC samplers for binary words (Schäfer and Chopin, 2014), with
   application to **variable selection**.
 
 * Bayesian parameter inference for state-space models: **PMCMC** (PMMH, Particle Gibbs) 

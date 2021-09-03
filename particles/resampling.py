@@ -35,11 +35,15 @@ where:
 
 Here the list of currently implemented resampling schemes:
 
+* `killing'
 * `multinomial`
 * `residual`
 * `stratified`
 * `systematic`
 * `ssp`
+
+If you don't know much about resampling, it's best to use the default scheme
+(systematic). See Chapter 9 of the book for a discussion.
 
 Alternative ways to sample from a multinomial distribution
 ==========================================================
@@ -90,13 +94,11 @@ the normalised weights and their ESS. Here is a quick example::
     print(new_wgts.ESS)  # the ESS of the new weights
 
 .. warning::
-
-A technical point is that `Weights` objects should be considered as immutable: in
-particular method `add` returns a new `Weights` object. Trying to modify
-directly (in place) a `Weights` object may introduce hairy bugs.
-Basically, `SMC` and the methods of `ParticleHistory` do not *copy* such objects,
-so if you modify them later, then you also modify the version that has been
-stored at a previous iteration.
+    `Weights` objects should be considered as immutable: in particular method `add`
+    returns a new `Weights` object. Trying to modify directly (in place) a
+    `Weights` object may introduce hairy bugs.  Basically, `SMC` and the methods of
+    `ParticleHistory` do not *copy* such objects, so if you modify them later, then
+    you also modify the version that has been stored at a previous iteration.
 
 Other functions related to resampling
 =====================================
@@ -425,27 +427,27 @@ def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0,75)):
     """
     return {p: wquantiles(W, x[p], alphas) for p in x.dtype.names}
 
-###################
+####################
 # Resampling schemes
 ####################
 
 rs_funcs = {}  # populated by the decorator below
 
 # generic docstring of resampling schemes; assigned by decorator below
-rs_doc = """%s resampling.
+rs_doc = """\
 
-             Parameters
-             ----------
-             W: (N,) ndarray
-                 normalized weights (>=0, sum to one)
-             M: int, optional (set to N if missing)
-                 number of resampled points.
+    Parameters
+    ----------
+    W: (N,) ndarray
+     normalized weights (>=0, sum to one)
+    M: int, optional (set to N if missing)
+     number of resampled points.
 
-             Returns
-             -------
-             (M,) ndarray
-                 M ancestor variables, drawn from range 0,...,N-1
-         """
+    Returns
+    -------
+    (M,) ndarray
+     M ancestor variables, drawn from range 0, ..., N-1
+"""
 
 def resampling_scheme(func):
     """Decorator for resampling schemes."""
@@ -456,7 +458,7 @@ def resampling_scheme(func):
         return func(W, M)
 
     rs_funcs[func.__name__] = modif_func
-    modif_func.__doc__ = rs_doc % func.__name__.capitalize()
+    modif_func.__doc__ = func.__doc__ + rs_doc
     return modif_func
 
 def resampling(scheme, W, M=None):
@@ -495,7 +497,7 @@ def inverse_cdf(su, W):
 
 
 def uniform_spacings(N):
-    """ Generate ordered uniform variates in O(N) time.
+    """Generate ordered uniform variates in O(N) time.
 
     Parameters
     ----------
@@ -523,7 +525,7 @@ def uniform_spacings(N):
 
 
 def multinomial_once(W):
-    """ Sample once from a Multinomial distribution
+    """Sample once from a Multinomial distribution.
 
     Parameters
     ----------
@@ -549,23 +551,38 @@ def multinomial_once(W):
 
 @resampling_scheme
 def multinomial(W, M):
+    """Multinomial resampling.
+
+    Popular resampling scheme, which amounts to sample N independently from
+    the multinomial distribution that generates n with probability W^n. 
+
+    This resampling scheme is *not* recommended for various reasons; basically
+    schemes like stratified / systematic / SSP tends to introduce less noise,
+    and may be faster too (in particular systematic). 
+    """
     return inverse_cdf(uniform_spacings(M), W)
 
 
 @resampling_scheme
 def stratified(W, M):
+    """Stratified resampling.
+    """
     su = (random.rand(M) + np.arange(M)) / M
     return inverse_cdf(su, W)
 
 
 @resampling_scheme
 def systematic(W, M):
+    """Systematic resampling.
+    """
     su = (random.rand(1) + np.arange(M)) / M
     return inverse_cdf(su, W)
 
 
 @resampling_scheme
 def residual(W, M):
+    """Residual resampling.
+    """
     N = W.shape[0]
     A = np.empty(M, dtype=np.int64)
     MW = M * W
@@ -583,6 +600,17 @@ def residual(W, M):
 @resampling_scheme
 @jit(nopython=True)
 def ssp(W, M):
+    """SSP stands for Srinivasan Sampling Process. This resampling scheme is
+    discussed in Gerber et al (2019). Basically, it has similar properties as
+    systematic resampling (number of off-springs is either k or k + 1, with 
+    k <= N W^n < k +1), and in addition is consistent. See that paper for more
+    details.
+
+    Reference
+    =========
+    Gerber M., Chopin N. and Whiteley N. (2019). Negative association, ordering 
+    and convergence of resampling methods. Ann. Statist. 47 (2019), no. 4, 2236–2260. 
+    """
     N = W.shape[0]
     MW = M * W
     nb_children = np.floor(MW).astype(np.int64)
@@ -607,6 +635,34 @@ def ssp(W, M):
             nb_children[i] += 1
             i = k + 2
     return np.arange(N).repeat(nb_children)
+
+
+@resampling_scheme
+def killing(W, M):
+    """Killing resampling.
+
+    This resampling scheme was not described in the book. For each particle, 
+    one either keeps the current value (with probability W[i] / W.max()), or
+    replaces it by a draw from the multinomial distribution.
+
+    This scheme requires to take M=N.
+    """
+    N = W.shape[0]
+    if M != N:
+        raise ValueError('killing resampling defined only for M=N')
+    killed = (np.random.rand(N) * W.max() >= W)
+    nkilled = killed.sum()
+    A = np.arange(N)
+    A[killed] = multinomial(W, nkilled)
+    return A
+
+
+@resampling_scheme
+def idiotic(W, M):
+    """Idiotic.
+    """
+    a = multinomial_once(W)
+    return np.full(M, a, dtype=np.int)
 
 
 class MultinomialQueue(object):

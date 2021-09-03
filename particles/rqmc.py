@@ -4,7 +4,11 @@
 
 TOL = 1e-10
 
-from scipy.stats import qmc
+# temporary: remove when scipy 1.7 is available in conda
+try:
+    from scipy.stats import qmc
+except ImportError:
+    qmc = None
 
 def safe_generate(N, d, engine_cls):
     eng = engine_cls(d)

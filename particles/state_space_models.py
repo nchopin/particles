@@ -107,7 +107,7 @@ an ancestor X_{t-1})::
             return dists.Normal(loc=rho * xp + data[t], scale=self.sigma)
 
     my_second_ssm = StochVol_with_prop(sigma=0.3)
-    my_better_fk_model = ssms.Guided(ssm=my_second_ssm, data=y)
+    my_better_fk_model = ssms.GuidedPF(ssm=my_second_ssm, data=y)
     # then run a SMC as above
 
 Voilà! You have now implemented a guided filter.
