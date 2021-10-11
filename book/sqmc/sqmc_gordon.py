@@ -21,7 +21,7 @@ from particles.collectors import Moments
 
 # instantiate model
 T = 100
-model = ssms.Gordon()
+model = ssms.Gordon_etal()
 _, data = model.simulate(T)
 fk = ssms.Bootstrap(ssm=model, data=data)
 

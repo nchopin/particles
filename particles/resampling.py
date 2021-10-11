@@ -35,12 +35,12 @@ where:
 
 Here the list of currently implemented resampling schemes:
 
-* `killing'
 * `multinomial`
 * `residual`
 * `stratified`
 * `systematic`
 * `ssp`
+* `killing`
 
 If you don't know much about resampling, it's best to use the default scheme
 (systematic). See Chapter 9 of the book for a discussion.
@@ -661,7 +661,9 @@ def killing(W, M):
 
 @resampling_scheme
 def idiotic(W, M):
-    """Idiotic.
+    """Idiotic resampling.
+
+    For testing only. DO NOT USE.
     """
     a = multinomial_once(W)
     return np.full(M, a, dtype=np.int)

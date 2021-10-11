@@ -6,6 +6,7 @@ Here is a list of the modules available in ``particles``:
 .. toctree::
    :maxdepth: 1
 
+   binary_smc
    collectors
    core
    datasets

@@ -1,5 +1,5 @@
 **smc_samplers**
-********
+****************
 
 .. automodule:: particles.smc_samplers
 
@@ -16,5 +16,7 @@ Module summary
     IBIS
     TemperingBridge
     AdaptiveTempering
-    ArrayMCMC
     SMC2
+    ArrayMCMC
+    MCMCSequence
+    MCMCSequenceWF

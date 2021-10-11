@@ -15,15 +15,15 @@ waste-free variant, see Dau & Chopin (2020).
 
 The following type of sequences of distributions are implemented: 
 
-    * SMC tempering: target distribution at time t as a density of the form
-    mu(theta) L(theta)^{gamma_t}, with gamma_t increasing from 0 to 1. 
+* SMC tempering: target distribution at time t as a density of the form
+  mu(theta) L(theta)^{gamma_t}, with gamma_t increasing from 0 to 1. 
 
-    * IBIS: target distribution at time t is the posterior of parameter theta
-    given data Y_{0:t}, for a given model. 
+* IBIS: target distribution at time t is the posterior of parameter theta
+  given data Y_{0:t}, for a given model. 
 
-    * SMC^2: same as IBIS, but a for state-space model. For each
-    theta-particle, a local particle filter is run to approximate the
-    likelihood up to time t; see Chapter 18 in the book.
+* SMC^2: same as IBIS, but a for state-space model. For each
+  theta-particle, a local particle filter is run to approximate the
+  likelihood up to time t; see Chapter 18 in the book.
 
 SMC samplers for binary distributions (and variable selection) are implemented
 elsewhere, in module `binary_smc`.
@@ -64,7 +64,7 @@ Then you can instantiate the class as follows::
 This object may be passed as an argument to the `FeynmanKac` classes that
 define SMC samplers, see below.
 
-Under the hood, class `StaticModel` defines methods `loglik` and `logpost`
+Under the hood, class `StaticModel` defines methods ``loglik`` and ``logpost``
 which computes respectively the log-likelihood and the log posterior density of
 the model at a certain time.
 
@@ -127,15 +127,15 @@ Under the hood
 In a SMC sampler, a particle sample is represented as a `ThetaParticles`
 object  ``X``, which contains several attributes such as, e.g.:
 
-    * ``X.theta``: a structured array of length N, representing the N
-    particles (or alternatively a numpy arrray of shape (N,d))
+* ``X.theta``: a structured array of length N, representing the N
+  particles (or alternatively a numpy arrray of shape (N,d))
 
-    * ``X.lpost``: a numpy float array of length N, which stores the
-    log-target density of the N particles.
+* ``X.lpost``: a numpy float array of length N, which stores the
+  log-target density of the N particles.
 
-    * ``X.shared``: a dictionary that contains meta-information on the N
-    particles; for instance it may be used to record the successive acceptance
-    rates of the Metropolis steps.
+* ``X.shared``: a dictionary that contains meta-information on the N
+  particles; for instance it may be used to record the successive acceptance
+  rates of the Metropolis steps.
 
 Details may vary in a given algorithm; the common idea is that attribute
 ``shared`` is the only one which not behave like an array of length N.
@@ -153,11 +153,11 @@ MCMC schemes
 A MCMC scheme (e.g. random walk Metropolis) is represented as an
 `ArrayMCMC` object, which has two methods: 
 
-    * ``self.calibrate(W, x)``: calibrate (tune the hyper-parameters of)
-    the MCMC kernel to the weighted sample (W, x).
+* ``self.calibrate(W, x)``: calibrate (tune the hyper-parameters of)
+  the MCMC kernel to the weighted sample (W, x).
 
-    * ``self.step(x)``: apply a single step to the `ThetaParticles` object
-    ``x``, in place. 
+* ``self.step(x)``: apply a single step to the `ThetaParticles` object
+  ``x``, in place. 
 
 Furthermore, the different ways one may repeat a given MCMC kernel  is
 represented by a `MCMCSequence` object, which you may pass as an argument 
@@ -183,7 +183,7 @@ References
 ==========
 
 Dau, H.D. and Chopin, N (2020). Waste-free Sequential Monte Carlo,
-arxiv:2011.02328.
+`arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_
 
 
 """
@@ -391,9 +391,9 @@ class ThetaParticles(object):
     This is a rather generic class for packing together information on N
     particles; it may have the following attributes:
 
-    * `theta`: a structured array (an array with named variables);
+    * ``theta``: a structured array (an array with named variables);
       see `distributions` module for more details on structured arrays.
-    * a bunch of `numpy` arrays such that shape[0] = N; for instance an array
+    * a bunch of numpy arrays such that shape[0] = N; for instance an array
       ``lpost`` for storing the log posterior density of the N particles;
     * lists of length N; object n in the list is associated to particle n;
       for instance a list of particle filters in SMC^2; the name of each
@@ -443,7 +443,7 @@ class ThetaParticles(object):
         return cls(shared=xs[0].shared.copy(), **fields)
 
     def copyto(self, src, where=None):
-        """Emulates function `copyto` in NumPy.
+        """Emulates function copyto in NumPy.
 
        Parameters
        ----------
@@ -535,9 +535,9 @@ class ArrayMCMC(object):
     """Base class for a (single) MCMC step applied to an array.
 
     To implement a particular MCMC scheme, subclass ArrayMCMC and define method
-    `step(self, x, target=None)`, which applies one step to all the particles
+    ``step(self, x, target=None)``, which applies one step to all the particles
     in object ``xx``, for a given target distribution ``target``).
-    Additionally, you may also define method `calibrate(self, W, x)` which will
+    Additionally, you may also define method ``calibrate(self, W, x)`` which will
     be called before resampling in order to tune the MCMC step on the weighted
     sample (W, x).
 
