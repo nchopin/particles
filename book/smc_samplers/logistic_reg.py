@@ -12,6 +12,15 @@ Compare IBIS and SMC tempering for approximating:
 for a logistic regression model.
 
 See below for how to select the data-set.
+
+Note: the SMC samplers implemented in module smc_samplers are now "waste-free"
+by default, see Dau & Chopin (2021), and the documentation of `smc_samplers`
+(plus the corresponding jupyter notebook). This script still performs exactly
+the same numerical experiments as in the book, based on standard (non
+waste-free) SMC samplers. To do so, we added ``wastefree=False`` to the
+definition of the corresponding `Feynman-Kac` object. Again, see the
+documentation of `smc_samplers` for more details.
+
 """
 
 from matplotlib import pyplot as plt
@@ -120,7 +129,7 @@ pal = sb.dark_palette('white', n_colors=2)
 plt.figure()
 diff_est = [(r['out'].logLts[-1] - r['path_sampling'])
             for r in results if r['type']=='tempering']
-sb.distplot(diff_est)
+sb.histplot(diff_est)
 
 # Figure 17.1: typical behaviour of IBIS
 typ_ibis = [r for r in results if r['type']=='ibis' and r['K'] == typK][0]
