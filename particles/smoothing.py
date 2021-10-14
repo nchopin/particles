@@ -538,7 +538,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
         pf = particles.SQMC(fk=fk, N=N, store_history=True)
     else:
         pf = particles.SMC(fk=fk, N=N, store_history=True)
-    tic = time.clock()
+    tic = time.perf_counter()
     pf.run()
     if method in ['FFBS_ON', 'FFBS_ON2', 'FFBS_QMC']:
         if method.startswith('FFBS_ON'):
@@ -571,6 +571,6 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
                                                      modif_info=modif_info)
     else:
         print('no such method?')
-    cpu_time = time.clock() - tic
+    cpu_time = time.perf_counter() - tic
     print(method + ' took %.2f s for N=%i' % (cpu_time, N))
     return {'est': est, 'cpu': cpu_time}
