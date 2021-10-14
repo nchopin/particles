@@ -66,86 +66,84 @@ def log_gamma(x, mu, phi, sigma):
                              scale=sigma / np.sqrt(1. - phi ** 2))
 
 
-if __name__ == '__main__':
+# set up model, simulate data
+T = 100
+mu0 = 0.
+phi0 = .9
+sigma0 = .5  # true parameters
+my_ssm = DiscreteCox_with_add_f(mu=mu0, phi=phi0, sigma=sigma0)
+_, data = my_ssm.simulate(T)
 
-    # set up model, simulate data
-    T = 100
-    mu0 = 0.
-    phi0 = .9
-    sigma0 = .5  # true parameters
-    my_ssm = DiscreteCox_with_add_f(mu=mu0, phi=phi0, sigma=sigma0)
-    _, data = my_ssm.simulate(T)
+# FK models
+fkmod = ssms.Bootstrap(ssm=my_ssm, data=data)
+# FK model for information filter: same model with data in reverse
+fk_info = ssms.Bootstrap(ssm=my_ssm, data=data[::-1])
 
-    # FK models
-    fkmod = ssms.Bootstrap(ssm=my_ssm, data=data)
-    # FK model for information filter: same model with data in reverse
-    fk_info = ssms.Bootstrap(ssm=my_ssm, data=data[::-1])
+nruns = 100  # run each algo 100 times
+Ns = [50, 200, 800, 3200, 12800]
+methods = ['FFBS_ON', 'FFBS_ON2', 'two-filter_ON',
+           'two-filter_ON_prop', 'two-filter_ON2']
 
-    nruns = 100  # run each algo 100 times
-    Ns = [50, 200, 800, 3200, 12800]
-    methods = ['FFBS_ON', 'FFBS_ON2', 'two-filter_ON',
-               'two-filter_ON_prop', 'two-filter_ON2']
+add_func = partial(psit, mu=mu0, phi=phi0, sigma=sigma0)
+log_gamma_func = partial(log_gamma, mu=mu0, phi=phi0, sigma=sigma0)
+results = utils.multiplexer(f=smoothing_worker, method=methods, N=Ns,
+                            fk=fkmod, fk_info=fk_info, add_func=add_func,
+                            log_gamma=log_gamma_func, nprocs=0, nruns=nruns)
 
-    add_func = partial(psit, mu=mu0, phi=phi0, sigma=sigma0)
-    log_gamma_func = partial(log_gamma, mu=mu0, phi=phi0, sigma=sigma0)
-    results = utils.multiplexer(f=smoothing_worker, method=methods, N=Ns,
-                                fk=fkmod, fk_info=fk_info, add_func=add_func,
-                                log_gamma=log_gamma_func, nprocs=0, nruns=nruns)
+# Plots
+# =====
+savefigs = True  # False if you don't want to save plots as pdfs
+plt.style.use('ggplot')
+palette = sb.dark_palette("lightgray", n_colors=5, reverse=False)
+sb.set_palette(palette)
+rc('text', usetex=True)  # latex
 
-    # Plots
-    # =====
-    savefigs = True  # False if you don't want to save plots as pdfs
-    plt.style.use('ggplot')
-    palette = sb.dark_palette("lightgray", n_colors=5, reverse=False)
-    sb.set_palette(palette)
-    rc('text', usetex=True)  # latex
+pretty_names = {}
+ON = r'$\mathcal{O}(N)$'
+ON2 = r'$\mathcal{O}(N^2)$'
+pretty_names['FFBS_ON2'] = ON2 + r' FFBS'
+pretty_names['FFBS_ON'] = 'FFBS-reject'
+pretty_names['two-filter_ON2'] = ON2 + r' two-filter'
+pretty_names['two-filter_ON'] = ON + r' two-filter, basic proposal'
+pretty_names['two-filter_ON_prop'] = ON + r' two-filter, better proposal'
 
-    pretty_names = {}
-    ON = r'$\mathcal{O}(N)$'
-    ON2 = r'$\mathcal{O}(N^2)$'
-    pretty_names['FFBS_ON2'] = ON2 + r' FFBS'
-    pretty_names['FFBS_ON'] = 'FFBS-reject'
-    pretty_names['two-filter_ON2'] = ON2 + r' two-filter'
-    pretty_names['two-filter_ON'] = ON + r' two-filter, basic proposal'
-    pretty_names['two-filter_ON_prop'] = ON + r' two-filter, better proposal'
+# box-plot of est. errors vs N and method (Figure 11.4)
+plt.figure()
+plt.xlabel(r'$N$')
+plt.ylabel('smoothing estimate')
+# remove FFBS_ON, since estimate has the same distribution as for FFBS ON2
+res_nofon = [r for r in results if r['method'] != 'FFBS_ON']
+sb.boxplot(y=[np.mean(r['est']) for r in res_nofon],
+           x=[r['N'] for r in res_nofon],
+           hue=[pretty_names[r['method']] for r in res_nofon],
+           palette=palette,
+           flierprops={'marker': 'o',
+                       'markersize': 4,
+                       'markerfacecolor': 'k'})
+if savefigs:
+    plt.savefig('offline_boxplots_est_vs_N.pdf')
 
-    # box-plot of est. errors vs N and method (Figure 11.4)
-    plt.figure()
-    plt.xlabel(r'$N$')
-    plt.ylabel('smoothing estimate')
-    # remove FFBS_ON, since estimate has the same distribution as for FFBS ON2
-    res_nofon = [r for r in results if r['method'] != 'FFBS_ON']
-    sb.boxplot(y=[np.mean(r['est']) for r in res_nofon],
-               x=[r['N'] for r in res_nofon],
-               hue=[pretty_names[r['method']] for r in res_nofon],
-               palette=palette,
-               flierprops={'marker': 'o',
-                           'markersize': 4,
-                           'markerfacecolor': 'k'})
-    if savefigs:
-        plt.savefig('offline_boxplots_est_vs_N.pdf')
+# CPU times as a function of N (Figure 11.5)
+plt.figure()
+plt.xscale('log')
+plt.yscale('log')
+plt.xlabel(r'$N$')
+# both O(N^2) algorithms have the same CPU cost, so we plot only
+# one line for both
+pretty_names['FFBS_ON2'] += " and " + pretty_names['two-filter_ON2']
+lsts = {'FFBS_ON2': '-', 'FFBS_ON': '--', 'two-filter_ON_prop': '-.',
+        'two-filter_ON': ':'}
+for method in ['FFBS_ON2', 'FFBS_ON',
+               'two-filter_ON_prop', 'two-filter_ON']:
+    plt.plot(Ns, [np.mean(np.array([r['cpu'] for r in results
+                                    if r['method'] == method and r['N'] == N]))
+                  for N in Ns], 
+             label=pretty_names[method], linewidth=3,
+             linestyle=lsts[method])
+plt.ylabel('cpu time (s)')
+plt.legend(loc=2)
+if savefigs:
+    plt.savefig('offline_cpu_vs_N.pdf')
 
-    # CPU times as a function of N (Figure 11.5)
-    plt.figure()
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel(r'$N$')
-    # both O(N^2) algorithms have the same CPU cost, so we plot only
-    # one line for both
-    pretty_names['FFBS_ON2'] += " and " + pretty_names['two-filter_ON2']
-    lsts = {'FFBS_ON2': '-', 'FFBS_ON': '--', 'two-filter_ON_prop': '-.',
-            'two-filter_ON': ':'}
-    for method in ['FFBS_ON2', 'FFBS_ON',
-                   'two-filter_ON_prop', 'two-filter_ON']:
-        plt.plot(Ns, [np.mean(np.array([r['cpu'] for r in results
-                                        if r['method'] == method and r['N'] == N]))
-                      for N in Ns], 
-                 label=pretty_names[method], linewidth=3,
-                 linestyle=lsts[method])
-    plt.ylabel('cpu time (s)')
-    plt.legend(loc=2)
-    if savefigs:
-        plt.savefig('offline_cpu_vs_N.pdf')
-
-    # and finally
-    plt.show()
+# and finally
+plt.show()

@@ -12,15 +12,10 @@ as in first example in Chopin and Singh (2014, Bernoulli)
 More precisely, we compare different smoothing algorithms for approximating
 the smoothing expectation of additive function phit, defined as
 phi_t(x_0:t) = sum_{s=0}^t psi_s(x_{s-1},x_s)
-see below for a definition of psi_s
+see below for a definition of psi_s.
 
 See Chapter 11 (smoothing) for more details; in particular Figures 11.2 and
 11.3 which were produced by this script.
-
-Warnings:
-    * takes about 20min to complete. 
-    * if multiprocessing does not work on your machine (see installation notes)
-    try to set option nprocs to 1 (line 95)
 
 """
 
@@ -66,90 +61,89 @@ def outf(pf, method):
             'cpu': pf.cpu_time}
 
 
-if __name__ == '__main__':
-    # set up models, simulate data
-    nruns = 25  # how many runs for each algorithm
-    T = 10 ** 4  #  sample size
-    mu0 = 0.  # true parameters
-    phi0 = 0.9
-    sigma0 = .5
+# set up models, simulate data
+nruns = 25  # how many runs for each algorithm
+T = 10 ** 4  #  sample size
+mu0 = 0.  # true parameters
+phi0 = 0.9
+sigma0 = .5
 
-    ssm = DiscreteCox_with_addf(mu=mu0, phi=phi0, sigma=sigma0)
-    true_states, data = ssm.simulate(T)
-    fkmod = state_space_models.Bootstrap(ssm=ssm, data=data)
+ssm = DiscreteCox_with_addf(mu=mu0, phi=phi0, sigma=sigma0)
+true_states, data = ssm.simulate(T)
+fkmod = state_space_models.Bootstrap(ssm=ssm, data=data)
 
-    # plot data
-    plt.figure()
-    plt.plot(data)
-    plt.title('data')
+# plot data
+plt.figure()
+plt.plot(data)
+plt.title('data')
 
-    methods = ['ON2', 'naive']  # in that order: ON2 must be run first
-    collectors = {'ON2': col.Online_smooth_ON2(),
-                  'naive': col.Online_smooth_naive()}
-    long_names = {'ON2': r'$O(N^2)$ forward-only',
-                  'naive': r'naive, $O(N)$ forward-only'}
-    runs = {}
-    avg_cpu = {}
-    Ns = {'ON2': 100, 'naive': 10 ** 4}  #  for naive N is rescaled later
+methods = ['ON2', 'naive']  # in that order: ON2 must be run first
+collectors = {'ON2': col.Online_smooth_ON2(),
+              'naive': col.Online_smooth_naive()}
+long_names = {'ON2': r'$O(N^2)$ forward-only',
+              'naive': r'naive, $O(N)$ forward-only'}
+runs = {}
+avg_cpu = {}
+Ns = {'ON2': 100, 'naive': 10 ** 4}  #  for naive N is rescaled later
 
-    for method in methods:
-        col = collectors[method]
-        if method == 'naive':
-            # rescale N to match CPU time
-            pf = particles.SMC(fk=fkmod, N=Ns['naive'], collect=[col])
-            pf.run()
-            Ns['naive'] = int(Ns['naive'] * avg_cpu['ON2'] / pf.cpu_time)
-            print('rescaling N to %i to match CPU time' % Ns['naive'])
-        long_names[method] += r', N=%i' % Ns[method]
-        print(long_names[method])
+for method in methods:
+    col = collectors[method]
+    if method == 'naive':
+        # rescale N to match CPU time
+        pf = particles.SMC(fk=fkmod, N=Ns['naive'], collect=[col])
+        pf.run()
+        Ns['naive'] = int(Ns['naive'] * avg_cpu['ON2'] / pf.cpu_time)
+        print('rescaling N to %i to match CPU time' % Ns['naive'])
+    long_names[method] += r', N=%i' % Ns[method]
+    print(long_names[method])
 
-        runs[method] = particles.multiSMC(fk= fkmod, N=Ns[method],
-                          collect=[col], nruns=nruns, nprocs=1,
-                          out_func=partial(outf, method=col.summary_name))
-        avg_cpu[method] = np.mean([r['cpu'] for r in runs[method]])
-        print('average cpu time (across %i runs): %f' % 
-              (nruns, avg_cpu[method]))
+    runs[method] = particles.multiSMC(fk= fkmod, N=Ns[method],
+                      collect=[col], nruns=nruns, nprocs=0,
+                      out_func=partial(outf, method=col.summary_name))
+    avg_cpu[method] = np.mean([r['cpu'] for r in runs[method]])
+    print('average cpu time (across %i runs): %f' % 
+          (nruns, avg_cpu[method]))
 
-    # Plots
-    # =====
-    savefigs = True  # False if you don't want to save plots as pdfs
-    plt.style.use('ggplot')
-    colors = {'ON2': 'gray', 'naive': 'black'}
+# Plots
+# =====
+savefigs = True  # False if you don't want to save plots as pdfs
+plt.style.use('ggplot')
+colors = {'ON2': 'gray', 'naive': 'black'}
 
-    # IQR (inter-quartile ranges) as a function of time: Figure 11.3
-    plt.figure()
-    estimates = {method: np.array([r['result'] for r in results])
-                 for method, results in runs.items()}
+# IQR (inter-quartile ranges) as a function of time: Figure 11.3
+plt.figure()
+estimates = {method: np.array([r['result'] for r in results])
+             for method, results in runs.items()}
+plt.xlabel(r'$t$')
+plt.ylabel('IQR (smoothing estimate)')
+plt.yscale('log')
+plt.xscale('log')
+for method in methods:
+    est = estimates[method]
+    delta = np.percentile(est, 75., axis=0) - np.percentile(est, 25., axis=0)
+    plt.plot(np.arange(T), delta, colors[method], linewidth=2, 
+             label=long_names[method])
+plt.legend(loc=4)
+if savefigs:
+    plt.savefig('online_iqr_vs_t_logscale.pdf')
+
+# actual estimates
+plt.figure()
+mint, maxt = 0, T
+miny = np.min([est[:, mint:maxt].min() for est in estimates.values()])
+maxy = np.max([est[:, mint:maxt].max() for est in estimates.values()])
+inflat = 1.1
+ax = [mint, maxt, maxy - inflat * (maxy - miny), miny + inflat * (maxy - miny)]
+for i, method in enumerate(methods):
+    plt.subplot(1, len(methods), i + 1)
+    plt.axis(ax)
     plt.xlabel(r'$t$')
-    plt.ylabel('IQR (smoothing estimate)')
-    plt.yscale('log')
-    plt.xscale('log')
-    for method in methods:
-        est = estimates[method]
-        delta = np.percentile(est, 75., axis=0) - np.percentile(est, 25., axis=0)
-        plt.plot(np.arange(T), delta, colors[method], linewidth=2, 
-                 label=long_names[method])
-    plt.legend(loc=4)
-    if savefigs:
-        plt.savefig('online_iqr_vs_t_logscale.pdf')
+    plt.ylabel('smoothing estimate')
+    plt.title(long_names[method])
+    est = estimates[method]
+    for j in range(nruns):
+        plt.plot(est[j, :])
+if savefigs:
+    plt.savefig('online_est_vs_t.pdf')
 
-    # actual estimates
-    plt.figure()
-    mint, maxt = 0, T
-    miny = np.min([est[:, mint:maxt].min() for est in estimates.values()])
-    maxy = np.max([est[:, mint:maxt].max() for est in estimates.values()])
-    inflat = 1.1
-    ax = [mint, maxt, maxy - inflat * (maxy - miny), miny + inflat * (maxy - miny)]
-    for i, method in enumerate(methods):
-        plt.subplot(1, len(methods), i + 1)
-        plt.axis(ax)
-        plt.xlabel(r'$t$')
-        plt.ylabel('smoothing estimate')
-        plt.title(long_names[method])
-        est = estimates[method]
-        for j in range(nruns):
-            plt.plot(est[j, :])
-    if savefigs:
-        plt.savefig('online_est_vs_t.pdf')
-
-    plt.show()
+plt.show()
