@@ -1,5 +1,5 @@
 **nested**
-********
+**********
 
 .. automodule:: particles.nested
 

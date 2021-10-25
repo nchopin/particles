@@ -1,7 +1,7 @@
 Python 2 vs Python 3 
 ====================
 
-Short version: **particles** only supports Python 3. 
+Short version: **particles** only supports Python 3.
 
 Long version:  initially, **particles** supported both Python 2 and Python 3.
 However, Python 2 has been deprecated, and supporting it has become
@@ -23,6 +23,7 @@ The long version: **particles** requires the following libraries:
 * `NumPy <http://www.numpy.org/>`_ 
 * `SciPy <http://www.scipy.org/>`_ 
 * `numba <https://numba.pydata.org/>`_
+* `joblib <https://joblib.readthedocs.io/>`_
 
 In addition, it is **strongly recommended** to install the following plotting
 libraries:  
@@ -57,8 +58,8 @@ import the modified version.
 
 .. _Github: https://github.com/nchopin/particles.git
 
-Installation: a simpler method
-===============================
+Installation: alternative method
+================================
 
 The package is also available on PyPI_ (the Python package index), so you may
 install it by running pip. On a Linux machine:: 
@@ -70,31 +71,7 @@ install it by running pip. On a Linux machine::
 Option ``--user`` lets you install the package in your home directory, rather than
 globally for all users. 
 
-The only drawback of this method is that it install only the modules of the
+The only drawback of this method is that it installs only the modules of the
 package, and not the additional examples (e.g. the datasets and scripts that 
 were used to generate the plots found in the book). 
 
-Troubleshooting
-===============
-
-If the two methods above fail, you may try this::
-
-    cd some_folder_of_your_choosing
-    git clone https://github.com/nchopin/particles.git
-    python setup.py install --force 
-
-This will install the package, without compiling the little bit of Fortran code 
-that is used in module `qmc`. At this stage, you may already use the package if
-you do not use anything related to quasi-Monte Carlo (i.e. option ``qmc`` in
-class `SMC`). In addition, you may compile manually the said piece of Fortran 
-as follows:: 
-
-    pip show particles  # tells you the folder where the package is installed
-    cd where_particles_is_installed/particles 
-    f2py3 -c ../src/LowDiscrepancy.f -m lowdiscrepancy 
-
-Replace f2py3 by f2py if you use Python 2.  Make sure a Fortran compiler is
-installed on your machine (e.g. package gfortran on Ubuntu).  Utility `f2py` is
-part of Numpy; see here_.
-
-.. _here: https://docs.scipy.org/doc/numpy/f2py/

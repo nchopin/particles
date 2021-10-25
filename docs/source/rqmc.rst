@@ -1,9 +1,9 @@
 **qmc**
 *******
 
-.. automodule:: particles.qmc
+.. automodule:: particles.rqmc
 
-.. currentmodule:: particles.qmc
+.. currentmodule:: particles.rqmc
 
 Module summary
 ==============

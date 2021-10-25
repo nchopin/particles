@@ -1,3 +1,3 @@
-__version__ = '0.1'
+__version__ = '0.3alpha'
 
 from particles.core import FeynmanKac, SMC, multiSMC

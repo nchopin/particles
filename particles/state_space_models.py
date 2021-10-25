@@ -40,7 +40,7 @@ To define this particular model, we sub-class `StateSpaceModel` as follows::
     from particles import distributions as dists
 
     class SimplifiedStochVol(ssms.StateSpaceModel):
-        default_parameters = {'sigma': 1., 'rho': 0.8}  # optional
+        default_params = {'sigma': 1., 'rho': 0.8}  # optional
         def PY(self, t, xp, x):  # dist of Y_t at time t, given X_t and X_{t-1}
             return dists.Normal(scale=np.exp(x))
         def PX(self, t, xp):  # dist of X_t at time t, given X_{t-1}
@@ -63,7 +63,7 @@ details:
       particular,  ``self.sigma`` and ``self.rho`` are **attributes** of
       this class that are set when we define object `my_stoch_vol_model`.
       Default values for these parameters may be defined in a dictionary called
-      ``default_parameters``. When this dictionary is defined, any un-defined
+      ``default_params``. When this dictionary is defined, any un-defined
       parameter will be replaced by its default value::
 
           default_stoch_vol_model = SimplifiedStochVol()  # sigma=1., rho=0.8
@@ -107,7 +107,7 @@ an ancestor X_{t-1})::
             return dists.Normal(loc=rho * xp + data[t], scale=self.sigma)
 
     my_second_ssm = StochVol_with_prop(sigma=0.3)
-    my_better_fk_model = ssms.Guided(ssm=my_second_ssm, data=y)
+    my_better_fk_model = ssms.GuidedPF(ssm=my_second_ssm, data=y)
     # then run a SMC as above
 
 Voilà! You have now implemented a guided filter.
@@ -146,7 +146,7 @@ Class                     Comments
 `StochVolLeverage`        Univariate stochastic volatility model with leverage
 `MVStochVol`              Multivariate stochastic volatility model
 `BearingsOnly`            Bearings-only tracking
-`Gordon`             Popular toy model often used as a benchmark
+`Gordon_etal`             Popular toy model often used as a benchmark
 `DiscreteCox`             A discrete Cox model (Y_t|X_t is Poisson)
 `ThetaLogistic`           Theta-logistic model from Population Ecology
 ===================       =====================================================
@@ -196,10 +196,10 @@ class StateSpaceModel(object):
     All the attributes that appear in ``PX0``, ``PX`` and ``PY`` must be
     initialised in this way. Alternatively, it it possible to define default
     values for these parameters, by defining class attribute
-    ``default_parameters`` to be a dictionary as follows::
+    ``default_params`` to be a dictionary as follows::
 
         class LinearGauss(StateSpaceModel):
-            default_parameters = {'rho': .9, 'sigmaX': 1., 'sigmaY': .1}
+            default_params = {'rho': .9, 'sigmaX': 1., 'sigmaY': .1}
             # rest as above
 
     Optionally, we may also define methods:
@@ -534,7 +534,7 @@ class StochVolLeverage(StochVol):
                             scale=std_x * np.sqrt(1. - self.phi**2))
 
 
-class Gordon(StateSpaceModel):
+class Gordon_etal(StateSpaceModel):
     r"""Popular toy example that appeared initially in Gordon et al (1993).
 
     .. math::

@@ -4,10 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- distributions: multivariate_normal supports for varying cov
-- utils: multiprocessing now based on joblib library (works better on Windows)
+## [0.3] - 2021-10-25
+### Added 
+- new module: binary_smc
+- smc_samplers: waste-free SMC (now default)
+- resampling: added killing resampling scheme
+- new tutorial notebook: how to define complicated state-space models
+
+### Changed
+- qmc: now based on scipy.stats.qmc (remove Fortran code dependency)
 
 ## [0.2] - 2021-01-27
+# Blog post: <https://statisfaction.wordpress.com/2021/01/29/particles-0-2-whats-new-whats-next-your-comments-most-welcome/>
 ### Added 
  - new module: datasets (cleaner way to load standard datasets)
  - new module: variance_estimators (single-run genealogy based estimators à la

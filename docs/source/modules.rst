@@ -6,6 +6,7 @@ Here is a list of the modules available in ``particles``:
 .. toctree::
    :maxdepth: 1
 
+   binary_smc
    collectors
    core
    datasets
@@ -15,8 +16,8 @@ Here is a list of the modules available in ``particles``:
    kalman
    mcmc
    nested
-   qmc
    resampling
+   rqmc
    smc_samplers
    smoothing
    state_space_models

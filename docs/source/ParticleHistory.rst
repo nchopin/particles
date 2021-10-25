@@ -1,5 +1,5 @@
 particles.smoothing.ParticleHistory
-================================
+===================================
 
 .. currentmodule:: particles.smoothing
 

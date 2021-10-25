@@ -4,9 +4,9 @@ This module gives access to several useful datasets. A dataset is represented
 as a class that inherits from base class `Dataset`. When instantiating such a
 class, you get an object with attributes:
 
-    * ``raw_data``: data in the original file;
-    * ``data`` : data obtained after a pre-processing step was applied to the raw
-      data.
+* ``raw_data``: data in the original file;
+* ``data`` : data obtained after a pre-processing step was applied to the raw
+  data.
 
 The pre-processing step is performed by method `preprocess` of the class. For
 instance, for a regression dataset, the pre-processing steps normalises the
@@ -98,9 +98,9 @@ class Neuro(Dataset):
 
     Reference
     ---------
+
     * Temereanca et al (2008).  Rapid changes in thalamic firing synchrony during
       repetitive whisker stimulation, J. of Neuroscience.
-
     """
     file_name = 'thaldata.csv'
 
@@ -167,7 +167,7 @@ def prepare_predictors(predictors, add_intercept=True, scale=0.5):
 class RegressionDataset(Dataset):
     """Regression dataset.
 
-    Such a dataset contains p predictors, and one scalar response.
+    A regression dataset contains p predictors, and one scalar response.
     The pre-processing step consists of:
         1. rescaling the predictors (mean=0, std dev=0.5)
         2. adding an intercept (constant predictor)
@@ -190,14 +190,34 @@ class Boston(RegressionDataset):
     `UCI archive <https://archive.ics.uci.edu/ml/machine-learning-databases/housing/>`__
 
     """
+    predictor_names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS',
+                       'RAD', 'TAX', 'PTRATIO', 'B', 'LSAT']
+    response_name = ['MEDV']
     file_name = 'boston_house_prices.csv'
     load_opts = {'delimiter': ',', 'skiprows': 2}
+
+class Concrete(RegressionDataset):
+    """Concrete compressive strength data of Yeh (1998). 
+
+    A dataset with 1030 observations and 9 predictors. 
+
+    Reference
+    ---------
+    `UCI archive <https://archive.ics.uci.edu/ml/machine-learning-databases/concrete/compressive/>`__
+
+    """
+    predictor_names = ['cement', 'blast', 'fly ash', 'water', 'superplasticizer', 
+                       'coarse aggregate', 'fine aggregate', 'age']
+    response_name = ['strength']
+    file_name = 'concrete.csv'
+    load_opts = {'delimiter': ',', 'skiprows': 1}
 
 class BinaryRegDataset(Dataset):
     """Binary regression (classification) dataset.
 
     Such a dataset contains p predictors, and one binary response.
     The pre-processing step consists of:
+
         1. rescaling the predictors (mean=0, std dev=0.5)
         2. adding an intercept (constant predictor)
         3. optionally, appling the "flip sign" trick.

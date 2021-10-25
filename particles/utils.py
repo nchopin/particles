@@ -219,7 +219,7 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
     nruns: int
         number of evaluations of f for each set of arguments
     nprocs: int
-        + if <=0, set to actual number of physical processors plus nprocs
+        if <=0, set to actual number of physical processors plus nprocs
         (i.e. -1 => number of cpus on your machine minus one)
         Default is 1, which means no multiprocessing
     seeding: bool (default: True if nruns > 1, False otherwise)

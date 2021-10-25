@@ -135,9 +135,9 @@ Then, in practice, in e.g. the bootstrap filter, when we generate particles
 X_t^n, we call method ``PX`` and pass as an argument a numpy array of shape
 (N,) containing the N ancestors.
 
-..  note::
+.. note::
     ProbDist objects are roughly similar to the frozen distributions of package
-    :package:`scipy.stats`. However, they are not equivalent. Using such a
+    `scipy.stats`. However, they are not equivalent. Using such a
     frozen distribution when e.g. defining a state-space model will return an
     error.
 

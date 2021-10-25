@@ -29,7 +29,9 @@ by Nicolas Chopin and Omiros Papaspiliopoulos.
 * Exact filtering/smoothing algorithms: **Kalman** (for linear Gaussian models) 
   and **forward-backward recursions** (for finite hidden Markov models).
 
-* **SMC samplers**: SMC tempering, IBIS (a.k.a. data tempering). 
+* **Standard and waste-free SMC samplers**: SMC tempering, IBIS (a.k.a. data
+  tempering). SMC samplers for binary words (Schäfer and Chopin, 2014), with
+  application to **variable selection**.
 
 * Bayesian parameter inference for state-space models: **PMCMC** (PMMH, Particle Gibbs) 
   and **SMC^2**. 

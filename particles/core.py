@@ -97,14 +97,13 @@ See the documentation of `SMC` for more details.
 
 from __future__ import division, print_function
 
-from functools import wraps
-
 import numpy as np
+from scipy import stats
 
 from particles import collectors
 from particles import hilbert
-from particles import qmc
 from particles import resampling as rs
+from particles import rqmc
 from particles import smoothing
 from particles import utils
 
@@ -112,7 +111,6 @@ err_msg_missing_trans = """
     Feynman-Kac class %s is missing method logpt, which provides the log-pdf
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
-
 
 class FeynmanKac(object):
     """Abstract base class for Feynman-Kac models.
@@ -141,8 +139,6 @@ class FeynmanKac(object):
     e.g. module `smc_samplers` and the corresponding tutorial in the on-line
     documentation.
     """
-    mutate_only_after_resampling = False
-
     # by default, we mutate at every time t
 
     def __init__(self, T):
@@ -190,6 +186,11 @@ class FeynmanKac(object):
     def done(self, smc):
         """Time to stop the algorithm"""
         return smc.t >= self.T
+
+    def time_to_resample(self, smc):
+        """When to resample.
+        """
+        return (smc.aux.ESS < smc.N * smc.ESSrmin)
 
     def default_moments(self, W, X):
         """Default moments (see module ``collectors``).
@@ -263,7 +264,6 @@ class SMC(object):
            run the algorithm until completion
        step()
            run the algorithm for one step (object self is an iterator)
-
     """
 
     def __init__(self,
@@ -326,7 +326,7 @@ class SMC(object):
 
     def generate_particles(self):
         if self.qmc:
-            u = qmc.sobol(self.N, self.fk.du).squeeze()
+            u = rqmc.sobol(self.N, self.fk.du).squeeze()
             # squeeze: must be (N,) if du=1
             self.X = self.fk.Gamma0(u)
         else:
@@ -336,33 +336,34 @@ class SMC(object):
         self.wgts = self.wgts.add(self.fk.logG(self.t, self.Xp, self.X))
 
     def resample_move(self):
-        self.rs_flag = self.aux.ESS < self.N * self.ESSrmin
+        self.rs_flag = self.fk.time_to_resample(self)
         if self.rs_flag:  # if resampling
-            self.A = rs.resampling(self.resampling, self.aux.W)
+            self.A = rs.resampling(self.resampling, self.aux.W, M=self.N)
+            # we always resample self.N particles, even if smc.X has a
+            # different size (example: waste-free)
             self.Xp = self.X[self.A]
             self.reset_weights()
-            self.X = self.fk.M(self.t, self.Xp)
-        elif not self.fk.mutate_only_after_resampling:
+        else:
             self.A = np.arange(self.N)
             self.Xp = self.X
-            self.X = self.fk.M(self.t, self.Xp)
+        self.X = self.fk.M(self.t, self.Xp)
 
     def resample_move_qmc(self):
         self.rs_flag = True  # we *always* resample in SQMC
-        u = qmc.sobol(self.N, self.fk.du + 1)
+        u = rqmc.sobol(self.N, self.fk.du + 1)
         tau = np.argsort(u[:, 0])
         self.h_order = hilbert.hilbert_sort(self.X)
         self.A = self.h_order[rs.inverse_cdf(u[tau, 0], self.aux.W[self.h_order])]
         self.Xp = self.X[self.A]
         v = u[tau, 1:].squeeze()
         #  v is (N,) if du=1, (N,d) otherwise
-        self.X = self.fk.Gamma(self.t, self.Xp, v)
         self.reset_weights()
+        self.X = self.fk.Gamma(self.t, self.Xp, v)
 
     def compute_summaries(self):
         if self.t > 0:
             prec_log_mean_w = self.log_mean_w
-        self.log_mean_w = rs.log_mean_exp(self.wgts.lw)
+        self.log_mean_w = self.wgts.log_mean
         if self.t == 0 or self.rs_flag:
             self.loglt = self.log_mean_w
         else:
@@ -443,7 +444,6 @@ def _identity(x):
 def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
     """Run SMC algorithms in parallel, for different combinations of parameters.
 
-
     `multiSMC` relies on the `multiplexer` utility, and obeys the same logic.
     A basic usage is::
 
@@ -452,7 +452,9 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
     This runs the same SMC algorithm 20 times, using all available CPU cores.
     The output, ``results``, is a list of 20 dictionaries; a given dict corresponds
     to a single run, and contains the following (key, value) pairs:
+
         + ``'run'``: a run identifier (a number between 0 and nruns-1)
+
         + ``'output'``: the corresponding SMC object (once method run was completed)
 
     Since a `SMC` object may take a lot of space in memory (especially when

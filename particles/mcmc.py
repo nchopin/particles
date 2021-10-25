@@ -7,9 +7,13 @@ Overview
 ========
 
 This module contains various classes that implement MCMC samplers:
+
     * `MCMC`: the base class for all MCMC samplers;
+
     * `GenericRWHM`: base class for random-walk Hastings-Metropolis;
+
     * `GenericGibbs`: base class for Gibbs samplers;
+
     * `PMMH`, `ParticleGibbs`: base classes for the PMCMC (particle MCMC
       algorithms) with the same name.
 
@@ -23,10 +27,13 @@ sampler::
                         adaptive=True)
     my_mcmc.run()
 
+
 Upon completion, object ``my_mcmc`` have an attribute called ``chain``, which
 is a `ThetaParticles` object (see module `smc_samplers`). In particular,
 ``my_mcmc.chain`` has the following attributes:
+
     * ``theta``: a structured array that contains the 200 simulated parameters;
+
     * ``lpost``: an array that contains the log-posterior density at these 200
       parameters.
 
@@ -181,13 +188,13 @@ class GenericRWHM(MCMC):
             number of MCMC iterations
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
-        theta0: a structured array of size=1
+        theta0: structured array of size=1 or None
             starting point, simulated from the prior if set to None
         adaptive: True/False
             whether to use the adaptive version or not
         scale: positive scalar (default = 1.)
             in the adaptive case, covariance of the proposal is scale^2 times
-            (2.38 / d) times the current estimate of the target covariance
+            (2.38^2 / d) times the current estimate of the target covariance
         rw_cov: (d, d) array
             covariance matrix of the random walk proposal (set to I_d if None)
         """
@@ -197,11 +204,12 @@ class GenericRWHM(MCMC):
                         theta=np.empty(shape=niter, dtype=self.prior.dtype),
                         lpost=np.empty(shape=niter))
         self.nacc = 0
-        d = self.chain.dim
+        self.arr = ssp.view_2d_array(self.chain.theta)
+        self.dim = self.arr.shape[-1]
         if self.adaptive:
             optim_scale = 2.38 / np.sqrt(d)
             self.scale = scale * optim_scale
-            self.cov_tracker = VanishCovTracker(dim=d, Sigma0=rw_cov)
+            self.cov_tracker = VanishCovTracker(dim=self.dim, Sigma0=rw_cov)
             self.L = self.scale * self.cov_tracker.L
         else:
             if rw_cov is None:
@@ -212,6 +220,7 @@ class GenericRWHM(MCMC):
     def step0(self):
         th0 = self.prior.rvs(size=1) if self.theta0 is None else self.theta0
         self.prop = ssp.ThetaParticles(theta=th0, lpost=np.zeros(1))
+        self.prop_arr = ssp.view_2d_array(th0)
         self.compute_post()
         self.chain.copyto_at(0, self.prop, 0)
 
@@ -220,8 +229,8 @@ class GenericRWHM(MCMC):
         raise NotImplementedError
 
     def step(self, n):
-        z = stats.norm.rvs(size=self.chain.dim)
-        self.prop.arr[0] = self.chain.arr[n - 1] + np.dot(self.L, z)
+        z = stats.norm.rvs(size=self.dim)
+        self.prop_arr[0] = self.arr[n - 1] + np.dot(self.L, z)
         self.compute_post()
         lp_acc = self.prop.lpost[0] - self.chain.lpost[n - 1]
         if np.log(stats.uniform.rvs()) < lp_acc:  # accept
@@ -230,7 +239,7 @@ class GenericRWHM(MCMC):
         else:  # reject
             self.chain.copyto_at(n, self.chain, n - 1)
         if self.adaptive:
-            self.cov_tracker.update(self.chain.arr[n])
+            self.cov_tracker.update(self.arr[n])
             self.L = self.scale * self.cov_tracker.L
 
     @property

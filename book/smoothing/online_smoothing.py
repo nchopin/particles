@@ -12,15 +12,10 @@ as in first example in Chopin and Singh (2014, Bernoulli)
 More precisely, we compare different smoothing algorithms for approximating
 the smoothing expectation of additive function phit, defined as
 phi_t(x_0:t) = sum_{s=0}^t psi_s(x_{s-1},x_s)
-see below for a definition of psi_s
+see below for a definition of psi_s.
 
 See Chapter 11 (smoothing) for more details; in particular Figures 11.2 and
 11.3 which were produced by this script.
-
-Warnings:
-    * takes about 20min to complete. 
-    * if multiprocessing does not work on your machine (see installation notes)
-    try to set option nprocs to 1 (line 95)
 
 """
 

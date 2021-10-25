@@ -48,7 +48,7 @@ Gaussian.)
 
 To define a univariate linear Gaussian model, you may want to use instead the
 more conveniently parametrised class `LinearGauss` (which is a sub-class of
-``MVLinearGauss`)::
+``MVLinearGauss``)::
 
     ssm = LinearGauss(rho=0.3, sigX=1., sigY=.2, sig0=1.)
 

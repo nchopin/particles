@@ -1,5 +1,5 @@
 **smc_samplers**
-********
+****************
 
 .. automodule:: particles.smc_samplers
 
@@ -13,9 +13,10 @@ Module summary
 
     StaticModel
     ThetaParticles
-    MetroParticles
-    FKSMCsampler
     IBIS
-    Tempering
+    TemperingBridge
     AdaptiveTempering
     SMC2
+    ArrayMCMC
+    MCMCSequence
+    MCMCSequenceWF
