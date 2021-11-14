@@ -207,13 +207,13 @@ class GenericRWHM(MCMC):
         self.arr = ssp.view_2d_array(self.chain.theta)
         self.dim = self.arr.shape[-1]
         if self.adaptive:
-            optim_scale = 2.38 / np.sqrt(d)
+            optim_scale = 2.38 / np.sqrt(self.dim)
             self.scale = scale * optim_scale
             self.cov_tracker = VanishCovTracker(dim=self.dim, Sigma0=rw_cov)
             self.L = self.scale * self.cov_tracker.L
         else:
             if rw_cov is None:
-                self.L = np.eye(d)
+                self.L = np.eye(self.dim)
             else:
                 self.L = cholesky(rw_cov, lower=True)
 
