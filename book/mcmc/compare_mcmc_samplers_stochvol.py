@@ -125,10 +125,10 @@ class Gibbs_SV(SVmixin, mcmc.GenericGibbs):
 ##################
 
 class Marginal(mcmc.GenericGibbs):
-    def __init__(self, niter=10, verbose=0, theta0=None, ssm_cls=None, 
+    def __init__(self, niter=10, verbose=0, theta0=None, ssm_cls=None,
                  prior=None, data=None, store_x=False, delta=0.3, Cinv=None):
         mcmc.GenericGibbs.__init__(self, niter=niter, verbose=verbose,
-                                   theta0=theta0, ssm_cls=ssm_cls, 
+                                   theta0=theta0, ssm_cls=ssm_cls,
                                    prior=prior, data=data, store_x=store_x)
         self.delta = delta
         self.tod = 2. / delta  # tod = two over delta

@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 """
-Follow-up on: pmmh_lingauss.py 
+Follow-up on: pmmh_lingauss.py
 
 Shows an instance where PMMH may be biased because it fails to explore a
 "corner" of the parameter space, where the performance of the bootstrap filter
-deteriorates too much. 
+deteriorates too much.
 
-See the end of the first numerical experiment in Chapter 16 (Figure 16.7 and the 
-surrounding discussion). 
+See the end of the first numerical experiment in Chapter 16 (Figure 16.7 and the
+surrounding discussion).
 
 """
 from collections import OrderedDict
@@ -51,7 +51,7 @@ burnin = int(niter/ 10)
 algos = OrderedDict()
 rw_cov = (0.15)**2 * np.eye(3)
 
-# Basic Metropolis sampler 
+# Basic Metropolis sampler
 class StaticLGModel(smc_samplers.StaticModel):
     def loglik(self, theta, t=None): 
         # Note: for simplicity we ignore argument t here,
@@ -62,7 +62,7 @@ class StaticLGModel(smc_samplers.StaticModel):
             kf = kalman.Kalman(data=data, ssm=mod)
             kf.filter()
             ll[n] = np.sum(kf.logpyt)
-        return ll 
+        return ll
 
 sm = StaticLGModel(data=data, prior=prior)
 algos['mh'] = mcmc.BasicRWHM(model=sm, niter=niter, adaptive=False, 
@@ -74,7 +74,7 @@ algos['pmmh'] = mcmc.PMMH(ssm_cls=ReparamLinGauss, prior=prior, data=data,
 # Run the algorithms 
 ####################
 
-for alg_name, alg in algos.items(): 
+for alg_name, alg in algos.items():
     print('\nRunning ' + alg_name)
     alg.run()
     print('CPU time: %.2f min' % (alg.cpu_time / 60))
@@ -141,7 +141,7 @@ for i, param in enumerate(dict_prior.keys()):
     plt.subplot(2, 2, i + 1)
     for alg_name, alg in algos.items():
         if not isinstance(alg, particles.SMC):
-            plt.plot(acf(alg.chain.theta[param][burnin:], nlags=nlags),
+            plt.plot(acf(alg.chain.theta[param][burnin:], nlags=nlags, fft=True),
                      label=alg_name)
             plt.title(param)
 plt.legend()
