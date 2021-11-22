@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" 
+"""
 Compare performance of SMC and SQMC on the popular toy example of Gordon et
-al (1993). 
+al (1993).
 
-For more details, see the numerical section of Chapter 13 (SQMC) of the book. 
+For more details, see the numerical section of Chapter 13 (SQMC) of the book;
+in particular Figure 13.4.
 
 """
 
 from __future__ import division, print_function
 
-from matplotlib import pyplot as plt 
+from matplotlib import pyplot as plt
 import numpy as np
 from scipy import stats
 
@@ -33,14 +34,14 @@ if __name__ == "__main__":
     results = particles.multiSMC(fk=fk, qmc={'smc': False, 'sqmc': True}, N=Ns,
                                  collect=[Moments], nruns=200, nprocs=0,
                                  out_func=of)
-    drez = {'smc': [r for r in results if r['qmc'] == 'smc'], 
+    drez = {'smc': [r for r in results if r['qmc'] == 'smc'],
             'sqmc': [r for r in results if r['qmc'] == 'sqmc']
            }
 
     # Plots
     # =====
     savefigs = True  # False if you don't want to save plots as pdfs
-    plt.rc('text', usetex=True)  # to force tex rendering 
+    plt.rc('text', usetex=True)  # to force tex rendering
     plt.style.use('ggplot')
 
     plt.figure()
@@ -56,7 +57,7 @@ if __name__ == "__main__":
     plt.xlabel(r'$N$')
     plt.ylabel('var log-likelihood')
     if savefigs:
-        plt.savefig('sqmc_Gordon_var_vs_N_loglik.pdf') 
+        plt.savefig('sqmc_Gordon_var_vs_N_loglik.pdf')
 
     plt.figure()
     gains = {}
@@ -74,6 +75,6 @@ if __name__ == "__main__":
     plt.yscale('log')
     plt.legend(loc=1)
     if savefigs:
-        plt.savefig('sqmc_Gordon_gain_vs_t.pdf') 
+        plt.savefig('sqmc_Gordon_gain_vs_t.pdf')
 
     plt.show()

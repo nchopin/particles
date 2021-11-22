@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Compare MCMC samplers to sample from the smoothing distribution of a basic
-stochastic volatility model; see the numerical example at the end of Chapter 14
+stochastic volatility model; see the numerical example at the end of Chapter 15
 (MCMC).
 
 Considered algorithms are:

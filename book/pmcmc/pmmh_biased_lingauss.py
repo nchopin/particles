@@ -15,7 +15,7 @@ surrounding discussion).
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 import numpy as np
-import numpy.random as random 
+import numpy.random as random
 import pandas
 import seaborn as sb
 from scipy import stats
@@ -27,14 +27,14 @@ from particles import kalman
 from particles import mcmc
 from particles import smc_samplers
 
-# prior 
+# prior
 dict_prior = {'varX': dists.Gamma(a=.5, b=1.),
               'varY': dists.Gamma(a=.5, b=.1),
               'rho':dists.Uniform(a=-1., b=1.)
              }
 prior = dists.StructDist(dict_prior)
 
-# State-space model 
+# State-space model
 class ReparamLinGauss(kalman.LinearGauss):
     def __init__(self, varX=1., varY=1., rho=0.):
         sigmaY = np.sqrt(varY) if varY > 0. else 0.
@@ -43,7 +43,7 @@ class ReparamLinGauss(kalman.LinearGauss):
         # Note: We take X_0 ~ N(0, sigmaX^2) so that Gibbs step is tractable
         kalman.LinearGauss.__init__(self, sigmaX=sigmaX, sigmaY=sigmaY, rho=rho,
                                     sigma0=sigma0)
- 
+
 data = np.loadtxt('./simulated_linGauss_T100_varX1_varY.04_rho.9.txt')
 
 niter = 10 ** 5
@@ -53,11 +53,11 @@ rw_cov = (0.15)**2 * np.eye(3)
 
 # Basic Metropolis sampler
 class StaticLGModel(smc_samplers.StaticModel):
-    def loglik(self, theta, t=None): 
+    def loglik(self, theta, t=None):
         # Note: for simplicity we ignore argument t here,
         # and compute the full log-likelihood
         ll = np.zeros(theta.shape[0])
-        for n, th in enumerate(theta): 
+        for n, th in enumerate(theta):
             mod = ReparamLinGauss(**smc_samplers.rec_to_dict(th))
             kf = kalman.Kalman(data=data, ssm=mod)
             kf.filter()
@@ -65,13 +65,13 @@ class StaticLGModel(smc_samplers.StaticModel):
         return ll
 
 sm = StaticLGModel(data=data, prior=prior)
-algos['mh'] = mcmc.BasicRWHM(model=sm, niter=niter, adaptive=False, 
+algos['mh'] = mcmc.BasicRWHM(model=sm, niter=niter, adaptive=False,
                              rw_cov=rw_cov, verbose=10)
 
 algos['pmmh'] = mcmc.PMMH(ssm_cls=ReparamLinGauss, prior=prior, data=data,
-                          Nx=100, niter=niter, adaptive=False, rw_cov=rw_cov, 
+                          Nx=100, niter=niter, adaptive=False, rw_cov=rw_cov,
                           verbose=10)
-# Run the algorithms 
+# Run the algorithms
 ####################
 
 for alg_name, alg in algos.items():
@@ -86,9 +86,9 @@ savefigs = True  # False if you don't want to save plots as pdfs
 
 # compare marginals of varY
 plt.figure()
-plt.hist(algos['mh'].chain.theta['varY'][burnin:], 35, alpha=0.7, density=True, 
+plt.hist(algos['mh'].chain.theta['varY'][burnin:], 35, alpha=0.7, density=True,
          histtype='stepfilled', color='black', label='mh', range=(0., .4))
-plt.hist(algos['pmmh'].chain.theta['varY'][burnin:], 35, alpha=0.7, density=True, 
+plt.hist(algos['pmmh'].chain.theta['varY'][burnin:], 35, alpha=0.7, density=True,
          histtype='stepfilled', color='gray', label='pmmh-100', range=(0., .4))
 plt.xlabel(r'$\sigma_Y^2$')
 plt.legend()
@@ -99,7 +99,7 @@ if savefigs:
 # compare all the marginals
 plt.figure()
 for i, param in enumerate(dict_prior.keys()):
-    plt.subplot(2, 2, i + 1)    
+    plt.subplot(2, 2, i + 1)
     for alg_name, alg in algos.items():
         if isinstance(alg, particles.SMC):
             w, par = alg.W, alg.X.theta[param]
@@ -147,4 +147,3 @@ for i, param in enumerate(dict_prior.keys()):
 plt.legend()
 
 plt.show()
-

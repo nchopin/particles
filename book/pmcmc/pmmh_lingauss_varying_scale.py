@@ -5,7 +5,7 @@
 
 Follow-up on: pmmh_lingauss.py
 
-This script generates Figure 15.3 in the book, which compares performance
+This script generates Figure 16.3 in the book, which compares performance
 of PMMH for N=100 and different random walk scales, for a linear Gaussian
 example.
 
