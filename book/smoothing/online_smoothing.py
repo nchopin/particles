@@ -14,8 +14,8 @@ the smoothing expectation of additive function phit, defined as
 phi_t(x_0:t) = sum_{s=0}^t psi_s(x_{s-1},x_s)
 see below for a definition of psi_s.
 
-See Chapter 11 (smoothing) for more details; in particular Figures 11.2 and
-11.3 which were produced by this script.
+See Chapter 12 (smoothing) for more details; in particular Figures 12.2 and
+12.3 which were produced by this script.
 
 """
 

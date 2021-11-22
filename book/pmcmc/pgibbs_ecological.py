@@ -3,7 +3,7 @@
 
 """
 Particle Gibbs (with or without the backward step) for the Theta-logistic
-model (second numerical example in Chapter 16 on PMCMC).
+model (2nd numerical example in Chapter 16 on PMCMC, Figures 16.8 to 16.10).
 """
 
 from __future__ import division, print_function
@@ -219,6 +219,6 @@ for i, p in enumerate(list(dict_prior.keys()) + ['x_0']):
         plt.legend()
 plt.tight_layout()
 if savefigs:
-    plt.savefig('ecological_acfs.pdf')  # Figure 16.9
+    plt.savefig('ecological_acfs.pdf')  # Figure 16.9
 
 plt.show()
