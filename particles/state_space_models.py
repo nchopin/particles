@@ -590,7 +590,7 @@ class DiscreteCox(StateSpaceModel):
 
     .. math::
         Y_t | X_t=x_t   & \sim Poisson(e^{x_t}) \\
-        X_t             & = \mu + \phi(X_{t-1}-\mu) + U_t,   U_t ~ N(0,1) \\
+        X_t             & = \mu + \phi(X_{t-1}-\mu) + U_t,   U_t ~ N(0, sigma^2) \\
         X_0             & \sim N(\mu, \sigma^2/(1-\phi**2))
     """
     default_params = {'mu': 0., 'sigma': 1., 'phi': 0.95}
