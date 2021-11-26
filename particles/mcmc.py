@@ -121,7 +121,7 @@ class MCMC(object):
         if hasattr(self, 'nacc') and n > 0:
             msg += ', acc. rate=%.3f' % (self.nacc / n)
         for p in params:
-            msg += ', %s=%.3f' % (p, self.chain.theta[p][n])
+            msg += ', %s=%s' % (p, self.chain.theta[p][n])
         print(msg)
 
     @utils.timer
