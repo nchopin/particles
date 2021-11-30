@@ -14,10 +14,10 @@ with open('README.md') as f:
     long_description = f.read()
 
 METADATA = dict(
-    name=NAME, 
-    version='0.2', 
+    name=NAME,
+    version='0.3',
     url='http://github.com/nchopin/particles/',
-    license='MIT', 
+    license='MIT',
     author='Nicolas Chopin',
     install_requires=['numpy>=1.18',
                       'scipy>=1.7',
@@ -25,10 +25,10 @@ METADATA = dict(
                       'joblib'
                       ],
     author_email='nicolas.chopin@ensae.fr',
-    description=DESCRIPTION, 
+    description=DESCRIPTION,
     long_description = long_description,
     long_description_content_type="text/markdown",
-    packages=[NAME], 
+    packages=[NAME],
     include_package_data=True,
     platforms='any',
     classifiers=[
