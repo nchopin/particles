@@ -718,12 +718,12 @@ class MvNormal(ProbDist):
     cov: (d, d) ndarray
         covariance matrix (default: identity, dimension determined by loc)
 
-    .. note::
+    Notes
+    -----
     The dimension d is determined either by argument cov (in case it is a dxd 
     array), or by argument loc (in case cov is None). In the latter case, the 
     covariance matrix is set to the identity matrix. 
 
-    .. note::
     If scale is set to 1. (the default value), we use the standard 
     parametrisation of a Gaussian. More generally, the following line::
 
@@ -814,7 +814,8 @@ class MvNormal(ProbDist):
         Sigma: (d, d) ndarray
             covariance matrix in the model (default: identity matrix)
 
-        .. note::
+        Notes
+        -----
         Scale must be set to 1.
         """
         if self.scale != 1.:
