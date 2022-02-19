@@ -716,16 +716,17 @@ class MvNormal(ProbDist):
     scale: ndarray
         scale parameter (default: 1.)
     cov: (d, d) ndarray
-        covariance matrix (default: identity, dimension determined by loc)
+        covariance matrix (default: identity, with dim determined by loc)
 
     Notes
     -----
-    The dimension d is determined either by argument cov (in case it is a dxd 
-    array), or by argument loc (in case cov is None). In the latter case, the 
-    covariance matrix is set to the identity matrix. 
+    The dimension d is determined either by argument ``cov`` (if it's a dxd 
+    array), or by argument loc (if ``cov`` is not specified). In the latter 
+    case, the covariance matrix is set to the identity matrix. 
 
-    If scale is set to 1. (the default value), we use the standard 
-    parametrisation of a Gaussian. More generally, the following line::
+    If ``scale`` is set to ``1.`` (default value), we use the standard 
+    parametrisation of a Gaussian, with mean ``loc`` and covariance 
+    matrix ``cov``. Otherwise::
 
         x = dists.MvNormal(loc=m, scale=s, cov=Sigma).rvs(size=30)
 
@@ -734,19 +735,14 @@ class MvNormal(ProbDist):
         x = m + s * dists.MvNormal(cov=Sigma).rvs(size=30)
 
     The idea is that they are many cases when we may want to pass
-    varying means and scales (but a fixed correlation matrix).
+    varying means and scales (but a fixed correlation matrix). Note that
+    ``cov`` does not need to be a correlation matrix; e.g.::
 
-    dx (dimension of vectors x) is determined by matrix cov; for rvs,
-    size must be (N, ), otherwise an error is raised.
+        MvNormal(loc=m, scale=s, cov=C)
 
-    Notes:
-    * if du<dx, fill the remaining dimensions by location
-        (i.e. scale should be =0.)
-    * cov does not need to be a correlation matrix; more generally
-    > mvnorm(loc=x, scale=s, cor=C)
-    correspond to N(m,diag(s)*C*diag(s))
+    correspond to N(m, diag(s)*C*diag(s))
 
-    In addition, note that x and s may be (N, d) vectors;
+    In addition, note that m and s may be (N, d) vectors;
     i.e for each n=1...N we have a different mean, and a different scale.
     """
 
