@@ -171,6 +171,9 @@ err_msg_missing_cst = """
     p(x_t|x_{t-1}) <= C_t
     This is required for smoothing algorithms based on rejection
     """
+err_msg_missing_policy = """
+    State-space model %s is missing method policy (a dictionnary) for controlled SMC, specify a  policy dictionnary
+    """
 
 class StateSpaceModel(object):
     """Base class for state-space models.
@@ -260,7 +263,27 @@ class StateSpaceModel(object):
             data
         """
         raise NotImplementedError(self._error_msg('proposal'))
-
+    
+    @property  # TODO: Policy should return a matrix ! Discuss how policy shoulb be incorporated  
+    def policy(self):  
+        """policy :
+        Coefficients specifying policy 
+        policy should be exponential quadratic 
+        log(policy(t, xp, x)) =  -[(A_t x,x) + (B_t,x) + c_t] + F(x_p); where  A is a matrix dxd, b a vector, c scalar 
+        return  the list [At, Bt, Ct]
+        A_t : a matrix
+        B_t  : a vector 
+        C_t  : contant at time t 
+        F depend only on xp
+        """
+        raise NotImplementedError(err_msg_missing_policy % self.__class__.__name__)
+        
+    def get_policy(self):
+       return self.policy
+    
+    def set_policy(self, newPolicy):
+        self.policy = newPolicy
+        
     def upper_bound_log_pt(self, t):
         """Upper bound for log of transition density.
 
