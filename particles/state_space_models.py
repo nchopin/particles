@@ -104,10 +104,10 @@ an ancestor X_{t-1})::
         def proposal0(self, data):
             return dists.Normal(scale = self.sigma)
         def proposal(t, xp, data):  # a silly proposal
-            return dists.Normal(loc=rho * xp + data[t], scale=self.sigma)
+            return dists.Normal(loc = rho * xp + data[t], scale=self.sigma)
 
     my_second_ssm = StochVol_with_prop(sigma=0.3)
-    my_better_fk_model = ssms.GuidedPF(ssm=my_second_ssm, data=y)
+    my_better_fk_model = ssms.Guided(ssm = my_second_ssm, data=y)
     # then run a SMC as above
 
 Voilà! You have now implemented a guided filter.
@@ -159,7 +159,6 @@ Class                     Comments
 """
 
 from __future__ import division, print_function
-
 import numpy as np
 
 import particles
@@ -172,7 +171,7 @@ err_msg_missing_cst = """
     This is required for smoothing algorithms based on rejection
     """
 err_msg_missing_policy = """
-    State-space model %s is missing method policy for controlled SMC, specify a policy
+    State-space model %s is missing method policy (a dictionnary) for controlled SMC, specify a  policy dictionnary
     """
 
 class StateSpaceModel(object):
@@ -220,7 +219,7 @@ class StateSpaceModel(object):
         if hasattr(self, 'default_params'):
             self.__dict__.update(self.default_params)
         self.__dict__.update(kwargs)
-
+        
     def _error_msg(self, method):
         return ('method ' + method + ' not implemented in class%s' %
                 self.__class__.__name__)
@@ -263,17 +262,17 @@ class StateSpaceModel(object):
             data
         """
         raise NotImplementedError(self._error_msg('proposal'))
-        
-    @property  # TODO: Policy should return a matrix ! Discuss how policy shoulb be incorporated  
+    
+    @property
     def policy(self):  
         """policy :
-        Coefficients specifying policy. 
-        Policy should be exponential quadratic
-        log(policy(t, xp, x)) =  -[(At x,x) + (Bt,x) + Ct] + F(x_p); where  A is a matrix dxd, b a vector, c scalar 
+        Coefficients specifying policy 
+        policy should be exponential quadratic 
+        log(policy(t, xp, x)) =  -[(A_t x,x) + (B_t,x) + C_t]; where  A is a matrix dxd, b a vector, c scalar 
         return  the list [At, Bt, Ct]
-        At : a matrix
-        Bt : a vector   
-        Ct : Normally for every t, we have a different coefficient
+        A_t is a matrix
+        Bt is a vector of dimension of the 
+        Ct is !!
         """
         raise NotImplementedError(err_msg_missing_policy % self.__class__.__name__)
         
@@ -282,8 +281,8 @@ class StateSpaceModel(object):
     
     def set_policy(self, newPolicy):
         self.policy = newPolicy
+    
 
-        
     def upper_bound_log_pt(self, t):
         """Upper bound for log of transition density.
 
@@ -444,7 +443,7 @@ class AuxiliaryPF(GuidedPF, APFMixin):
     """
 
     pass
-
+ 
 
 class AuxiliaryBootstrap(Bootstrap, APFMixin):
     """Base class for auxiliary bootstrap particle filters
@@ -681,3 +680,4 @@ class ThetaLogistic(StateSpaceModel):
 
     def proposal(self, t, xp, data):
         return self.PX(t, xp).posterior(data[t], sigma=self.sigmaY)
+    

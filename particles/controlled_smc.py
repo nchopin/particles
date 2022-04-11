@@ -13,10 +13,9 @@ This module defines:
 
     1. the `ControlledSMC` class, which lets you define a controlled sequential Monte Carlo model
        as a Python object;
+       
+    2. `TwistedFK` class that define a twisted Feynman-Kac models
 
-    3. `TwistedSMC` class that define a kind of Bootstrap Feynman-Kac models
-
-    2. `FeynmanKac` classes based on the previous classes
 
 The recommended import is::
 
@@ -24,18 +23,29 @@ The recommended import is::
 
 For more details on ControlledSMC models and their properties, see the article: https://arxiv.org/abs/1708.08396
 
-TODO: Defining a ControlledSMC model
+Steps to define a ControlledSMC model 
 ==============================
-
+Step 1 : - Define your own model (for example a state space model [See basic tutorial lesson]) 
+           This model should be an ssm object. For example ssm = stovolModel() 
+         - Define your policy functions. 
+         
+Step 2 :  Create the ControlledSMC object as follow:
+ 
+     myCtrlSMC = cSMC.ControlledSMC(ssm=stovolModel, data = data, iterations = 5)
+       ssm = your original defined model 
+       data: is your data
+       iterations = fixed at your convenience. 
+       
+Example: 
+--------
 Consider the following (simplified) stochastic volatility model:
-
 .. math::
 
      Y_t|X_t=x_t         &\sim N(0, e^{x_t})                   \\
      X_t|X_{t-1}=x_{t-1} &\sim N(0, \rho x_{t-1})             \\
      X_0                 &\sim N(0, \sigma^2 / (1 - \rho^2))
 
-To define this particular model, we sub-class `StateSpaceModel` as follows::
+To define this particular model, we sub-class from `ControlledSMC` as follows::
 
     import numpy as np
     from particles import distributions as dists
@@ -52,34 +62,15 @@ To define this particular model, we sub-class `StateSpaceModel` as follows::
 
 Then we define a particular object (model) by instantiating this class::
 
-    my_stoch_vol_model = SimplifiedStochVol(sigma=0.3, rho=0.9)
+    stovolModel = SimplifiedStochVol(sigma=0.3, rho=0.9)
+
+    myCtrlSMC = cSMC.ControlledSMC(ssm=stovolModel, data = data, iterations = 10)
+
 
 Hopefully, the code above is fairly transparent, but here are some noteworthy
 details:
-
-    * probability distributions are defined through `ProbDist` objects, which
-      are defined in module `distributions`. Most basic probability
-      distributions are defined there;  see module `distributions` for more details.
-    * The class above actually defines a **parametric** class of models; in
-      particular,  ``self.sigma`` and ``self.rho`` are **attributes** of
-      this class that are set when we define object `my_stoch_vol_model`.
-      Default values for these parameters may be defined in a dictionary called
-      ``default_parameters``. When this dictionary is defined, any un-defined
-      parameter will be replaced by its default value::
-
-          default_stoch_vol_model = SimplifiedStochVol()  # sigma=1., rho=0.8
-    * There is no need to define a ``__init__()`` method, as it is already
-      defined by the parent class. (This parent ``__init__()`` simply takes
-      care of the default parameters, and may be overrided if needed.)
-
-Now that our state-space model is properly defined, what can we do with it?
-First, we may simulate states and data from it::
-
-    x, y = my_stoch_vol_model.simulate(20)
-
-This generates two lists of length 20: a list of states, X_0, ..., X_{19} and
-a list of observations (data-points), Y_0, ..., Y_{19}.
-
+ 
+ 
 TODO: Associated Feynman-Kac models
 =============================
 
@@ -113,94 +104,50 @@ an ancestor X_{t-1})::
 
 Voilà! You have now implemented a guided filter.
 
-Of course, the proposal distribution above does not make much sense; we use it
-to illustrate how proposals may be defined. Note in particular that it depends
-on ``data``, an object that represents the complete dataset. Hence the proposal
-kernel at time ``t`` may depend on y_t but also y_{t-1}, or any other
-datapoint.
-
-For auxiliary particle filters (APF), one must in addition specify auxiliary
-functions, that is the (log of) functions :math:`\eta_t` that modify the
-resampling probabilities (see Section 10.3.3 in the book)::
-
-    class StochVol_with_prop_and_aux_func(StochVol_with_prop):
-        def logeta(self, t, x, data):
-            "Log of auxiliary function eta_t at time t"
-            return -(x-data[t])**2
-
-    my_third_ssm = StochVol_with_prop_and_aux_func()
-    apf_fk_model = ssms.AuxiliaryPF(ssm=my_third_ssm, data=y)
-
-Again, this particular choice does not make much sense, and is just given to
-show how to define an auxiliary function.
-
-Already implemented the module
-======================================
-
-This module implements a few basic state-space models that are often used as
-numerical examples:
-
-===================       =====================================================
-Class                     Comments
-===================       =====================================================
-`NeuroScience`
-`StochasticVol`
-
-===================       =====================================================
-
 .. note::
-    In C-SMC, proposal and weights are changed by the twisted functions.
-    The policy function Psi (in Twisted SMC) is   an attribute of StateSpaceModel.
-    The user also need to define the proposal function in this class as well.
-    This proposal shoub be overidden dynamically with ADP !
-
+    The policy function Psi (in Twisted SMC) is  an attribute of StateSpaceModel.
 """
-
 from __future__ import division, print_function
-import state_space_models as modelssm
+
+from matplotlib.pyplot import hist
+import state_space_models as ssm
 import numpy as np
-from   collectors import Moments
+import core as core
+import distributions as dists
+from collectors import Moments
 import utils
 import kalman as kalman
-import particles
-from particles import distributions as dists
+from matplotlib import pyplot as plt
+from sklearn.linear_model import Ridge
 
-err_msg_missing_cst = """
-    State-space model %s is missing method upper_bound_log_pt, which provides
-    log of constant C_t, such that
-    p(x_t|x_{t-1}) <= C_t
-    This is required for smoothing algorithms based on rejection
-    """
+
 err_msg_missing_policy = """
     State-space model %s is missing method policy for controlled SMC, specify a policy
     """
 
-"""
+""" 
 TODO:
 =====
- - code is failing in resampling module in the function wmean_and_var() or 2D.
-                      m = np.average(x, weights=W, axis=0)
-                      m2 = np.average(x**2, weights=W, axis=0) # x**2
-                      v = m2 - m**2
-                      return {'mean': m, 'var': v}
 
- - Policy input shoud be refined 
- - Management of Policy function interaction.
- - Reshape def run(self) in ControlledSMC class.
-
+ - Argument ssm must implement method: Policy function (Later on this will be taken out).
+ - 
+  
  QUESTIONS
  ---------
- -Observation space need to be updated !
+ -
  
+ DISCUSION
+ ---------
+ - moove some functions to utils.
+ - reshape the classes and simplify it
+ - Make controlled SMC algo iterable  
+  
 """
 
-# Define the ψ-twisted model || ψ-observation space, ψ-Proposal0, ψ-Proposal, G-ψ ?
-class TwistedSMC(modelssm.Bootstrap):
-    """Twisted SMC for a given state-space model.
-    TODO:
-     matmul is not working for 1D. Adjust this.
-     define a template class to accomodate 1D and nD.
 
+class TwistedFK(ssm.Bootstrap):
+
+    """Twisted SMC for a given state-space model.
     Parameters
     ----------
     ssm: StateSpaceModel object
@@ -216,157 +163,179 @@ class TwistedSMC(modelssm.Bootstrap):
 
     Note
     ----
-    Argument ssm must implement methods `proposal0` and `proposal` and define a Policy function.
+    Argument ssm must implement methods a Policy function (Later on this will be taken out).
     """
+    def M0(self, N):  
+        '''  Initial-Distribution  '''
+        return self.M(0, self.ssm.PX0().rvs(size=N))
 
-    def M0(self, N):  # TODO:   t = 0 is not the right thing to do.
-        return self.M(0, self.ssm.proposal0(self.data).rvs(size=N))
+    def M(self, t, xp): 
+        '''  ψ-Distribution of X_t given X_{t-1}=xp   '''
+        it = t*np.ones(xp.shape[0]).astype(int)
+        if self.ssm.PX(t, xp).dim == 1:
+            loop = [self.PsiProposal (it[i], xp[i]) for i in range (0, len(it)) ]  
+            transition = np.array(loop).reshape(xp.shape[0])  
+        else:   
+            loop = [self.PsiProposal (int(it[i]), xp[i,:]) for i in range (0, len(it)) ]
+            transition = np.array(loop).reshape(xp.shape[0], xp.shape[1])
+       
+        return transition
+ 
 
-    def M(self, t, xp):
-        At, Bt, Ct = self.ssm.policy()
-        Mean = self.ssm.proposal(t, xp, self.data).loc
-        dimension = self.ssm.proposal(t, xp, self.data).dim
-
-        if dimension == 1:
-            Var = self.ssm.proposal(t, xp, self.data).scale
-            VarInv = 1.00 / Var
-            V = np.dot(VarInv, Mean) - Bt
-            Alpha = VarInv + 2*At
-            AlphaInv = 1.00 / Alpha
+    def PsiProposal(self, t, xp): # M-ψ-Proposal  
+        
+        myPolicy = self.ssm.policy
+        At, Bt, Ct =   myPolicy[t] if type(myPolicy) is np.ndarray else  self.ssm.policy(t)
+ 
+        dim = self.ssm.PX(t, xp).dim  
+        
+        if t == 0: 
+            Mean = self.ssm.PX0().loc  
+            Var = self.ssm.PX0().cov if dim > 1 else self.ssm.PX0().scale**2
         else:
-            Var = self.ssm.proposal(t, xp, self.data).cov
-            VarInv = np.linalg.inv(Var)
-            V = np.dot(VarInv, Mean) - Bt
-            Alpha = VarInv + 2*At
-            AlphaInv = np.linalg.inv(Alpha)
+            Mean =  self.ssm.PX(t, xp).loc 
+            Var = self.ssm.PX(t, xp).cov if dim > 1 else self.ssm.PX(t, xp).scale**2 
+        
+        VarInv = np.linalg.inv(Var)  if dim > 1 else  1.00 / Var
+        V = np.dot(VarInv, Mean) - Bt 
+        Alpha =  np.linalg.inv(VarInv + 2*At) if dim > 1 else 1.0/(VarInv + 2*At)
+        mbar = np.dot(Alpha, V)  
 
-        mbar = np.dot(V, np.dot(VarInv, Mean) - Bt)
-
-        expo = 0.5 * self.Quadratic(self, AlphaInv,
-                                    np.zeros((dimension, 1)), - Ct, mbar)
-        if dimension == 1:
-            sqrtDet = np.sqrt(np.abs(Alpha)/np.abs(Var))
+        if dim == 1:
+            ProposalxPsiLaw = dists.Normal(loc=mbar, scale = np.sqrt(Alpha))  
         else:
-            sqrtDet = np.sqrt(np.linalg.det(Alpha)/np.linalg.det(Var))
+            ProposalxPsiLaw = dists.MvNormal(loc=mbar, scale = 1, cov =  Alpha)  
+            
+        return  ProposalxPsiLaw.rvs(size=1)
 
-        normalisation = self.Expectation(t, xp)
+    def logG(self, t, xp, x):  # Log Potentials    
 
-        if dimension == 1:
-            ProposalxPsi = dists.Normal(
-                mbar, (sqrtDet*expo/normalisation)**2*Alpha)
-        else:
-            ProposalxPsi = dists.MvNormal(
-                mbar, sqrtDet*expo/normalisation, Alpha)
-        # Proposal =  self.ssm.proposal(t, xp, self.data).rvs(size=xp.shape[0])
-        # psiFactor = 0.5 * self.Quadratic(At, Bt, Ct, x)
-        # return Proposal*psiFactor/self.Expectation(t, xp)
-        # return ProposalxPsi / normalisation
-        return ProposalxPsi
+        # retrieve policy from ssm model
+        myPolicy = self.ssm.policy
 
-    def logG(self, t, xp, x):
-        At, Bt, Ct = self.ssm.policy()
-        du = self.ssm.PX0().dim
+        At, Bt, Ct =   myPolicy[t] if type(myPolicy) is np.ndarray else  self.ssm.policy(t)
 
-        # Dimension adjustement
-        # Is breaking but something is happing in the code core.  Weights are appended !
-        if self.du == 1:
-            LogPolicy = self.Quadratic(self, At, Bt, Ct, x)  # TODO:   unsupported operand type(s) for ** or pow(): 'Normal' and 'int'
-        else:
-            LogPolicy = self.Quadratic(self, At, Bt.reshape(
-                self.du, 1), Ct.reshape(1, 1),  x[-1])  # TODO:  x[1]
-
-        LogNormalisation = np.log(self.Expectation(t, x[-1]))
-
-        #  TODO:
-        if t == 0:
-            return (self.ssm.PX0().logpdf(x)
-                    + self.ssm.proposal0(self.data).logpdf(x) + LogNormalisation - LogPolicy)
-        if t == self.T:
-            LogPotential = self.ssm.PY(t, xp, x).logpdf(
-                self.data[t])
+        # initialisation
+        LogPolicy = np.zeros(x.shape[0])
+        LogExpect =  np.zeros(x.shape[0])
+        LogForwardExpt =  np.zeros(x.shape[0])
+         
+        for v in range(x.shape[0]):
+            if self.du == 1:
+                LogPolicy[v] = -self.Quadratic( At, Bt, Ct, x[v])
+                if t != self.T:
+                   LogForwardExpt[v] = self.logCondExp(t+1, x[v])  
+                if t == 0:
+                   LogExpect[v] =  self.logCondExp(t, x[v])
+            else:  
+                LogPolicy[v] = - self.Quadratic(At, Bt.reshape(self.du, 1), Ct,  x[v])  
+                if t != self.T-1:
+                   LogForwardExpt[v] =  self.logCondExp(t+1, x[v]) 
+                if t == 0:
+                   LogExpect[v] =  self.logCondExp(t, x[v]) 
+                
+        if t == 0: 
+            LogNuPsiOnPolicy =  LogExpect - LogPolicy  
+            LogPotential = self.ssm.PY(t, xp, x).logpdf(self.data[t])  
+            LogForwardExp =  LogForwardExpt 
+            LogGPsi =  LogPotential + LogForwardExp + LogNuPsiOnPolicy  
+            return LogGPsi
+            
+        if t == self.T-1:
+            LogPotential = self.ssm.PY(t, xp, x).logpdf(self.data[t])  
+            LogGPsi = LogPotential - LogPolicy
             return LogPotential - LogPolicy
         else:
-            LogPotential = self.ssm.PY(t, xp, x).logpdf(
-                self.data[t])
-            return LogPotential + LogNormalisation - LogPolicy
+            LogForwardExp =  LogForwardExpt  
+            LogPotential = self.ssm.PY(t, xp, x).logpdf(self.data[t]) 
+            LogGPsi = LogPotential + LogForwardExpt - LogPolicy
+            return LogGPsi
+        
 
-    @staticmethod # TODO: unsupported operand type(s) for ** or pow(): 'Normal' and 'int'
-    def Quadratic(self, A, B, c, x):
-        if self.ssm.PX0().dim == 1:
-            return A*x**2 + B*x + c
-        else:
-            return np.sum(x * np.dot(A, np.transpose(x))) + np.sum(B*np.transpose(x)) + c
+    def logPolicy(self, t, xp, x, policy_t):
+        LogPolicy = np.ones(x.shape[0]) 
+        At = policy_t[0]
+        Bt = policy_t[1]
+        Ct = policy_t[2]
+        for v in range(x.shape[0]):
+            if self.du == 1:
+                LogPolicy[v] = -self.Quadratic(At, Bt, Ct, x[v])
+            else: 
+                LogPolicy[v] = -self.Quadratic(At, Bt.reshape(self.du, 1), Ct,  x[v]) 
+        return LogPolicy
 
-
-    def Expectation(self, t, xp): # \E[ψ(t, x, xp)| xp] = \E {\exp[(Ax,x)+ Bx + C] | xp}
-        """Conditional expectation with respect to the Markov kernel at time t
+    
+    def logCondExp(self, t, xp): 
+        # TODO: make the function  depends on policy !
+        
+        """ Log Conditional expectation with respect to the Markov kernel at time t
+        summary_ \E_M(ψ(Xp_t,X_t))
 
         Args:
             t (_type_): _description_
             xp (_type_): _description_
 
         Returns:
-            _type_: _description_
+           \E_M(ψ(Xp_t,X_t))
         """
-        At, Bt, Ct = self.ssm.policy()  # policy depends on (self, t, xp, x))
-        dimension =  self.du
-
-        # TODO:
-        if t == 0:
-            return xp  # This should be adjusted TODO:
-        if t == self.T:  # G_T/Psi_T
-            Mean = self.ssm.proposal(t, xp, self.data[t]).loc
-            Var = self.ssm.proposal(t, xp, self.data[t]).cov  
-            VarInverse = np.linalg.inv(Var)
-            V = np.dot(VarInverse, Mean) - Bt
-            Alpha = VarInverse + 2*At
-            Identity = np.identity(dim)
-            sqrtDet = np.sqrt(np.linalg.det(Identity + 2 * np.dot(Var, At)))
-            expo = self.Quadratic(Alpha, np.zeros((dimension, 1)), - Ct, V)
-
-            return np.exp(expo) / np.sqrt(sqrtDet)
+        dim = self.du
+        myPolicy = self.ssm.policy
+        
+        A , B , C  =   myPolicy[t-1] if type(myPolicy) is np.ndarray else  self.ssm.policy(t-1)
+       
+        if t == 0: 
+            Mean = self.ssm.PX0().loc  
+            Cov = self.ssm.PX0().cov if dim > 1 else self.ssm.PX0().scale**2
         else:
-            Mean = self.ssm.proposal(t, xp, self.data).loc 
-            if dimension == 1:
-                Var = self.ssm.proposal(t, xp, self.data).scale 
-            else:
-                Var = self.ssm.proposal(t, xp, self.data).cov  
+            Mean =  self.ssm.PX(t, xp).loc 
+            Cov = self.ssm.PX(t, xp).cov if dim > 1 else self.ssm.PX(t, xp).scale**2
+        
+        result = self.logCondFun(t, A, B, C, Mean, Cov)  
+          
+        return result
+    
+    @property
+    def isADP(self):
+        """Returns true if we perform an ADP"""
+        return 'ADP' in dir(self)
+    
+    @staticmethod
+    def Quadratic(A, B, c, x):
+        if type(x) is np.ndarray:  
+            result = np.sum(x * np.dot(A, np.transpose(x))) + np.sum(B*np.transpose(x)) + c
+        else:
+            result = A*x**2 + B*x + c
+        return  result  
+        
 
-            if dimension == 1:
-                VarInverse = 1.00/Var
-                V = VarInverse*Mean - Bt  # ! Mean can be a random variable
-                Identity = dimension
-                sqrtDet = np.sqrt(np.abs(Identity + 2 * Var * At))
-                Alpha = VarInverse + 2*At
-                expo = self.Quadratic(self, Alpha, np.zeros((dimension, 1)), - Ct, np.transpose(V))
-            else:
-                VarInverse = np.linalg.inv(Var)
-                V = np.dot(VarInverse, np.transpose(Mean)) - \
-                    (np.transpose(Bt)).reshape(dimension, 1)
-                Identity = np.identity(dimension)
-                sqrtDet = np.sqrt(np.linalg.det(
-                    Identity + 2 * np.dot(Var, At)))
-                Alpha = VarInverse + 2*At
+    def logCondFun(self, t, A, B, C, Mean, Cov):  
 
-                expo = self.Quadratic(self, Alpha, np.zeros(
-                    (dimension, 1)), - Ct.reshape(1, 1), np.transpose(V))
+        """Log conditional expectation function"""
 
-            return np.exp(expo) / sqrtDet
+        dim =  Cov.shape[0]  if  type(Cov) is np.ndarray else 1
+        Identity = np.identity(dim)
+        CovInv =  np.linalg.inv(Cov) if dim > 1 else 1.0/Cov
+        V =  np.dot(CovInv, Mean) - B
+        Alpha =  np.linalg.inv(CovInv + 2*A)  if dim > 1 else 1.0 /(CovInv + 2*A)
+        quadraV = 0.5*self.Quadratic(Alpha, np.zeros([dim, 1]), 0, np.transpose(V))
+        quadraGamaMean = - 0.5*self.Quadratic(CovInv, np.zeros([dim, 1]), 0, np.transpose(Mean))
+        
+        Det =   np.linalg.det(Identity + 2 * np.dot(Cov, A)) if dim > 1 else 1+2*Cov*A  
+        return quadraV + quadraGamaMean -0.5 * np.log(Det) - C
 
 
-class ControlledSMC(TwistedSMC):
+class ControlledSMC(TwistedFK):
 
-    """ Controlled SMC algorithm
-    Proposal distributions are determined by approximating the solution to an associated
-    optimal control problem using an iterative scheme = > You use APF where the proposal
-    is updated at every iteration.
-    Parameters + Inputs
-    -------------------
+    """ Controlled SMC class algorithm
+
+    Parameters + Inputs.
+    -------------------------------------------------------------
+    It is the same as of TwistedFK  +  iterations (number of iterations) to use for the controlled SMC
+     
     ssm: StateSpaceModel object
-        the considered state-space model  (-ssm with proposal and logEta(the psi)),
+        the considered state-space model (-ssm with proposal and logEta(the psi)),
     data: list-like
         the data
-
 
     Returns
     -------
@@ -375,92 +344,128 @@ class ControlledSMC(TwistedSMC):
         the Feynman-Kac representation of the  filter for the
         considered state-space model
 
-    Note
-    ----
-    In C-SMC, proposal and weights are changed by the twisted functions.
     """
 
-    def __init__(self, ssm=None, data=None):
-        self.ssm = ssm  # Argument ssm must implement methods `proposal0`, `proposal`
+    def __init__(self, ssm=None, data=None, iterations = None):
+        self.ssm = ssm   
         self.data = data
-        self.du = self.ssm.PX0().dim
+        self.iterations = 1
+        self.du = self.ssm.PX0().dim  
         self.policy = self.ssm.policy
-
-    @property
+        self.iter = 0
+        
+    @property   
     def T(self):
         return 0 if self.data is None else len(self.data)
 
     @property
     def isPolicyMissing(self):
         """Returns true if model parameter contains policy in the argument dictionary in ssm constructor"""
-        if (hasattr(self,self.ssm.policy) == False):
-          raise NotImplementedError(self._error_msg('missing policy'))
+        if (hasattr(self, self.ssm.policy) == False):  # if('policy' in dir(self) == False):
+            raise NotImplementedError(self._error_msg('missing policy'))
 
-
-    def run(self):  # make this iterator()
-        # Policy Initialisation
-        AO, BO, CO = self.ssm.policy()
-
-        # TODO: Dynamic SMC with update proposal via policy modulo coeffs A, B, C of Policy
-        for t in range(self.T):
-            # Run  Twisted SMC  for t different of T
-            fk_model = modelssm.TwistedSMC(self.ssm, self.data)
-            PsiSMC = particles.SMC(fk=fk_model, N=100, resampling='stratified',
-                              collect=[Moments()], store_history=True)
-            PsiSMC.run()
-            
-            # TODO: Look at the code and pick the right params
-            settings = {'N': 100, 'sample_trajectory': False, 'regularization': 1e-4}
-
-            # run ADP to refine previous policy
-            # add feed the right staffs from PsiSMC.run()
-            adp = self.RefinePsiEstimation(
-                fk_model, self.data, self.ssm.policy, PsiSMC.summaries, settings, inverse_temperature=0.0) # add feed the right staffs from PsiSMC.run()
-            """
-                model = ssm or any kind of model
-                observations = data
-                psi_smc = fk.run().results (derived from fk.run())
-                settings = parameters of the model you define yourself
-            """
-            # Construct refined policy (It is why we get/set policy), Use set function
-            refinedPolicy = self.ssm.policy() * adp['policy_refined'] # update A, B, C normally !
-            self.ssm.set_policy(self, refinedPolicy)
-
-            # Run ψ -twisted SMC method for t = T,
-            if t == self.T:
-                fk_model = modelssm.TwistedSMC(self.ssm, self.data)
-                PsiSMC = particles.SMC(fk=fk_model, N=100, resampling='stratified',
-                                  collect=[Moments()], store_history=True)
-                PsiSMC.run()
-
-            # return PsiSMC.result # Seems that PsiSMC is void :) as desire ! Smoothing, Filtering etc..
-        pass
-
-    # python compatibility
     def next(self):
-        return self.__next__()  #  Python 2 compatibility
-
+        return self.__next__()  
+ 
     def __iter__(self):
-        return self
+       return self
 
-    # Compute the Backward Filter
-    def RefinePsiEstimation(model, observations, policy, psi_smc, settings, inverse_temperature=1.0):
+    @utils.timer
+    def run(self):  # make this iterator()
+        for _ in self:
+           pass
+    
+    def generateIntialParticules(self):
+        N = len(self.data)
+        myPolicy = self.ssm.policy
+        policy_initial = np.array([[0.0 , 0.0, 0.0]  for t in range(self.T)])  
+
+        # Construct and run the Psi Model for initialisation to compute ADP to refine the policy
+        fk_model = TwistedFK(self.ssm, self.data)
+        PsiSMC = core.SMC(fk=fk_model, N=N, resampling='multinomial',
+                    collect=[Moments()], store_history=True)
+        PsiSMC.run()
+        
+        # TODO: Add new field to the FK object. 
+        self.hist = PsiSMC.hist 
+        self.policy = policy_initial
+        
+        
+    def generateParticulesWithADP(self):
+        settings = {'N': len(self.data), 'sample_trajectory': False,
+            'regularization': 1e-4}
+        # fk_model = self.hist
+        PsiSMC = self.hist
+        adp = self.ADP(self.data, self.policy, PsiSMC, settings) 
+        refinedPolicy =  adp['policy_refined'] 
+        self.ssm.set_policy(refinedPolicy)
+
+        # Run ψ -twisted SMC with refined policy
+        fk_model = TwistedFK(self.ssm, self.data)
+        fk_model.isADP == True
+        PsiSMC = core.SMC(fk=fk_model, N=len(self.data), resampling='multinomial',
+                            collect=[Moments()], store_history=True)
+        PsiSMC.run()
+        
+        # TODO: Add new field to the FK object. 
+        self.hist = PsiSMC.hist
+        self.policy =  refinedPolicy 
+
+          
+    def RunAll(self): #   def __next__(self):
+        # if self.done(self):
+        #     raise StopIteration
+        # if self.iterations == 1:
+            # intialisation
+            N = len(self.data)
+            myPolicy = self.ssm.policy
+            policy = np.array([myPolicy[t] if type(myPolicy) is np.ndarray else  self.ssm.policy(t)  for t in range(self.T)]) # this is the right one. 
+            policy = np.array([myPolicy[t] if type(myPolicy) is np.ndarray else  self.ssm.policy(t)  for t in range(self.T)]) # this is the right one. 
+            
+            policySSM = [policy for t in range(self.T+1)]
+            policySSM = [[0.0 , 0.0, 0.0]  for t in range(self.T+1)]
+            
+            
+            # Construct and run the Psi Model for initialisation 
+            fk_model = TwistedFK(self.ssm, self.data)
+            PsiSMC = core.SMC(fk=fk_model, N=N, resampling='multinomial',
+                                collect=[Moments()], store_history=True)
+            PsiSMC.run()
+            histDataPsiSMC = PsiSMC.hist   
+            settings = {'N': N, 'sample_trajectory': False,
+                        'regularization': 1e-4}
+        # else: 
+            for it  in range(self.iterations):
+                # run ADP  
+                adp = self.ADP(fk_model, self.data, policy, PsiSMC, settings)
+                # Construct refined policy
+                refinedPolicy =  adp['policy_refined'] 
+                self.ssm.set_policy(refinedPolicy)
+                TestRefinedPolicy = np.array(self.ssm.policy)
+                # Run ψ-twisted SMC with refined policy
+                fk_model = TwistedFK(self.ssm, self.data)
+                fk_model.isADP == True
+                PsiSMC = core.SMC(fk=fk_model, N=N, resampling='multinomial', collect=[Moments()], store_history=True)
+                PsiSMC.run()
+            return PsiSMC.hist
+ 
+    def ADP(self, observations, policy, psi_smc, settings):
         """
-        model = ssm or any kind of model
+        model = ssm or any kind of model 
         observations = data
         psi_smc = fk.run().results (derived from fk.run())
         settings = parameters of the model you define yourself
 
         Approximate dynamic programming to refine a policy.
 
-        In Python method overriding occurs by simply defining in the child class  a method with the same name of a method
-        in the parent class. When you  define a method in the object you make this latter able to satisfy that  method call,
+        In Python method overriding occurs by simply defining in the child class  a method with the same name of a method 
+        in the parent class. When you  define a method in the object you make this latter able to satisfy that  method call, 
         so the implementations of its ancestors do not come in  play.
 
         Parameters
         ----------
         model : controlledpsi_smc.models.LRR.ssm
-            A ssm class instance
+            A ssm class instance 
 
         observations : numpy.array (T+1, dim_y)
             Time series
@@ -470,8 +475,8 @@ class ControlledSMC(TwistedSMC):
                 'N' : int specifying number of particles
                 'sample_trajectory' : bool specifying whether a trajectory is to be sampled
 
-        policy : list of dicts of length T+1
-            Coefficients specifying policy
+        policy : list of dicts of length T+1 
+            Coefficients specifying policy 
 
         inverse_temperature : float
             The inverse temperature controls the annealing of the observation densities
@@ -481,81 +486,204 @@ class ControlledSMC(TwistedSMC):
         -------
         output : dict
             Algorithm output contain:
-            'policy_refined' : list of dicts of length T+1 containing coefficients specifying refined policy
-            'r_squared' : numpy.array (T+1,) containing coefficient of determination values
+            'policy_refined' : list of dicts of length T+1 containing coefficients specifying refined policy 
+            'r_squared' : numpy.array (T+1,) containing coefficient of determination values    
         """
 
         # get model properties and algorithmic settings
-        dim_s = model.dim_s
-        T = observations.shape[0] - 1
+        T = len(observations) - 1  # observations.shape[0] - 1
         N = settings['N']
 
+        HistoryData = psi_smc.hist
+
         # pre-allocate
-        policy_refined = [{} for t in range(T+1)]
+        policy_refined = np.array([[0.0 , 0.0, 0.0]  for t in range(self.T)])  
+        
         r_squared = np.ones([T+1])
 
-        # initialize
-        log_conditional_expectation = np.zeros([N])
-        ancestors = psi_smc['ancestry'][:, T-1]
-        states_previous = psi_smc['states'][ancestors, :, T-1]
-        states_current = psi_smc['states'][:, :, T]
+        # initialize at T
+        states_previous = psi_smc.Xp  
+        states_current = psi_smc.X  
+        log_conditional_expectation = np.zeros([N]) 
 
+        
         # iterate over time periods backwards
         for t in range(T, 0, -1):
+            states_previous =  HistoryData.X[t-1]
+            states_current =  HistoryData.X[t]
+            
             # compute uncontrolled weights of reference proposal transition
-            log_weights_uncontrolled = model.log_weights_uncontrolled(
-                t, observations[t, :], states_previous, states_current, inverse_temperature)
+            log_weights_uncontrolled = self.log_weights_uncontrolled(t, states_previous, states_current) # (t, observations[t, :], states_previous, states_current) 
+          
+            # evaluate log-policy function  
+            log_policy = self.log_policy(t, policy[t], states_previous, states_current)
 
-            # evaluate log-policy function
-            log_policy = model.log_policy(
-                policy[t], states_previous, states_current)
+            # target function values    
+            target_values = log_weights_uncontrolled.reshape(len(log_policy), 1) + \
+                log_conditional_expectation.reshape(len(log_policy), 1) - log_policy.reshape(len(log_policy), 1) # TODO:  log_conditional_expectation is not calculated here ! 
 
-            # target function values
-            target_values = log_weights_uncontrolled + \
-                log_conditional_expectation - log_policy
-
-            # perform regression to learn refinement
-            (refinement, r_squared[t]) = model.learn_refinement(
+            # perform regression to learn refinement (update this function for high dimensional case)
+            (refinement, r_squared[t]) = self.learn_refinement(
                 states_previous, states_current, target_values, settings)
 
             # refine current policy
-            policy_refined[t] = model.refine_policy(policy[t], refinement)
+            policy_refined[t] = self.refine_policy(policy[t], refinement)
+            
+            # set Policy
+            self.ssm.set_policy(policy_refined)  
 
             # compute log-conditional expectation of refined policy
             if t != 1:
-                ancestors = psi_smc['ancestry'][:, t-2]
-                states_previous = psi_smc['states'][ancestors, :, t-2]
-                states_current = psi_smc['states'][:, :, t-1]
-                (log_conditional_expectation, _) = model.log_conditional_expectation(
-                    policy_refined[t], states_current)
-
-        # also refine initial policy for random initial distributions
-        if model.initial_type == 'random':
-            # compute log-conditional expectation of refined policy
-            states_current = psi_smc['states'][:, :, 0]
-            (log_conditional_expectation, _) = model.log_conditional_expectation(
-                policy_refined[1], states_current)
-
-            # compute uncontrolled weights of reference proposal distribution
-            log_weights_uncontrolled = model.log_weights_uncontrolled_initial(
-                observations[0, :], states_current, inverse_temperature)
-
-            # evaluate log-policy function
-            log_policy = model.log_initial_policy(policy[0], states_current)
-
-            # target function values
-            target_values = log_weights_uncontrolled + \
-                log_conditional_expectation - log_policy
-
-            # perform regression to learn refinement
-            (refinement, r_squared[0]) = model.learn_initial_refinement(
-                states_current, target_values, settings)
-
-            # refine current policy
-            policy_refined[0] = model.refine_initial_policy(
-                policy[0], refinement)
-
-        # algorithm output
-        output = {'policy_refined': policy_refined, 'r_squared': r_squared}
+                states_previous =  HistoryData.X[t-1]  
+                states_current =  HistoryData.X[t]  
+                log_conditional_expectation = self.log_conditional_expectation(t, policy_refined[t], states_current)
+     
+        output = {'policy_refined': policy_refined }
 
         return output
+
+
+    """ 
+    FONCTIONS USED FOR ADP FUNCTION ABOVE
+    """
+    
+    def log_weights_uncontrolled(self, t, xp, x ):  
+        """ """
+        return self.ssm.PY(t, xp, x).logpdf(self.data[t])  
+        
+    def log_policy(self, t, policy, xp, x ): 
+        """ """
+        LogPolicy = self.logPolicy(t, xp, x, policy)
+        return LogPolicy
+
+    def log_conditional_expectation(self, t, policy_refined, x):
+        """ """
+        LogCondExpect = np.ones(x.shape[0]) 
+        
+        it = t*np.ones(x.shape[0]).astype(int)
+
+        if self.ssm.PX(t, x).dim == 1:
+            loop = [self.logCondExp(it[i], x[i]) for i in range (0, len(it))] 
+            LogCondExpect = np.array(loop).reshape(x.shape[0])  
+        else:   
+            loop = [self.logCondExp(it[i], x[i,:]) for i in range (0, len(it)) ]
+            
+            LogCondExpect = np.array(loop).reshape(x.shape[0], 1)
+
+        return LogCondExpect
+
+
+    def learn_refinement(self, xp, x, target_values, settings): # ridge_regressor   here
+        """
+        Learn policy refinement using ridge regression.
+
+        Parameters
+        ----------                       
+        xp : numpy.array (N, dim_s)
+            Latent states at previous time period 
+        x : numpy.array (N, dim_s)
+            Latent states at current time period 
+        target_values : numpy.array (N,)
+            Target function values at latent states
+        settings : dict
+            Regression settings
+
+        Returns
+        -------    
+        refinement : dict 
+            Coefficients specifying the refinement at the current time period 
+        r_squared : float
+            Coefficient of determination
+        """
+        # construct design matrix
+        if self.du == 1:
+           x = x.reshape(x.shape[0],1)
+           xp = xp.reshape(xp.shape[0],1)
+           
+        design_matrix = self.design_matrix_Quadratic_univariate(x)
+
+        # perform ridge regression
+        ridge_regressor = Ridge(alpha=settings['regularization'], fit_intercept=False)
+        ridge_regressor.fit(design_matrix, - target_values)
+
+        # get refinement coefficients from regression coefficients
+        refinement = ridge_regressor.coef_ # self.get_coef_Quadratic_univariate(ridge_regressor.coef_)
+
+        # compute R-squared
+        r_squared = np.corrcoef(ridge_regressor.predict(design_matrix), target_values)[0, 1]**2
+
+        return (refinement, r_squared)
+    
+    def get_coef_Quadratic_univariate(self, regression_coef):
+        """
+        Get coefficients (a, b, c) of the Quadratic function of a univariate variable x 
+        Q(x) = a * x^2 + b * x + c 
+        given an array of regression coefficients.
+
+        Parameters
+        ----------    
+        regression_coef : numpy.array (num_features,) where num_features = 3
+            Array of regression coefficients
+
+        Returns
+        -------
+        output : dict 
+        """
+        # get coefficients
+        output = {}
+        
+        output['a'] = regression_coef[2] #  output['a'] = regression_coef[2]
+        output[1] = regression_coef[2] #  output['a'] = regression_coef[2]
+        
+        output['b'] = regression_coef[1] #  output['b'] = regression_coef[1]
+        output['c'] = regression_coef[0] #  output['c'] = regression_coef[0]
+        return output
+    
+    def design_matrix_Quadratic_univariate(self, x):
+        """
+        Construct design matrix of features for Quadratic function of a univariate variable
+        Q(x) = a * x^2 + b * x + c.
+
+        Parameters
+        ----------    
+        x : numpy.array (N, 1) 
+
+        Returns
+        -------
+        design_matrix : numpy.array (N, num_features) where num_features = 3
+        """
+
+        # get size
+        N = x.shape[0]
+
+        # construct design matrix
+        num_features = 3
+        design_matrix = np.ones([N, num_features])  # for intercept c
+        design_matrix[:, 1] = x[:, 0]  # for coefficient b
+        design_matrix[:, 2] = x[:, 0]**2  # for coefficient a
+
+        return design_matrix
+
+    def refine_policy(self, policy_current, refinement):
+        """
+        Perform policy refinement.
+
+        Parameters
+        ----------  
+        policy_current : dict
+            Coefficients specifying the policy at the current time period 
+
+        refinement : dict
+            Coefficients specifying the refinement at the current time period 
+
+        Returns
+        -------
+        output : dict
+            Coefficients specifying the refined policy at the current time period         
+        """
+  
+        if self.du  == 1:
+            outPut = policy_current + np.exp(-refinement)
+        else: # should be updated
+            outPut = policy_current + refinement 
+        return outPut
