@@ -700,6 +700,37 @@ class LogitD(TransformedDist):
     def logJac(self, x):
         return np.log(self.b - self.a) + x - 2. * np.log(1. + np.exp(x))
 
+###########################
+# Mixtures
+###########################
+
+class Mixture(dists.ProbDist):
+    """Mixture distributions.
+
+    WIP
+    
+    Example:
+        mix = Mixture([0.6, 0.4], Normal(loc=3.), Normal(loc=-3.))
+
+    """
+    def __init__(self, p, *bdists):
+        self.p = np.atleast_1d(p)
+        self.k = self.p.shape[-1]
+        if len(bdists) != self.k:
+            raise ValueError('Size of p and nr of distributions should match')
+        self.bdists = bdists
+
+    def logpdf(self, x):
+        lpks = [np.log(self.p[..., i]) + bd.logpdf(x)
+               for i, bd in enumerate(self.bdists)]
+        return sp.special.logsumexp(np.column_stack(tuple(lpks)), 
+                                    axis=-1)
+
+    def rvs(self, size=None):
+        k = dists.Categorical(p=self.p).rvs(size=size)
+        xk = [bd.rvs(size=size) for bd in self.bdists]
+        # sub-optimal, we sample N x k values
+        return np.choose(k, xk)
 
 ############################
 # Multivariate distributions
