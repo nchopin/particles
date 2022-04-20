@@ -257,7 +257,8 @@ class Normal(LocScaleDist):
         return stats.norm.ppf(u, loc=self.loc, scale=self.scale)
 
     def posterior(self, x, sigma=1.):
-        """Model is X_1,...,X_n ~ N(theta, sigma^2), theta~self, sigma fixed"""
+        """Model is X_1,...,X_n ~ N(theta, sigma^2), theta~self, sigma fixed.
+        """
         pr0 = 1. / self.scale**2  # prior precision
         prd = x.size / sigma**2  # data precision
         varp = 1. / (pr0 + prd)  # posterior variance
@@ -711,16 +712,21 @@ class MvNormal(ProbDist):
     Parameters
     ----------
     loc: ndarray
-        location parameter (see below)
+        location parameter (default: 0.)
     scale: ndarray
-        scale parameter (see below)
+        scale parameter (default: 1.)
     cov: (d, d) ndarray
-        covariance matrix (see below)
+        covariance matrix (default: identity, with dim determined by loc)
 
-    Note
-    ----
-    The parametrisation used here is slightly unusual. In short,
-    the following line::
+    Notes
+    -----
+    The dimension d is determined either by argument ``cov`` (if it's a dxd 
+    array), or by argument loc (if ``cov`` is not specified). In the latter 
+    case, the covariance matrix is set to the identity matrix. 
+
+    If ``scale`` is set to ``1.`` (default value), we use the standard 
+    parametrisation of a Gaussian, with mean ``loc`` and covariance 
+    matrix ``cov``. Otherwise::
 
         x = dists.MvNormal(loc=m, scale=s, cov=Sigma).rvs(size=30)
 
@@ -729,34 +735,29 @@ class MvNormal(ProbDist):
         x = m + s * dists.MvNormal(cov=Sigma).rvs(size=30)
 
     The idea is that they are many cases when we may want to pass
-    varying means and scales (but a fixed correlation matrix).
+    varying means and scales (but a fixed correlation matrix). Note that
+    ``cov`` does not need to be a correlation matrix; e.g.::
 
-    dx (dimension of vectors x) is determined by matrix cov; for rvs,
-    size must be (N, ), otherwise an error is raised.
+        MvNormal(loc=m, scale=s, cov=C)
 
-    Notes:
-    * if du<dx, fill the remaining dimensions by location
-        (i.e. scale should be =0.)
-    * cov does not need to be a correlation matrix; more generally
-    > mvnorm(loc=x, scale=s, cor=C)
-    correspond to N(m,diag(s)*C*diag(s))
+    correspond to N(m, diag(s)*C*diag(s))
 
-    In addition, note that x and s may be (N, d) vectors;
+    In addition, note that m and s may be (N, d) vectors;
     i.e for each n=1...N we have a different mean, and a different scale.
     """
 
     def __init__(self, loc=0., scale=1., cov=None):
+        self.cov = np.eye(loc.shape[-1]) if cov is None else cov
         self.loc = loc
         self.scale = scale
-        self.cov = cov
         err_msg = 'mvnorm: argument cov must be a dxd ndarray, \
                 with d>1, defining a symmetric positive matrix'
         try:
-            self.L = cholesky(cov, lower=True)  # L*L.T = cov
+            self.L = cholesky(self.cov, lower=True)  # L*L.T = cov
             self.halflogdetcor = np.sum(np.log(np.diag(self.L)))
         except:
             raise ValueError(err_msg)
-        assert cov.shape == (self.dim, self.dim), err_msg
+        assert self.cov.shape == (self.dim, self.dim), err_msg
 
     @property
     def dim(self):
@@ -789,7 +790,7 @@ class MvNormal(ProbDist):
     def ppf(self, u):
         """
         Note: if dim(u) < self.dim, the remaining columns are filled with 0
-        Useful in case the distribution is partly degenerate
+        Useful in case the distribution is partly degenerate.
         """
         N, du = u.shape
         if du < self.dim:
@@ -800,22 +801,30 @@ class MvNormal(ProbDist):
         return self.linear_transform(z)
 
     def posterior(self, x, Sigma=None):
-        """Posterior for model: X1, ..., Xn ~ N(theta, Sigma).
+        """Posterior for model: X1, ..., Xn ~ N(theta, Sigma), theta ~ self.
 
         Parameters
         ----------
         x: (n, d) ndarray
             data
         Sigma: (d, d) ndarray
-            (fixed) covariance matrix in the model
+            covariance matrix in the model (default: identity matrix)
+
+        Notes
+        -----
+        Scale must be set to 1.
         """
+        if self.scale != 1.:
+            raise ValueError('posterior of MvNormal: scale must be one.')
         n = x.shape[0]
         Sigma = np.eye(self.dim) if Sigma is None else Sigma
         Siginv = inv(Sigma)
-        Qpost = inv(self.cov) + n * Siginv
+        covinv = inv(self.cov)
+        Qpost = covinv + n * Siginv
         Sigpost = inv(Qpost)
-        mupost = (np.matmul(Siginv, self.mean) +
-                  np.matmu(Siginv, np.sum(x, axis=0)))
+        m = np.full(self.dim, self.loc) if np.isscalar(self.loc) else self.loc
+        mupost = Sigpost @ (m @ covinv + Siginv @ np.sum(x, axis=0))
+        # m @ covinv works wether the shape of m is (N, d) or (d)
         return MvNormal(loc=mupost, cov=Sigpost)
 
 ##################################

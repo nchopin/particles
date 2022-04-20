@@ -50,7 +50,7 @@ To define a univariate linear Gaussian model, you may want to use instead the
 more conveniently parametrised class `LinearGauss` (which is a sub-class of
 ``MVLinearGauss``)::
 
-    ssm = LinearGauss(rho=0.3, sigX=1., sigY=.2, sig0=1.)
+    ssm = LinearGauss(rho=0.3, sigmaX=1., sigmaY=.2, sigma0=1.)
 
 which corresponds to model:
 
