@@ -81,7 +81,7 @@ A quick example::
 Multivariate distributions
 ==========================
 
-The module implements one multivariate distribution class, for Gaussian 
+The module implements one multivariate distribution class, for Gaussian
 distributions; see `MvNormal`.
 
 Furthermore, the module provides two ways to construct multivariate
@@ -396,6 +396,23 @@ class Student(ProbDist):
         return stats.t.ppf(u, self.df, loc=self.loc, scale=self.scale)
 
 
+class FlatNormal(ProbDist):
+    """Normal with infinite variance.
+
+    May be used to specify the distribution of a missing value.
+    Sampling from FlatNormal generate an array of NaNs.
+    """
+    def __init__(self, loc=0.):
+        self.loc = loc
+
+    def logpdf(self, x):
+        # ensures proper shape/type
+        return 0. * (x + self.loc)
+
+    def rvs(self, size=1):
+        return self.loc + np.full(size, np.nan)
+
+
 class Dirac(ProbDist):
     """Dirac mass.
     """
@@ -573,7 +590,7 @@ class DiscreteUniform(DiscreteDist):
         self.log_norm_cst = np.log(hi - lo)
 
     def logpdf(self, x):
-        return np.where((x >= self.lo) & (x<self.hi), -self.log_norm_cst, -np.inf) 
+        return np.where((x >= self.lo) & (x<self.hi), -self.log_norm_cst, -np.inf)
 
     def rvs(self, size=None):
         return random.randint(self.lo, high=self.hi, size=size)
@@ -590,9 +607,9 @@ class TransformedDist(ProbDist):
     To define a particular class of transformations, sub-class this class, and
     define methods:
 
-        * f(self, x): function f 
+        * f(self, x): function f
         * finv(self, x): inverse of function f
-        * logJac(self, x): log of Jacobian of the inverse of f 
+        * logJac(self, x): log of Jacobian of the inverse of f
 
     """
 
@@ -704,33 +721,67 @@ class LogitD(TransformedDist):
 # Mixtures
 ###########################
 
-class Mixture(dists.ProbDist):
+class Mixture(ProbDist):
     """Mixture distributions.
 
-    WIP
-    
+    Parameters
+    ----------
+    pk:  array-like
+        component probabilities (must sum to one)
+    *components: ProbDist objects
+        component distributions
+
     Example:
         mix = Mixture([0.6, 0.4], Normal(loc=3.), Normal(loc=-3.))
 
     """
-    def __init__(self, p, *bdists):
-        self.p = np.atleast_1d(p)
+    def __init__(self, pk, *components):
+        self.pk = np.atleast_1d(pk)
         self.k = self.p.shape[-1]
-        if len(bdists) != self.k:
-            raise ValueError('Size of p and nr of distributions should match')
-        self.bdists = bdists
+        if len(components) != self.k:
+            raise ValueError('Size of pk and nr of components should match')
+        self.components = components
 
     def logpdf(self, x):
-        lpks = [np.log(self.p[..., i]) + bd.logpdf(x)
-               for i, bd in enumerate(self.bdists)]
-        return sp.special.logsumexp(np.column_stack(tuple(lpks)), 
+        lpks = [np.log(self.pk[..., i]) + cd.logpdf(x)
+               for i, cd in enumerate(self.components)]
+        return sp.special.logsumexp(np.column_stack(tuple(lpks)),
                                     axis=-1)
 
     def rvs(self, size=None):
-        k = dists.Categorical(p=self.p).rvs(size=size)
-        xk = [bd.rvs(size=size) for bd in self.bdists]
+        k = Categorical(p=self.pk).rvs(size=size)
+        xk = [cd.rvs(size=size) for cd in self.components]
         # sub-optimal, we sample N x k values
         return np.choose(k, xk)
+
+class MixMissing(ProbDist):
+    """Mixture between a given distribution and 'missing'.
+
+    Example:
+        mix = MixMissing(pmiss=0.10, base_dist=Normal(loc=1.))
+
+    Main use is for state-space models where Y_t may be missing with a certain
+    probability.
+    """
+    def __init__(self, pmiss=0.10, base_dist=None):
+        self.pmiss = pmiss
+        self.base_dist = base_dist
+
+    def logpdf(self, x):
+        l = self.base_dist.logpdf(x)
+        ina = np.atleast_1d(np.isnan(x))
+        if ina.shape[0] == 1:
+            ina = np.full_like(l, ina, dtype=np.bool)
+        l[ina] = np.log(self.pmiss)
+        l[np.logical_not(ina)] += np.log(1. - self.pmiss)
+        return l
+
+    def rvs(self, size=None):
+        x = self.base_dist.rvs(size=size)
+        N = x.shape[0]
+        is_missing = random.rand(N) < self.pmiss
+        x[is_missing, ...] = np.nan
+        return x
 
 ############################
 # Multivariate distributions
@@ -899,7 +950,7 @@ class IndepProd(ProbDist):
                         axis=1)
 
 def IID(law, k):
-    """Joint distribution of k iid (independent and identically distributed) variables. 
+    """Joint distribution of k iid (independent and identically distributed) variables.
 
     Parameters
     ----------
@@ -919,10 +970,10 @@ class Cond(ProbDist):
     """Conditional distributions.
 
     A conditional distribution acts as a function, which takes as input the
-    current value of the samples, and returns a probability distribution. 
+    current value of the samples, and returns a probability distribution.
 
     This is used to specify conditional distributions in `StructDist`; see the
-    documentation of that class for more details. 
+    documentation of that class for more details.
     """
     def __init__(self, law, dim=1, dtype='float64'):
         self.law = law
