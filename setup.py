@@ -22,8 +22,8 @@ METADATA = dict(
     install_requires=['numpy>=1.18',
                       'scipy>=1.7',
                       'numba',
-                      'joblib'
-                      ],
+                      'joblib',
+           'sklearn.linear_model'],
     author_email='nicolas.chopin@ensae.fr',
     description=DESCRIPTION,
     long_description = long_description,
