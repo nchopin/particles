@@ -32,6 +32,7 @@ Uniform(a=0., b=1.)                      uniform over interval [a,b]
 Student(loc=0., scale=1., df=3)
 TruncNormal(mu=0, sigma=1., a=0., b=1.)  N(mu, sigma^2) truncated to interval [a,b]
 Dirac(loc=0.)                            Dirac mass at point *loc*
+FlatNormal(loc=0.)                       Normal with inf variance (missing data)
 =======================================  =====================
 
 and the following classes of univariate discrete distributions:
@@ -50,6 +51,24 @@ Note that all the parameters of these distributions have default values, e.g.::
 
     some_norm = Normal(loc=2.4)  # N(2.4, 1)
     some_gam = Gamma()  # Gamma(1, 1)
+
+Mixture distributions (new in version 0.4)
+==========================================
+
+A (univariate) mixture distribution may be specified as follows::
+
+    mix = Mixture([0.5, 0.5], Normal(loc=-1), Normal(loc=1.))
+
+The first argument is the vector of probabilities, the next arguments are the k
+component distributions. 
+
+See also `MixMissing` for defining a mixture distributions, between one
+component that generates the label "missing", and another component::
+
+    mixmiss = MixMissing(pmiss=0.1, base_dist=Normal(loc=2.))
+
+This particular distribution is useful to specify a state-space model where the
+observation may be missing with a certain probability.
 
 Transformed distributions
 =========================
