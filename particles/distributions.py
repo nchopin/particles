@@ -409,8 +409,9 @@ class FlatNormal(ProbDist):
         # ensures proper shape/type
         return 0. * (x + self.loc)
 
-    def rvs(self, size=1):
-        return self.loc + np.full(size, np.nan)
+    def rvs(self, size=None):
+        sz = 1 if size is None else size
+        return self.loc + np.full(sz, np.nan)
 
 
 class Dirac(ProbDist):
@@ -726,10 +727,10 @@ class Mixture(ProbDist):
 
     Parameters
     ----------
-    pk:  array-like
+    pk:  array-like of shape (k,) or (N, k)
         component probabilities (must sum to one)
     *components: ProbDist objects
-        component distributions
+        the k component distributions
 
     Example:
         mix = Mixture([0.6, 0.4], Normal(loc=3.), Normal(loc=-3.))
