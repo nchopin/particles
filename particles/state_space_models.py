@@ -268,11 +268,10 @@ class StateSpaceModel(object):
         """policy :
         Coefficients specifying policy 
         policy should be exponential quadratic 
-        log(policy(t, xp, x)) =  -[(A_t x,x) + (B_t,x) + C_t]; where  A is a matrix dxd, b a vector, c scalar 
-        return  the list [At, Bt, Ct]
-        A_t is a matrix
-        Bt is a vector of dimension of the 
-        Ct is !!
+        log(policy(t, xp, x)) =  -[(A_t x,x) + (B_t,x) + C_t]; where  A_t is a symetric matrix, B_t a vector, C_t a scalar 
+        
+        Returns: 
+               A_t, B_t, C_t
         """
         raise NotImplementedError(err_msg_missing_policy % self.__class__.__name__)
         
