@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-#- distributions: LogNormal
+- distributions: LogNormal
+- distributions: Mixture, FlatNormal, mixMissing (to deal with missing data)
 
 ## [0.3] - 2021-10-25
 ### Added 
