@@ -22,16 +22,17 @@ The module defines the following classes of univariate continuous distributions:
 =======================================  =====================
   class (with signature)                       comments
 =======================================  =====================
-Normal(loc=0., scale=1.)                 N(loc,scale^2) distribution
-Logistic(loc=0., scale=1.)
-Laplace(loc=0., scale=1.)
 Beta(a=1., b=1.)
+Dirac(loc=0.)                            Dirac mass at point *loc*
 Gamma(a=1., b=1.)                        scale = 1/b
 InvGamma(a=1., b=1.)                     Distribution of 1/X for X~Gamma(a,b)
-Uniform(a=0., b=1.)                      uniform over interval [a,b]
+Laplace(loc=0., scale=1.)
+Logistic(loc=0., scale=1.)
+LogNormal(mu=0., sigma=1.)               Dist of Y=e^X, X ~ N(μ, σ^2)
+Normal(loc=0., scale=1.)                 N(loc,scale^2) distribution
 Student(loc=0., scale=1., df=3)
 TruncNormal(mu=0, sigma=1., a=0., b=1.)  N(mu, sigma^2) truncated to interval [a,b]
-Dirac(loc=0.)                            Dirac mass at point *loc*
+Uniform(a=0., b=1.)                      uniform over interval [a,b]
 =======================================  =====================
 
 and the following classes of univariate discrete distributions:
@@ -360,6 +361,24 @@ class InvGamma(ProbDist):
         return InvGamma(a=self.a + 0.5 * x.size,
                         b=self.b + 0.5 * np.sum(x**2))
 
+
+class LogNormal(ProbDist):
+    """Distribution of Y=e^X, with X ~ N(mu, sigma^2).
+
+    Note that mu and sigma are the location and scale parameters of X, not Y.
+    """
+    def __init__(self, mu=0., sigma=1.):
+        self.mu = mu
+        self.sigma = sigma
+
+    def rvs(self, size=None):
+        return random.lognormal(mean=self.mu, sigma=self.sigma, size=size)
+
+    def logpdf(self, x):
+        return stats.lognorm.logpdf(x, self.sigma, scale=np.exp(self.mu))
+
+    def ppf(self, u):
+        return stats.lognorm.ppf(u, self.sigma, scale=np.exp(self.mu))
 
 class Uniform(ProbDist):
     """Uniform([a,b]) distribution.
