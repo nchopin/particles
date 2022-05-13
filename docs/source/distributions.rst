@@ -12,24 +12,26 @@ Summary of module
     :toctree: _autosummary
     :nosignatures:
 
-    IndepProd
-    StructDist
-    ProbDist
     DiscreteDist
-    Normal
-    Logistic
-    Laplace
     Beta
+    Dirac
+    FlatNormal
     Gamma
     InvGamma
-    Uniform
+    Laplace
+    Logistic
+    LogNormal
+    Normal
     Student
     TruncNormal
-    Dirac
-    Poisson
+    Uniform
     Binomial
     Geometric
+    Poisson
     LinearD
     LogD
     LogitD
     MvNormal
+    IndepProd
+    ProbDist
+    StructDist

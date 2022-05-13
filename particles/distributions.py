@@ -41,11 +41,11 @@ and the following classes of univariate discrete distributions:
 =======================================  =====================
   class (with signature)                       comments
 =======================================  =====================
-Poisson(rate=1.)                         Poisson distribution, with expectation ``rate``
 Binomial(n=1, p=0.5)
-Geometric(p=0.5)
 Categorical(p=None)                      returns i with prob p[i]
 DiscreteUniform(lo=0, hi=2)              uniform over a, ..., b-1
+Geometric(p=0.5)
+Poisson(rate=1.)                         Poisson with expectation ``rate``
 =======================================  =====================
 
 Note that all the parameters of these distributions have default values, e.g.::

@@ -5,7 +5,7 @@
 """
 
 import numpy as np
-from numba import jit, prange
+from numba import jit
 
 
 def invlogit(x):
@@ -27,7 +27,7 @@ def hilbert_array(xint):
     """
     N, d = xint.shape
     h = np.zeros(N, dtype=np.int64)
-    for n in prange(N):
+    for n in range(N):
         h[n] = Hilbert_to_int(xint[n, :])
     return h
 
