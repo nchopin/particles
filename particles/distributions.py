@@ -180,10 +180,10 @@ Here is a list of distributions implementing posteriors:
 ============    =================== ==================
 Distribution    Corresponding model comments
 ============    =================== ==================
-Normal          N(theta, sigma^2),   sigma fixed (passed as extra argument)
-TruncNormal     same
-Gamma           N(0, 1/theta)
 InvGamma        N(0, theta)
+Gamma           N(0, 1/theta)
+Normal          N(theta, sigma^2)   sigma fixed (passed as extra argument)
+TruncNormal     same
 MvNormal        N(theta, Sigma)     Sigma fixed (passed as extra argument)
 ============    =================== ==================
 
