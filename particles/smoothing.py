@@ -266,7 +266,7 @@ class ParticleHistory(RollingParticleHistory):
             raise ValueError('QMC FFBS requires particles have been Hilbert\
                              ordered during the forward pass')
 
-    def backward_sampling(self, M, linear_cost=False, return_ar=False):
+    def backward_sampling(self, M, method='MCMC'):
         """Generate smoothing trajectories using FFBS.
 
         FFBS (forward filtering backward smoothing) is a class of off-line
@@ -277,64 +277,72 @@ class ParticleHistory(RollingParticleHistory):
         ----------
         M: int
             number of trajectories we want to generate
-        linear_cost: bool
-            if set to True, the O(N) version is used, see below.
-
-        return_ar: bool (default=False)
-            if set to True, change the output, see below.
+        method: string ('ON2', 'reject',  'MCMC')
+            selected method, see notes below
 
         Returns
         -------
         paths: a list of ndarrays
             paths[t][n] is component t of trajectory m.
-        ar: float
-            the overall acceptance rate of the rejection procedure
 
         Notes
         -----
 
-        1. if ``linear_cost=False``, complexity is O(TMN); i.e. O(TN^2) for M=N;
-           if ``linear_cost=True``, complexity is O(T(M+N)), i.e. O(TN) for M=N.
-           This requires that model has method `upper_bound_trans`, which
-           provides the log of a constant C_t such that
+        1. The MCMC method uses one step of an independent Metropolis kernel,
+           where the proposal is the multinomial distribution based on the
+           weights. This is now the method recommended by default, since it has 
+           O(N) (deterministic) complexity and it seems to work well, as explained 
+           in Dau and Chopin (2022).
+
+        2. The ON2 method is the standard method with complexity O(N^2).
+
+        3. To use rejection, you need to define (in the model) a method
+           `upper_bound_trans`, which provides the log of a constant C_t such that
            :math:`p_t(x_t|x_{t-1}) \leq C_t`.
+           Because of the issues with the pure rejection method discussed in
+           Dau and Chopin (2022), i.e. execution time is random and may have
+           infinite expectation, we implement the hybrid version introduced in
+           Dau & Chopin (2022), where, for a given particle, we make at most N
+           attempts, before switching back to the standard method.
+           The average acceptance rate is saved in `self.acc_rate`.
 
-        2. main output is ``paths``, a list of T arrays such that
-           ``paths[t][m]`` is component t of trajectory m.
+        References
+        ----------
 
-        3. if ``linear_cost=True`` and ``return_ar=True``, output is tuple
-           ``(paths, ar)``, where ``paths`` is as above, and ``ar`` is the overall
-           acceptance rate (of the rejection steps that choose the ancestors);
-           otherwise output is simply ``paths``.
+        Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing 
+        algorithms, arXiv:2207.00976
+
         """
         idx = np.empty((self.T, M), dtype=int)
         idx[-1, :] = rs.multinomial(self.wgts[-1].W, M=M)
-        if linear_cost:
-            ar = self._backward_sampling_ON(M, idx)
-        else:
+        if method == 'reject':
+            self._backward_sampling_reject(M, idx)
+        elif method == 'ON2':
             self._backward_sampling_ON2(M, idx)
+        elif method == 'MCMC':
+            self._backward_sampling_mcmc(M, idx)
+        else:
+            raise ValueError('backward sampling: unknown method')
         # When M=1, we want a list of states, not a list of arrays containing
         # one state
         if M == 1:
             idx = idx.squeeze(axis=1)
         paths = [self.X[t][idx[t]] for t in range(self.T)]
-        if linear_cost and return_ar:
-            return (paths, ar)
-        else:
-            return paths
+        return paths
 
-    def _backward_sampling_ON(self, M, idx):
-        """O(N) version of backward sampling.
+    def _backward_sampling_reject(self, M, idx):
+        """rejection-based version of backward sampling.
 
         not meant to be called directly, see backward_sampling.
         """
-        nattempts = 0
+        tot_nattempts = 0
         for t in reversed(range(self.T - 1)):
             where_rejected = np.arange(M)
             who_rejected = self.X[t + 1][idx[t + 1, :]]
             nrejected = M
+            nattempts = 0
             gen = rs.MultinomialQueue(self.wgts[t].W, M=M)
-            while nrejected > 0:
+            while nrejected > 0 and nattempts < M:  # TODO M here in general?
                 nattempts += nrejected
                 nprop = gen.dequeue(nrejected)
                 lpr_acc = (self.fk.logpt(t + 1, self.X[t][nprop],
@@ -346,7 +354,23 @@ class ParticleHistory(RollingParticleHistory):
                 where_rejected = where_rejected[still_rejected]
                 who_rejected = who_rejected[still_rejected]
                 nrejected -= sum(newly_accepted)
-        return (M * (self.T - 1)) / nattempts
+            if nrejected > 0:
+                for m in where_rejected:
+                    lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
+                                                         self.X[t + 1][idx[t + 1, m]]))
+                    idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
+            tot_nattempts += nattempts
+        self.acc_rate = (M * (self.T - 1)) / tot_nattempts
+
+    def _backward_sampling_mcmc(self, M, idx):
+        for t in reversed(range(self.T - 1)):
+            current = self.A[t + 1][idx[t + 1, :]]
+            prop = rs.multinomial(self.wgts[t].W, M=M)
+            xn = self.X[t + 1][idx[t + 1, :]]
+            lpr_acc = (self.fk.logpt(t + 1, self.X[t][prop], xn)
+                       - self.fk.logpt(t + 1, self.X[t][current], xn))
+            lu = np.log(np.random.rand(M))
+            idx[t, :] = np.where(lu < lpr_acc, prop, current)
 
     def _backward_sampling_ON2(self, M, idx):
         """O(N^2) version of backward sampling.
@@ -356,7 +380,7 @@ class ParticleHistory(RollingParticleHistory):
         for m in range(M):
             for t in reversed(range(self.T - 1)):
                 lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
-                                                     self.X[t + 1][idx[t + 1, m]]))
+                                                self.X[t + 1][idx[t + 1, m]]))
                 idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
 
     def backward_sampling_qmc(self, M):
@@ -510,7 +534,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
     Parameters
     ----------
     method: string
-         ['FFBS_ON', 'FFBS_ON2', 'FFBS_QMC',
+         ['FFBS_reject', 'FFBS_MCMC', 'FFBS_ON2', 'FFBS_QMC',
            'two-filter_ON', 'two-filter_ON_prop', 'two-filter_ON2']
     N: int
         number of particles
@@ -540,11 +564,12 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
         pf = particles.SMC(fk=fk, N=N, store_history=True)
     tic = time.perf_counter()
     pf.run()
-    if method in ['FFBS_ON', 'FFBS_ON2', 'FFBS_QMC']:
-        if method.startswith('FFBS_ON'):
-            z = pf.hist.backward_sampling(N, linear_cost=(method == 'FFBS_ON'))
-        else:
+    if method.startswith('FFBS'):
+        submethod = method.split('_')[-1]
+        if submethod == 'QMC':
             z = pf.hist.backward_sampling_qmc(N)
+        else:
+            z = pf.hist.backward_sampling(N, method=submethod)
         for t in range(T - 1):
             est[t] = np.mean(add_func(t, z[t], z[t + 1]))
     elif method in ['two-filter_ON2', 'two-filter_ON', 'two-filter_ON_prop']:
@@ -570,7 +595,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
                                                      modif_forward=modif_fwd,
                                                      modif_info=modif_info)
     else:
-        print('no such method?')
+        print('smoothing_worker: no such method?')
     cpu_time = time.perf_counter() - tic
     print(method + ' took %.2f s for N=%i' % (cpu_time, N))
     return {'est': est, 'cpu': cpu_time}

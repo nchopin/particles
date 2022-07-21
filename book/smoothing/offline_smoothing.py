@@ -80,16 +80,17 @@ fkmod = ssms.Bootstrap(ssm=my_ssm, data=data)
 # FK model for information filter: same model with data in reverse
 fk_info = ssms.Bootstrap(ssm=my_ssm, data=data[::-1])
 
-nruns = 100  # run each algo 100 times
+nruns = 100  # run each algo 100 times # TODO was 100
 Ns = [50, 200, 800, 3200, 12800]
-methods = ['FFBS_ON', 'FFBS_ON2', 'two-filter_ON',
+methods = ['FFBS_MCMC', 'FFBS_ON2', 'FFBS_reject', 'two-filter_ON',
            'two-filter_ON_prop', 'two-filter_ON2']
 
 add_func = partial(psit, mu=mu0, phi=phi0, sigma=sigma0)
 log_gamma_func = partial(log_gamma, mu=mu0, phi=phi0, sigma=sigma0)
 results = utils.multiplexer(f=smoothing_worker, method=methods, N=Ns,
                             fk=fkmod, fk_info=fk_info, add_func=add_func,
-                            log_gamma=log_gamma_func, nprocs=0, nruns=nruns)
+                            log_gamma=log_gamma_func, nprocs=0, nruns=nruns) 
+#TODO nruns=0
 
 # Plots
 # =====
@@ -103,7 +104,8 @@ pretty_names = {}
 ON = r'$\mathcal{O}(N)$'
 ON2 = r'$\mathcal{O}(N^2)$'
 pretty_names['FFBS_ON2'] = ON2 + r' FFBS'
-pretty_names['FFBS_ON'] = 'FFBS-reject'
+pretty_names['FFBS_reject'] = 'FFBS-reject'
+pretty_names['FFBS_MCMC'] = 'FFBS-MCMC'
 pretty_names['two-filter_ON2'] = ON2 + r' two-filter'
 pretty_names['two-filter_ON'] = ON + r' two-filter, basic proposal'
 pretty_names['two-filter_ON_prop'] = ON + r' two-filter, better proposal'
@@ -112,8 +114,8 @@ pretty_names['two-filter_ON_prop'] = ON + r' two-filter, better proposal'
 plt.figure()
 plt.xlabel(r'$N$')
 plt.ylabel('smoothing estimate')
-# remove FFBS_ON, since estimate has the same distribution as for FFBS ON2
-res_nofon = [r for r in results if r['method'] != 'FFBS_ON']
+# remove FFBS_reject, since estimate has the same distribution as for FFBS ON2
+res_nofon = [r for r in results if r['method'] != 'FFBS_reject']
 sb.boxplot(y=[np.mean(r['est']) for r in res_nofon],
            x=[r['N'] for r in res_nofon],
            hue=[pretty_names[r['method']] for r in res_nofon],
@@ -132,9 +134,9 @@ plt.xlabel(r'$N$')
 # both O(N^2) algorithms have the same CPU cost, so we plot only
 # one line for both
 pretty_names['FFBS_ON2'] += " and " + pretty_names['two-filter_ON2']
-lsts = {'FFBS_ON2': '-', 'FFBS_ON': '--', 'two-filter_ON_prop': '-.',
-        'two-filter_ON': ':'}
-for method in ['FFBS_ON2', 'FFBS_ON',
+lsts = {'FFBS_ON2': '-', 'FFBS_reject': '--', 'FFBS_MCMC': '-',
+        'two-filter_ON_prop': '-.', 'two-filter_ON': ':'}
+for method in ['FFBS_ON2', 'FFBS_reject', 'FFBS_MCMC',
                'two-filter_ON_prop', 'two-filter_ON']:
     plt.plot(Ns, [np.mean(np.array([r['cpu'] for r in results
                                     if r['method'] == method and r['N'] == N]))
