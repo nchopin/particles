@@ -379,32 +379,39 @@ class Online_smooth_ON2(Collector, OnlineSmootherMixin):
 
 
 class Paris(Collector, OnlineSmootherMixin):
-    signature = {'Nparis': 2}
+    signature = {'Nparis': 2, 'maxattempts': None}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.nprop = [0.]
 
     def update(self, smc):
+        maxtries = smc.N if self.maxattempts is None else self.maxattempts
         prev_Phi = self.Phi.copy()
         mq = rs.MultinomialQueue(self.prev_W)
-        nprop = 0
+        tot_ntries = 0
         for n in range(self.N):
             As = np.empty(self.Nparis, dtype=np.int64)
             for m in range(self.Nparis):
-                while True:
+                ntries = 0
+                while ntries < maxtries:
                     a = mq.dequeue(1)
-                    nprop += 1
+                    ntries += 1
                     lp = (smc.fk.logpt(smc.t, self.prev_X[a], smc.X[n])
                           - smc.fk.upper_bound_log_pt(smc.t))
                     if np.log(random.rand()) < lp:
                         break
-                As[m] = a
-            mod_Phi = (prev_Phi[As]
-                       + smc.fk.add_func(smc.t, self.prev_X[As], smc.X[n]))
-            self.Phi[n] = np.average(mod_Phi, axis=0)
+                if ntries < maxtries:
+                    As[m] = a
+                else:
+                    lwXn = (self.prev_logw
+                            + smc.fk.logpt(smc.t, self.prev_X, smc.X[n]))
+                    WXn = rs.exp_and_normalise(lwXn)
+                    As[m] = rs.multinomial_once(WXn)
+                tot_ntries += ntries
         self.nprop.append(nprop)
 
     def save_for_later(self, smc):
         self.prev_X = smc.X
         self.prev_W = smc.W
+        self.prev_logw = smc.wgts.lw
