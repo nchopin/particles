@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - distributions: LogNormal
 - distributions: Mixture, FlatNormal, mixMissing (to deal with missing data)
+- distributions: VaryingCovNormal (issue 55 on github)
 
 ## [0.3] - 2021-10-25
 ### Added 
