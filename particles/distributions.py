@@ -208,7 +208,8 @@ from collections import OrderedDict  # see prior
 import numpy as np
 import numpy.random as random
 import scipy.stats as stats
-from scipy.linalg import cholesky, solve_triangular, inv
+import scipy.linalg as sla
+import numpy.linalg as nla
 
 HALFLOG2PI = 0.5 * np.log(2. * np.pi)
 
@@ -841,7 +842,7 @@ class MvNormal(ProbDist):
 
     Notes
     -----
-    The dimension d is determined either by argument ``cov`` (if it's a dxd 
+    The dimension d is determined either by argument ``cov`` (if it is a dxd 
     array), or by argument loc (if ``cov`` is not specified). In the latter 
     case, the covariance matrix is set to the identity matrix. 
 
@@ -855,47 +856,49 @@ class MvNormal(ProbDist):
 
         x = m + s * dists.MvNormal(cov=Sigma).rvs(size=30)
 
-    The idea is that they are many cases when we may want to pass
-    varying means and scales (but a fixed correlation matrix). Note that
+    The idea is that they are cases when we may want to pass varying
+    means and scales (but a fixed correlation matrix). Note that
     ``cov`` does not need to be a correlation matrix; e.g.::
 
         MvNormal(loc=m, scale=s, cov=C)
 
-    correspond to N(m, diag(s)*C*diag(s))
+    corresponds to N(m, diag(s)*C*diag(s)).
 
     In addition, note that m and s may be (N, d) vectors;
     i.e for each n=1...N we have a different mean, and a different scale.
+
+    To specify a Multivariate Normal distribution with a different covariance
+    matrix for each particle, see `VaryingCovNormal`.
     """
 
     def __init__(self, loc=0., scale=1., cov=None):
-        self.cov = np.eye(loc.shape[-1]) if cov is None else cov
         self.loc = loc
         self.scale = scale
-        err_msg = 'mvnorm: argument cov must be a dxd ndarray, \
-                with d>1, defining a symmetric positive matrix'
+        self.cov = np.eye(loc.shape[-1]) if cov is None else cov
+        err_msg = 'MvNormal: argument cov must be a (d, d) pos. definite matrix'
         try:
-            self.L = cholesky(self.cov, lower=True)  # L*L.T = cov
-            self.halflogdetcor = np.sum(np.log(np.diag(self.L)))
+            self.L = nla.cholesky(self.cov)  # lower triangle
         except:
             raise ValueError(err_msg)
         assert self.cov.shape == (self.dim, self.dim), err_msg
 
     @property
     def dim(self):
-        return self.cov.shape[0]
+        return self.cov.shape[-1]
 
     def linear_transform(self, z):
         return self.loc + self.scale * np.dot(z, self.L.T)
 
     def logpdf(self, x):
-        z = solve_triangular(self.L, np.transpose((x - self.loc) / self.scale),
-                             lower=True)
+        halflogdetcor = np.sum(np.log(np.diag(self.L)))
+        xc = (x - self.loc) / self.scale
+        z = sla.solve_triangular(self.L, np.transpose(xc), lower=True)
         # z is dxN, not Nxd
         if np.asarray(self.scale).ndim == 0:
             logdet = self.dim * np.log(self.scale)
         else:
             logdet = np.sum(np.log(self.scale), axis=-1)
-        logdet += self.halflogdetcor
+        logdet += halflogdetcor
         return - 0.5 * np.sum(z * z, axis=0) - logdet - self.dim * HALFLOG2PI
 
     def rvs(self, size=None):
@@ -910,7 +913,7 @@ class MvNormal(ProbDist):
 
     def ppf(self, u):
         """
-        Note: if dim(u) < self.dim, the remaining columns are filled with 0
+        Note: if dim(u) < self.dim, the remaining columns are filled with 0.
         Useful in case the distribution is partly degenerate.
         """
         N, du = u.shape
@@ -939,14 +942,67 @@ class MvNormal(ProbDist):
             raise ValueError('posterior of MvNormal: scale must be one.')
         n = x.shape[0]
         Sigma = np.eye(self.dim) if Sigma is None else Sigma
-        Siginv = inv(Sigma)
-        covinv = inv(self.cov)
+        Siginv = sla.inv(Sigma)
+        covinv = sla.inv(self.cov)
         Qpost = covinv + n * Siginv
-        Sigpost = inv(Qpost)
+        Sigpost = sla.inv(Qpost)
         m = np.full(self.dim, self.loc) if np.isscalar(self.loc) else self.loc
         mupost = Sigpost @ (m @ covinv + Siginv @ np.sum(x, axis=0))
         # m @ covinv works wether the shape of m is (N, d) or (d)
         return MvNormal(loc=mupost, cov=Sigpost)
+
+class VaryingCovNormal(MvNormal):
+    """Multivariate Normal (varying covariance matrix).
+
+    Parameters
+    ----------
+    loc: ndarray
+        location parameter (default: 0.)
+    cov: (N, d, d) ndarray
+        covariance matrix (no default)
+
+    Notes
+    -----
+
+    Uses this distribution if you need to specify a Multivariate distribution
+    where the covariance matrix varies across the N particles. Otherwise, see
+    `MvNormal`.
+    """
+    def __init__(self, loc=0., cov=None):
+        self.loc = loc
+        self.cov = cov
+        err_msg = 'VaryingCovNormal: argument cov must be a (N, d, d) array, \
+                with d>1; cov[n, :, :] must be symmetric and positive'
+        try:
+            self.N, d1, d2 = self.cov.shape  # must be 3D
+            self.L = nla.cholesky(self.cov)  # lower triangle
+        except:
+            raise ValueError(err_msg)
+        assert d1 == d2, err_msg
+
+    def linear_transform(self, z):
+        zl = np.zeros((self.cov.shape[0], self.dim))
+        # compute the product manually
+        for i in range(self.dim):
+            zl[:, i] = np.sum(z[:, :(i+1)] * self.L[:, i, :(i+1)], axis=1)
+        return self.loc + zl
+
+    def rvs(self, size=None):
+        N = self.N if size is None else size
+        z = stats.norm.rvs(size=(N, self.dim))
+        return self.linear_transform(z)
+
+    def logpdf(self, x):
+        halflogdetcov = np.sum(np.log(np.diagonal(self.L, axis1=1, axis2=2)),
+                               axis=1)
+        # not as efficient as triangular_solve, but numpy does not have
+        # a "tensor" version of triangular_solve
+        z = nla.solve(self.L, x - self.loc)
+        norm_cst = self.dim * HALFLOG2PI + halflogdetcov
+        return - 0.5 * np.sum(z * z, axis=1) - norm_cst
+
+    def posterior(self, x, Sigma=None):
+        raise NotImplementedError
 
 ##################################
 # product of independent dists
