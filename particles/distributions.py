@@ -856,13 +856,13 @@ class MvNormal(ProbDist):
 
         x = m + s * dists.MvNormal(cov=Sigma).rvs(size=30)
 
-    The idea is that they are cases when we may want to pass varying 
+    The idea is that they are cases when we may want to pass varying
     means and scales (but a fixed correlation matrix). Note that
     ``cov`` does not need to be a correlation matrix; e.g.::
 
         MvNormal(loc=m, scale=s, cov=C)
 
-    correspond to N(m, diag(s)*C*diag(s))
+    corresponds to N(m, diag(s)*C*diag(s)).
 
     In addition, note that m and s may be (N, d) vectors;
     i.e for each n=1...N we have a different mean, and a different scale.
@@ -994,8 +994,8 @@ class VaryingCovNormal(MvNormal):
 
     def logpdf(self, x):
         halflogdetcov = np.sum(np.log(np.diagonal(self.L, axis1=1, axis2=2)),
-                               axis=1) 
-        # not as efficient as triangular_solve, but numpy does not have  
+                               axis=1)
+        # not as efficient as triangular_solve, but numpy does not have
         # a "tensor" version of triangular_solve
         z = nla.solve(self.L, x - self.loc)
         norm_cst = self.dim * HALFLOG2PI + halflogdetcov

@@ -50,7 +50,7 @@ The package is available on Github_ and may be installed using git::
 
     cd some_folder_of_your_choosing
     git clone https://github.com/nchopin/particles.git
-    pip install --user . 
+    pip install --user .
 
 Replace option `--user` by `-e` if you want to install in editable mode; in that
 way you may edit yourself the package (in the folder you chose), and then
