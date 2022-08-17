@@ -80,12 +80,12 @@ take as an input the complete history of a particle filter, run until time T
     pf.run()
 
 Then, ``pf.hist`` is an instance of class `ParticleHistory`. It implements two
-types of approaches: 
+types of approaches:
 
     * two-filter smoothing: uses two particle filters (one forward, one
-      backward) to estimate marginal expectations; see `two_filter_smoothing`. 
+      backward) to estimate marginal expectations; see `two_filter_smoothing`.
 
-    * FFBS (forward filtering backward sampling): uses one particle filter, 
+    * FFBS (forward filtering backward sampling): uses one particle filter,
       then generates trajectories from its history, using different methods
       (exact, rejection, MCMC, QMC). See `backward_sampling_mcmc`,
       `backward_sampling_ON2`, `backward_sampling_reject`, and
@@ -316,7 +316,7 @@ class ParticleHistory(RollingParticleHistory):
         M: int
             number of trajectories we want to generate
         nsteps: int (default: 1)
-            number of independent Metropolis steps 
+            number of independent Metropolis steps
 
         Returns
         -------
@@ -325,7 +325,7 @@ class ParticleHistory(RollingParticleHistory):
 
         References
         ----------
-        Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing 
+        Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing
         algorithms, arXiv:2207.00976
         """
         self._init_backward_sampling(M)
@@ -345,7 +345,7 @@ class ParticleHistory(RollingParticleHistory):
         Because of the issues with the pure rejection method discussed in Dau
         and Chopin (2022), i.e. execution time is random and may have infinite
         expectation, we implement the hybrid version introduced in Dau & Chopin
-        (2022), where, for a given particle, we make at most `maxattempts` 
+        (2022), where, for a given particle, we make at most `maxattempts`
         attempts, before switching back to the exact (expensive) method. To
         recover the "pure rejection" scheme, simply set this parameter to
         infinity (or a very large value).
@@ -356,7 +356,7 @@ class ParticleHistory(RollingParticleHistory):
             number of trajectories we want to generate
         maxattempts: int (default: M)
             max number of rejection steps before we switch to the expensive
-            method. 
+            method.
 
         Returns
         -------
@@ -366,8 +366,8 @@ class ParticleHistory(RollingParticleHistory):
         Note
         ----
         1. To use rejection, you need to define (in the model) a method
-           `upper_bound_trans`, which provides the log of a constant C_t such 
-           that :math:`p_t(x_t|x_{t-1}) \leq C_t`. 
+           `upper_bound_trans`, which provides the log of a constant C_t such
+           that :math:`p_t(x_t|x_{t-1}) \leq C_t`.
 
         2.  The average acceptance rate is saved in `self.acc_rate`.
         """
