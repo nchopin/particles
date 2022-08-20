@@ -981,11 +981,7 @@ class VaryingCovNormal(MvNormal):
         assert d1 == d2, err_msg
 
     def linear_transform(self, z):
-        zl = np.zeros((self.cov.shape[0], self.dim))
-        # compute the product manually
-        for i in range(self.dim):
-            zl[:, i] = np.sum(z[:, :(i+1)] * self.L[:, i, :(i+1)], axis=1)
-        return self.loc + zl
+        return self.loc + np.einsum("...ij,...j", self.L, z)
 
     def rvs(self, size=None):
         N = self.N if size is None else size
