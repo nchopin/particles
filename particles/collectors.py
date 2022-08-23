@@ -379,14 +379,33 @@ class Online_smooth_ON2(Collector, OnlineSmootherMixin):
 
 
 class Paris(Collector, OnlineSmootherMixin):
-    signature = {'Nparis': 2, 'maxattempts': None}
+    """Hybrid version of the Paris algorithm.
+
+    This implements a hybrid variant of Paris, the on-line smoothing algorithm
+    of Olsson and Westerborn (2017), where at most `max_trials` proposals are
+    generated in the rejection step, before switching to an exact (more
+    expensive) algorithm. See Dau & Chopin (2022) for why the hybrid version is
+    recommended (with `max_trials` set to N, which is done by default, if you
+    do no provide a value). To recover the original Paris algorithm, simply set
+    `max_trials` to a very large value (or infinity).
+
+    References
+    ----------
+    Olsson, J., & Westerborn, J. (2017). Efficient particle-based online
+    smoothing in general hidden Markov models: the PaRIS algorithm. Bernoulli,
+    23(3), 1951-1996.
+
+    Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing
+    algorithms, arXiv:2207.00976
+    """
+    signature = {'Nparis': 2, 'max_trials': None}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.nprop = [0.]
 
     def update(self, smc):
-        maxtries = smc.N if self.maxattempts is None else self.maxattempts
+        maxtries = smc.N if self.max_trials is None else self.max_trials
         prev_Phi = self.Phi.copy()
         mq = rs.MultinomialQueue(self.prev_W)
         tot_ntries = 0

@@ -287,7 +287,7 @@ class ParticleHistory(RollingParticleHistory):
         Parameter
         ---------
         M: int
-            number of trajectories we want to generate
+            number of trajectories to generate
 
         Returns
         -------
@@ -308,13 +308,13 @@ class ParticleHistory(RollingParticleHistory):
         Uses one step of an independent Metropolis kernel, where the proposal
         is the multinomial distribution based on the weights. This is now the
         method recommended by default, since it has O(N) (deterministic)
-        complexity and it seems to work well, as explained in Dau and Chopin
+        complexity and it seems to work well, as explained in Dau & Chopin
         (2022).
 
         Parameters
         ----------
         M: int
-            number of trajectories we want to generate
+            number of trajectories to generate
         nsteps: int (default: 1)
             number of independent Metropolis steps
 
@@ -328,7 +328,7 @@ class ParticleHistory(RollingParticleHistory):
         Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing
         algorithms, arXiv:2207.00976
         """
-        self._init_backward_sampling(M)
+        idx = self._init_backward_sampling(M)
         for t in reversed(range(self.T - 1)):
             idx[t, :] = self.A[t + 1][idx[t + 1, :]]
             prop = rs.multinomial(self.wgts[t].W, M=M)
@@ -339,13 +339,13 @@ class ParticleHistory(RollingParticleHistory):
             idx[t, :] = np.where(lu < lpr_acc, prop, idx[t, :])
         return self._output_backward_sampling(idx)
 
-    def backward_sampling_reject(self, M, maxattempts=None):
+    def backward_sampling_reject(self, M, max_trials=None):
         """Rejection-based backward sampling.
 
         Because of the issues with the pure rejection method discussed in Dau
         and Chopin (2022), i.e. execution time is random and may have infinite
         expectation, we implement the hybrid version introduced in Dau & Chopin
-        (2022), where, for a given particle, we make at most `maxattempts`
+        (2022), where, for a given particle, we make at most `max_trials`
         attempts, before switching back to the exact (expensive) method. To
         recover the "pure rejection" scheme, simply set this parameter to
         infinity (or a very large value).
@@ -353,8 +353,8 @@ class ParticleHistory(RollingParticleHistory):
         Parameters
         ----------
         M: int
-            number of trajectories we want to generate
-        maxattempts: int (default: M)
+            number of trajectories to generate
+        max_trials: int (default: M)
             max number of rejection steps before we switch to the expensive
             method.
 
@@ -370,10 +370,18 @@ class ParticleHistory(RollingParticleHistory):
            that :math:`p_t(x_t|x_{t-1}) \leq C_t`.
 
         2.  The average acceptance rate is saved in `self.acc_rate`.
+
+        3. Dau & Chopin (2022) recommend to set max_trials to M, or a multiple
+           of M.
+
+        References
+        ----------
+        Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing
+        algorithms, arXiv:2207.00976
         """
-        self._init_backward_sampling(M)
-        if maxattempts is None:
-            maxattempts = M
+        idx = self._init_backward_sampling(M)
+        if max_trials is None:
+            max_trials = M
         tot_nattempts = 0
         for t in reversed(range(self.T - 1)):
             where_rejected = np.arange(M)
@@ -381,7 +389,7 @@ class ParticleHistory(RollingParticleHistory):
             nrejected = M
             nattempts = 0
             gen = rs.MultinomialQueue(self.wgts[t].W, M=M)
-            while nrejected > 0 and nattempts < maxattempts:
+            while nrejected > 0 and nattempts < max_trials:
                 nattempts += nrejected
                 nprop = gen.dequeue(nrejected)
                 lpr_acc = (self.fk.logpt(t + 1, self.X[t][nprop],
@@ -408,7 +416,7 @@ class ParticleHistory(RollingParticleHistory):
         Parameters
         ----------
         M : int
-            number of trajectories
+            number of trajectories to generate
 
         Note
         ----
@@ -573,6 +581,14 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
     a dict with fields:
         est: a ndarray of length T
         cpu_time
+
+    Notes
+    -----
+    'FFBS_hybrid' is the hybrid method that makes at most N attempts to
+    generate an ancestor using rejection, and then switches back to the
+    standard (expensive method). On the other hand, 'FFBS_purereject' is the
+    original rejection-based FFBS method, where only rejection is used. See Dau
+    & Chopin (2022) for a discussion.
     """
     T = fk.T
     if fk_info is None:
@@ -588,14 +604,14 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
         submethod = method.split('_')[-1]
         if submethod == 'QMC':
             z = pf.hist.backward_sampling_qmc(N)
-        elif submethod = 'ON2':
+        elif submethod == 'ON2':
             z = pf.hist.backward_sampling_ON2(N)
         elif submethod == 'MCMC':
             z = pf.hist.backward_sampling_mcmc(N)
         elif submethod == 'hybrid':
             z = pf.hist.backward_sampling_reject(N)
         elif submethod == 'purereject':
-            z = pf.hist.backward_sampling_reject(N, maxattempts=N * 10**9)
+            z = pf.hist.backward_sampling_reject(N, max_trials=N * 10**9)
         for t in range(T - 1):
             est[t] = np.mean(add_func(t, z[t], z[t + 1]))
     elif method in ['two-filter_ON2', 'two-filter_ON', 'two-filter_ON_prop']:
