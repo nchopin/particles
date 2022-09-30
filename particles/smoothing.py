@@ -563,7 +563,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
     ----------
     method: string
          ['FFBS_purereject', 'FFBS_hybrid', FFBS_MCMC', 'FFBS_ON2', 'FFBS_QMC',
-           'two-filter_ON', 'two-filter_ON_prop', 'two-filter_ON2']
+          'two-filter_ON', 'two-filter_ON_prop', 'two-filter_ON2']
     N: int
         number of particles
     fk: Feynman-Kac object

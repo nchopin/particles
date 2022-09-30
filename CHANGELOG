@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 - distributions: LogNormal
 - distributions: Mixture, FlatNormal, mixMissing (to deal with missing data)
+- smoothing: FFBS-MCMC, FFBS-hybrid
+- collectors: Paris algorithm
 
 ## [0.3] - 2021-10-25
 ### Added 

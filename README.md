@@ -22,9 +22,13 @@ by Nicolas Chopin and Omiros Papaspiliopoulos.
 * **SQMC** (Sequential quasi Monte Carlo);  routines for computing the Hilbert curve, 
   and generating RQMC sequences. 
 
-* **particle smoothing**: fixed-lag smoothing, on-line smoothing, FFBS (forward
-  filtering, backward sampling), two-filter smoothing (O(N) and O(N^2)
-  variants).  FFBS for SQMC is also implemented. 
+* **FFBS (forward filtering backward sampling)**: standard, O(N^2) variant, and
+  faster variants based on either MCMC, pure rejection, or the hybrid scheme ;
+  see Dau & Chopin (2022) for a discussion. The QMC version of Gerber and
+  Chopin (2017, Bernoulli) is also implemented.
+
+* **other smoothing algorithms**: fixed-lag smoothing, on-line smoothing,
+  two-filter smoothing (O(N) and O(N^2) variants).  
 
 * Exact filtering/smoothing algorithms: **Kalman** (for linear Gaussian models) 
   and **forward-backward recursions** (for finite hidden Markov models).
