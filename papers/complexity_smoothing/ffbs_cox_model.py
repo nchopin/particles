@@ -100,7 +100,7 @@ results = utils.multiplexer(f=smoothing_worker, method=methods, N=Ns,
 # =====
 savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
-palette = sb.dark_palette("lightgray", n_colors=5, reverse=False)
+palette = sb.dark_palette("lightgray", n_colors=len(methods), reverse=False)
 sb.set_palette(palette)
 rc('text', usetex=True)  # latex
 
@@ -116,11 +116,9 @@ pretty_names['FFBS_hybrid'] = 'FFBS-hybrid'
 plt.figure()
 plt.xlabel(r'$N$')
 plt.ylabel('smoothing estimate')
-# remove FFBS_reject, since estimate has the same distribution as for FFBS ON2
-res_nofon = [r for r in results if r['method'] != 'FFBS_purereject']
-sb.boxplot(y=[np.mean(r['est']) for r in res_nofon],
-           x=[r['N'] for r in res_nofon],
-           hue=[pretty_names[r['method']] for r in res_nofon],
+sb.boxplot(y=[np.mean(r['est']) for r in results],
+           x=[r['N'] for r in results],
+           hue=[pretty_names[r['method']] for r in results],
            palette=palette,
            flierprops={'marker': 'o',
                        'markersize': 4,
@@ -133,8 +131,8 @@ plt.figure()
 plt.xscale('log')
 plt.yscale('log')
 plt.xlabel(r'$N$')
-lsts = {'FFBS_ON2': '-', 'FFBS_purereject': '--', 'FFBS_MCMC': '-',
-        'FFBS_hybrid': '.'}
+lsts = {'FFBS_ON2': '-', 'FFBS_purereject': '--', 'FFBS_MCMC': ':',
+        'FFBS_hybrid': '-.'}
 for method in methods:
     plt.plot(Ns, [np.mean(np.array([r['cpu'] for r in results
                                     if r['method'] == method and r['N'] == N]))
