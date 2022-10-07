@@ -116,15 +116,12 @@ pretty_names['FFBS_hybrid'] = 'FFBS-hybrid'
 plt.figure()
 plt.xlabel(r'$N$')
 plt.ylabel('smoothing estimate')
-sb.boxplot(y=[np.mean(r['est']) for r in results],
-           x=[r['N'] for r in results],
-           hue=[pretty_names[r['method']] for r in results],
-           palette=palette,
-           flierprops={'marker': 'o',
-                       'markersize': 4,
-                       'markerfacecolor': 'k'})
+sb.violinplot(y=[np.mean(r['est']) for r in results],
+              x=[r['N'] for r in results],
+              hue=[pretty_names[r['method']] for r in results],
+              palette=palette)
 if savefigs:
-    plt.savefig('offline_boxplots_est_vs_N.pdf')
+    plt.savefig('offline_violinplots_est_vs_N.pdf')
 
 # CPU times as a function of N (Figure 11.5)
 plt.figure()
