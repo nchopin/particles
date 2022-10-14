@@ -27,7 +27,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import particles
-from particles import collectors as col
+from particles import collectors as cols
 from particles import state_space_models
 
 
@@ -78,8 +78,8 @@ plt.plot(data)
 plt.title('data')
 
 methods = ['ON2', 'naive']  # in that order: ON2 must be run first
-collectors = {'ON2': col.Online_smooth_ON2(),
-              'naive': col.Online_smooth_naive()}
+collectors = {'ON2': cols.Online_smooth_ON2(),
+              'naive': cols.Online_smooth_naive()}
 long_names = {'ON2': r'$O(N^2)$ forward-only',
               'naive': r'naive, $O(N)$ forward-only'}
 runs = {}

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Illustrates the different on-line smoothing algorithms using the
-bootstrap filter of the following model:
+Compare different on-line smoothing algorithms based on the bootstrap 
+filter of the following model:
 
 X_t|X_{t-1}=x_{t-1} ~ N(mu+phi(x_{t-1}-mu),sigma^2)
 Y_t|X_t=x_t ~ Poisson(exp(x_t))
@@ -14,9 +14,13 @@ the smoothing expectation of additive function phit, defined as
 phi_t(x_0:t) = sum_{s=0}^t psi_s(x_{s-1},x_s)
 see below for a definition of psi_s.
 
-See Chapter 12 (smoothing) for more details; in particular Figures 12.2 and
-12.3 which were produced by this script.
+This is essentially the same experiment as in Chapter 12 of the book (see
+Figures 12.2 and 12.3), except that: 
+    * we add the Paris algorithm to the comparison
+    * we stop at time T=100 (instead of T=10^4)
 
+Note that we implement the hybrid version of Paris (where, after N attempt, we
+switch to the more expensive algorithm). 
 """
 
 from __future__ import division, print_function
@@ -63,7 +67,7 @@ def outf(pf, method):
 
 # set up models, simulate data
 nruns = 25  # how many runs for each algorithm
-T = 10 ** 4  #  sample size
+T = 10 ** 2  #  sample size  " TODO was 4
 mu0 = 0.  # true parameters
 phi0 = 0.9
 sigma0 = .5
@@ -86,7 +90,7 @@ long_names = {'ON2': r'$O(N^2)$ forward-only',
               'Paris': 'Paris'}
 runs = {}
 avg_cpu = {}
-Ns = {'ON2': 100, 'naive': 10**4, 'Paris': 5000}
+Ns = {'ON2': 100, 'naive': 10**4, 'Paris': 10**3}
 
 for method in methods:
     col = collectors[method]

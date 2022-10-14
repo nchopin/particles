@@ -413,21 +413,25 @@ class Paris(Collector, OnlineSmootherMixin):
             As = np.empty(self.Nparis, dtype=np.int64)
             for m in range(self.Nparis):
                 ntries = 0
+                accepted = False
                 while ntries < maxtries:
                     a = mq.dequeue(1)
                     ntries += 1
                     lp = (smc.fk.logpt(smc.t, self.prev_X[a], smc.X[n])
                           - smc.fk.ssm.upper_bound_log_pt(smc.t))
                     if np.log(random.rand()) < lp:
+                        As[m] = a
+                        accepted = True
                         break
-                if ntries < maxtries:
-                    As[m] = a
-                else:
+                if not(accepted):
                     lwXn = (self.prev_logw
                             + smc.fk.logpt(smc.t, self.prev_X, smc.X[n]))
                     WXn = rs.exp_and_normalise(lwXn)
                     As[m] = rs.multinomial_once(WXn)
                 tot_ntries += ntries
+            mod_Phi = (prev_Phi[As]
+                       + smc.fk.add_func(smc.t, self.prev_X[As], smc.X[n]))
+            self.Phi[n] = np.average(mod_Phi, axis=0)
         self.nprop.append(tot_ntries)
 
     def save_for_later(self, smc):
