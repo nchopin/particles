@@ -369,7 +369,7 @@ class ParticleHistory(RollingParticleHistory):
            `upper_bound_trans`, which provides the log of a constant C_t such
            that :math:`p_t(x_t|x_{t-1}) \leq C_t`.
 
-        2.  The average acceptance rate is saved in `self.acc_rate`.
+        2.  The average acceptance rate at time t is saved in `self.acc_rate[t]`.
 
         3. Dau & Chopin (2022) recommend to set max_trials to M, or a multiple
            of M.
@@ -382,15 +382,17 @@ class ParticleHistory(RollingParticleHistory):
         idx = self._init_backward_sampling(M)
         if max_trials is None:
             max_trials = M
-        tot_nattempts = 0
+        self.acc_rate = np.zeros(self.T - 1)
         for t in reversed(range(self.T - 1)):
             where_rejected = np.arange(M)
             who_rejected = self.X[t + 1][idx[t + 1, :]]
+            nprops = 0
+            ntrials = 0
             nrejected = M
-            nattempts = 0
             gen = rs.MultinomialQueue(self.wgts[t].W, M=M)
-            while nrejected > 0 and nattempts < max_trials:
-                nattempts += nrejected
+            while nrejected > 0 and ntrials < max_trials:
+                ntrials += 1
+                nprops += nrejected
                 nprop = gen.dequeue(nrejected)
                 lpr_acc = (self.fk.logpt(t + 1, self.X[t][nprop],
                                             who_rejected)
@@ -406,8 +408,7 @@ class ParticleHistory(RollingParticleHistory):
                     lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
                                                          self.X[t + 1][idx[t + 1, m]]))
                     idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
-            tot_nattempts += nattempts
-        self.acc_rate = (M * (self.T - 1)) / tot_nattempts
+            self.acc_rate[t] = (M - nrejected) / nprops
         return self._output_backward_sampling(idx)
 
     def backward_sampling_qmc(self, M):
