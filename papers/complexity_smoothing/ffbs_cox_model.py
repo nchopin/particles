@@ -87,7 +87,7 @@ fkmod = ssms.Bootstrap(ssm=my_ssm, data=data)
 fk_info = ssms.Bootstrap(ssm=my_ssm, data=data[::-1])
 
 nruns = 100 # run each algo 100 times
-Ns = [50, 200, 800, 3200, 12800]
+Ns = [200, 800, 3200, 12800, 51200]  # note: in book, from 50 to 12800
 methods = ['FFBS_ON2', 'FFBS_purereject', 'FFBS_MCMC', 'FFBS_hybrid']
 
 add_func = partial(psit, mu=mu0, phi=phi0, sigma=sigma0)
