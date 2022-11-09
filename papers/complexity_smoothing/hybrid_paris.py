@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Illustrates the different on-line smoothing algorithms using the
-bootstrap filter of the following model:
+Compare different on-line smoothing algorithms based on the bootstrap 
+filter of the following model:
 
 X_t|X_{t-1}=x_{t-1} ~ N(mu+phi(x_{t-1}-mu),sigma^2)
 Y_t|X_t=x_t ~ Poisson(exp(x_t))
@@ -14,9 +14,13 @@ the smoothing expectation of additive function phit, defined as
 phi_t(x_0:t) = sum_{s=0}^t psi_s(x_{s-1},x_s)
 see below for a definition of psi_s.
 
-See Chapter 12 (smoothing) for more details; in particular Figures 12.2 and
-12.3 which were produced by this script.
+This is essentially the same experiment as in Chapter 12 of the book (see
+Figures 12.2 and 12.3), except that: 
+    * we add the Paris algorithm to the comparison
+    * we stop at time T=100 (instead of T=10^4)
 
+Note that we implement the hybrid version of Paris (where, after N attempt, we
+switch to the more expensive algorithm). 
 """
 
 from __future__ import division, print_function
@@ -27,7 +31,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import particles
-from particles import collectors as cols
+from particles import collectors as col
 from particles import state_space_models
 
 
@@ -63,7 +67,7 @@ def outf(pf, method):
 
 # set up models, simulate data
 nruns = 25  # how many runs for each algorithm
-T = 10 ** 4  #  sample size
+T = 10 ** 2  #  sample size  " TODO was 4
 mu0 = 0.  # true parameters
 phi0 = 0.9
 sigma0 = .5
@@ -77,23 +81,26 @@ plt.figure()
 plt.plot(data)
 plt.title('data')
 
-methods = ['ON2', 'naive']  # in that order: ON2 must be run first
-collectors = {'ON2': cols.Online_smooth_ON2(),
-              'naive': cols.Online_smooth_naive()}
+methods = ['ON2', 'naive', 'Paris']
+collectors = {'ON2': col.Online_smooth_ON2(),
+              'naive': col.Online_smooth_naive(),
+              'Paris': col.Paris()}
 long_names = {'ON2': r'$O(N^2)$ forward-only',
-              'naive': r'naive, $O(N)$ forward-only'}
+              'naive': r'naive, $O(N)$ forward-only',
+              'Paris': 'Paris'}
 runs = {}
 avg_cpu = {}
-Ns = {'ON2': 100, 'naive': 10 ** 4}  #  for naive N is rescaled later
+Ns = {'ON2': 100, 'naive': 10**4, 'Paris': 10**3}
 
 for method in methods:
     col = collectors[method]
-    if method == 'naive':
-        # rescale N to match CPU time
-        pf = particles.SMC(fk=fkmod, N=Ns['naive'], collect=[col])
-        pf.run()
-        Ns['naive'] = int(Ns['naive'] * avg_cpu['ON2'] / pf.cpu_time)
-        print('rescaling N to %i to match CPU time' % Ns['naive'])
+    # TODO see if we rescale or not (like in the book)
+    # if method == 'naive':
+    #     # rescale N to match CPU time
+    #     pf = particles.SMC(fk=fkmod, N=Ns['naive'], collect=[col])
+    #     pf.run()
+    #     Ns['naive'] = int(Ns['naive'] * avg_cpu['ON2'] / pf.cpu_time)
+    #     print('rescaling N to %i to match CPU time' % Ns['naive'])
     long_names[method] += r', N=%i' % Ns[method]
     print(long_names[method])
 
@@ -108,7 +115,7 @@ for method in methods:
 # =====
 savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
-colors = {'ON2': 'gray', 'naive': 'black'}
+colors = {'ON2': 'gray', 'naive': 'black', 'Paris': 'lightgray'}
 
 # IQR (inter-quartile ranges) as a function of time: Figure 11.3
 plt.figure()
