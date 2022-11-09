@@ -79,19 +79,21 @@ take as an input the complete history of a particle filter, run until time T
     pf = particles.SMC(fk=fk, N=100, store_history=True)
     pf.run()
 
-Then, ``pf.hist`` is an instance of class `ParticleHistory`, which has the
-following methods:
+Then, ``pf.hist`` is an instance of class `ParticleHistory`. It implements two
+types of approaches:
 
-    * `backward_sampling`: implements O(N) and O(N^2) FFBS algorithms,
-      which generates smoothing trajectories from the history of the forward
-      pass;
-    * `backward_sampling_qmc`: same as above, but for when the forward pass
-      was based on QMC (quasi-Monte Carlo).
-    * `two_filter_smoothing`: to estimate expectations of marginal smoothing
-      distributions (using the two-filter smoothing approach).
+    * two-filter smoothing: uses two particle filters (one forward, one
+      backward) to estimate marginal expectations; see `two_filter_smoothing`.
+
+    * FFBS (forward filtering backward sampling): uses one particle filter,
+      then generates trajectories from its history, using different methods
+      (exact, rejection, MCMC, QMC). See `backward_sampling_mcmc`,
+      `backward_sampling_ON2`, `backward_sampling_reject`, and
+      `backward_sampling_qmc`. Recommended method is `backward_sampling_mcmc`,
+      see discussion in Dang & Chopin (2022).
 
 For more details, see the documentation of `ParticleHistory`, the ipython
-notebook on smoothing, and Chapter 12 of the book.
+notebook on smoothing, Chapter 12 of the book, and Dang & Chopin (2022).
 
 .. warning:: the complete history of a particle filter may take a lot of
   memory.
@@ -266,76 +268,131 @@ class ParticleHistory(RollingParticleHistory):
             raise ValueError('QMC FFBS requires particles have been Hilbert\
                              ordered during the forward pass')
 
-    def backward_sampling(self, M, linear_cost=False, return_ar=False):
-        """Generate smoothing trajectories using FFBS.
+    def _init_backward_sampling(self, M):
+        idx = np.empty((self.T, M), dtype=int)
+        idx[-1, :] = rs.multinomial(self.wgts[-1].W, M=M)
+        return idx
 
-        FFBS (forward filtering backward smoothing) is a class of off-line
-        smoothing algorithms, which generate smoothing trajectories constructed
-        from the history of a particle filter.
+    def _output_backward_sampling(self, idx):
+        # When M=1, we want a list of states, not a list of arrays containing
+        # one state
+        if idx.shape[1] == 1:
+            idx = idx.squeeze(axis=1)
+        paths = [self.X[t][idx[t]] for t in range(self.T)]
+        return paths
 
-        Parameters
-        ----------
+    def backward_sampling_ON2(self, M):
+        """Default O(N^2) version of FFBS.
+
+        Parameter
+        ---------
         M: int
-            number of trajectories we want to generate
-        linear_cost: bool
-            if set to True, the O(N) version is used, see below.
-
-        return_ar: bool (default=False)
-            if set to True, change the output, see below.
+            number of trajectories to generate
 
         Returns
         -------
         paths: a list of ndarrays
             paths[t][n] is component t of trajectory m.
-        ar: float
-            the overall acceptance rate of the rejection procedure
-
-        Notes
-        -----
-
-        1. if ``linear_cost=False``, complexity is O(TMN); i.e. O(TN^2) for M=N;
-           if ``linear_cost=True``, complexity is O(T(M+N)), i.e. O(TN) for M=N.
-           This requires that model has method `upper_bound_trans`, which
-           provides the log of a constant C_t such that
-           :math:`p_t(x_t|x_{t-1}) \leq C_t`.
-
-        2. main output is ``paths``, a list of T arrays such that
-           ``paths[t][m]`` is component t of trajectory m.
-
-        3. if ``linear_cost=True`` and ``return_ar=True``, output is tuple
-           ``(paths, ar)``, where ``paths`` is as above, and ``ar`` is the overall
-           acceptance rate (of the rejection steps that choose the ancestors);
-           otherwise output is simply ``paths``.
         """
-        idx = np.empty((self.T, M), dtype=int)
-        idx[-1, :] = rs.multinomial(self.wgts[-1].W, M=M)
-        if linear_cost:
-            ar = self._backward_sampling_ON(M, idx)
-        else:
-            self._backward_sampling_ON2(M, idx)
-        # When M=1, we want a list of states, not a list of arrays containing
-        # one state
-        if M == 1:
-            idx = idx.squeeze(axis=1)
-        paths = [self.X[t][idx[t]] for t in range(self.T)]
-        if linear_cost and return_ar:
-            return (paths, ar)
-        else:
-            return paths
+        idx = self._init_backward_sampling(M)
+        for m in range(M):
+            for t in reversed(range(self.T - 1)):
+                lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
+                                                self.X[t + 1][idx[t + 1, m]]))
+                idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
+        return self._output_backward_sampling(idx)
 
-    def _backward_sampling_ON(self, M, idx):
-        """O(N) version of backward sampling.
+    def backward_sampling_mcmc(self, M, nsteps=1):
+        """MCMC-based backward sampling.
 
-        not meant to be called directly, see backward_sampling.
+        Uses one step of an independent Metropolis kernel, where the proposal
+        is the multinomial distribution based on the weights. This is now the
+        method recommended by default, since it has O(N) (deterministic)
+        complexity and it seems to work well, as explained in Dau & Chopin
+        (2022).
+
+        Parameters
+        ----------
+        M: int
+            number of trajectories to generate
+        nsteps: int (default: 1)
+            number of independent Metropolis steps
+
+        Returns
+        -------
+        paths: a list of ndarrays
+            paths[t][n] is component t of trajectory m.
+
+        References
+        ----------
+        Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing
+        algorithms, arXiv:2207.00976
         """
-        nattempts = 0
+        idx = self._init_backward_sampling(M)
+        for t in reversed(range(self.T - 1)):
+            idx[t, :] = self.A[t + 1][idx[t + 1, :]]
+            prop = rs.multinomial(self.wgts[t].W, M=M)
+            xn = self.X[t + 1][idx[t + 1, :]]
+            lpr_acc = (self.fk.logpt(t + 1, self.X[t][prop], xn)
+                       - self.fk.logpt(t + 1, self.X[t][idx[t, :]], xn))
+            lu = np.log(np.random.rand(M))
+            idx[t, :] = np.where(lu < lpr_acc, prop, idx[t, :])
+        return self._output_backward_sampling(idx)
+
+    def backward_sampling_reject(self, M, max_trials=None):
+        """Rejection-based backward sampling.
+
+        Because of the issues with the pure rejection method discussed in Dau
+        and Chopin (2022), i.e. execution time is random and may have infinite
+        expectation, we implement the hybrid version introduced in Dau & Chopin
+        (2022), where, for a given particle, we make at most `max_trials`
+        attempts, before switching back to the exact (expensive) method. To
+        recover the "pure rejection" scheme, simply set this parameter to
+        infinity (or a very large value).
+
+        Parameters
+        ----------
+        M: int
+            number of trajectories to generate
+        max_trials: int (default: M)
+            max number of rejection steps before we switch to the expensive
+            method.
+
+        Returns
+        -------
+        paths: a list of ndarrays
+            paths[t][n] is component t of trajectory m.
+
+        Note
+        ----
+        1. To use rejection, you need to define (in the model) a method
+           `upper_bound_trans`, which provides the log of a constant C_t such
+           that :math:`p_t(x_t|x_{t-1}) \leq C_t`.
+
+        2.  The average acceptance rate at time t is saved in `self.acc_rate[t]`.
+
+        3. Dau & Chopin (2022) recommend to set max_trials to M, or a multiple
+           of M.
+
+        References
+        ----------
+        Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing
+        algorithms, arXiv:2207.00976
+        """
+        idx = self._init_backward_sampling(M)
+        if max_trials is None:
+            max_trials = M
+        self.acc_rate = np.zeros(self.T - 1)
         for t in reversed(range(self.T - 1)):
             where_rejected = np.arange(M)
             who_rejected = self.X[t + 1][idx[t + 1, :]]
+            nprops = 0
+            ntrials = 0
             nrejected = M
             gen = rs.MultinomialQueue(self.wgts[t].W, M=M)
-            while nrejected > 0:
-                nattempts += nrejected
+            while nrejected > 0 and ntrials < max_trials:
+                ntrials += 1
+                nprops += nrejected
                 nprop = gen.dequeue(nrejected)
                 lpr_acc = (self.fk.logpt(t + 1, self.X[t][nprop],
                                             who_rejected)
@@ -346,18 +403,13 @@ class ParticleHistory(RollingParticleHistory):
                 where_rejected = where_rejected[still_rejected]
                 who_rejected = who_rejected[still_rejected]
                 nrejected -= sum(newly_accepted)
-        return (M * (self.T - 1)) / nattempts
-
-    def _backward_sampling_ON2(self, M, idx):
-        """O(N^2) version of backward sampling.
-
-        not meant to be called directly, see backward_sampling.
-        """
-        for m in range(M):
-            for t in reversed(range(self.T - 1)):
-                lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
-                                                     self.X[t + 1][idx[t + 1, m]]))
-                idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
+            if nrejected > 0:
+                for m in where_rejected:
+                    lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
+                                                         self.X[t + 1][idx[t + 1, m]]))
+                    idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
+            self.acc_rate[t] = (M - nrejected) / nprops
+        return self._output_backward_sampling(idx)
 
     def backward_sampling_qmc(self, M):
         """QMC version of backward sampling.
@@ -365,11 +417,12 @@ class ParticleHistory(RollingParticleHistory):
         Parameters
         ----------
         M : int
-            number of trajectories
+            number of trajectories to generate
 
         Note
         ----
-        Use this only on the history of a SQMC algorithm.
+        This is the version to use if your particle filter relies on QMC.
+        Otherwise use one of the other methods.
         """
         self._check_h_orders()
         u = rqmc.sobol(M, self.T)
@@ -510,8 +563,8 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
     Parameters
     ----------
     method: string
-         ['FFBS_ON', 'FFBS_ON2', 'FFBS_QMC',
-           'two-filter_ON', 'two-filter_ON_prop', 'two-filter_ON2']
+         ['FFBS_purereject', 'FFBS_hybrid', FFBS_MCMC', 'FFBS_ON2', 'FFBS_QMC',
+          'two-filter_ON', 'two-filter_ON_prop', 'two-filter_ON2']
     N: int
         number of particles
     fk: Feynman-Kac object
@@ -529,6 +582,14 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
     a dict with fields:
         est: a ndarray of length T
         cpu_time
+
+    Notes
+    -----
+    'FFBS_hybrid' is the hybrid method that makes at most N attempts to
+    generate an ancestor using rejection, and then switches back to the
+    standard (expensive method). On the other hand, 'FFBS_purereject' is the
+    original rejection-based FFBS method, where only rejection is used. See Dau
+    & Chopin (2022) for a discussion.
     """
     T = fk.T
     if fk_info is None:
@@ -540,11 +601,18 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
         pf = particles.SMC(fk=fk, N=N, store_history=True)
     tic = time.perf_counter()
     pf.run()
-    if method in ['FFBS_ON', 'FFBS_ON2', 'FFBS_QMC']:
-        if method.startswith('FFBS_ON'):
-            z = pf.hist.backward_sampling(N, linear_cost=(method == 'FFBS_ON'))
-        else:
+    if method.startswith('FFBS'):
+        submethod = method.split('_')[-1]
+        if submethod == 'QMC':
             z = pf.hist.backward_sampling_qmc(N)
+        elif submethod == 'ON2':
+            z = pf.hist.backward_sampling_ON2(N)
+        elif submethod == 'MCMC':
+            z = pf.hist.backward_sampling_mcmc(N)
+        elif submethod == 'hybrid':
+            z = pf.hist.backward_sampling_reject(N)
+        elif submethod == 'purereject':
+            z = pf.hist.backward_sampling_reject(N, max_trials=N * 10**9)
         for t in range(T - 1):
             est[t] = np.mean(add_func(t, z[t], z[t + 1]))
     elif method in ['two-filter_ON2', 'two-filter_ON', 'two-filter_ON_prop']:
@@ -570,7 +638,7 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
                                                      modif_forward=modif_fwd,
                                                      modif_info=modif_info)
     else:
-        print('no such method?')
+        print('smoothing_worker: no such method?')
     cpu_time = time.perf_counter() - tic
     print(method + ' took %.2f s for N=%i' % (cpu_time, N))
     return {'est': est, 'cpu': cpu_time}

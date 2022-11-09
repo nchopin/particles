@@ -379,32 +379,62 @@ class Online_smooth_ON2(Collector, OnlineSmootherMixin):
 
 
 class Paris(Collector, OnlineSmootherMixin):
-    signature = {'Nparis': 2}
+    """Hybrid version of the Paris algorithm.
+
+    This implements a hybrid variant of Paris, the on-line smoothing algorithm
+    of Olsson and Westerborn (2017), where at most `max_trials` proposals are
+    generated in the rejection step, before switching to an exact (more
+    expensive) algorithm. See Dau & Chopin (2022) for why the hybrid version is
+    recommended (with `max_trials` set to N, which is done by default, if you
+    do no provide a value). To recover the original Paris algorithm, simply set
+    `max_trials` to a very large value (or infinity).
+
+    References
+    ----------
+    Olsson, J., & Westerborn, J. (2017). Efficient particle-based online
+    smoothing in general hidden Markov models: the PaRIS algorithm. Bernoulli,
+    23(3), 1951-1996.
+
+    Dau, H.D. and Chopin, N. (2022).On the complexity of backward smoothing
+    algorithms, arXiv:2207.00976
+    """
+    signature = {'Nparis': 2, 'max_trials': None}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.nprop = [0.]
 
     def update(self, smc):
+        maxtries = smc.N if self.max_trials is None else self.max_trials
         prev_Phi = self.Phi.copy()
         mq = rs.MultinomialQueue(self.prev_W)
-        nprop = 0
-        for n in range(self.N):
+        tot_ntries = 0
+        for n in range(smc.N):
             As = np.empty(self.Nparis, dtype=np.int64)
             for m in range(self.Nparis):
-                while True:
+                ntries = 0
+                accepted = False
+                while ntries < maxtries:
                     a = mq.dequeue(1)
-                    nprop += 1
+                    ntries += 1
                     lp = (smc.fk.logpt(smc.t, self.prev_X[a], smc.X[n])
-                          - smc.fk.upper_bound_log_pt(smc.t))
+                          - smc.fk.ssm.upper_bound_log_pt(smc.t))
                     if np.log(random.rand()) < lp:
+                        As[m] = a
+                        accepted = True
                         break
-                As[m] = a
+                if not(accepted):
+                    lwXn = (self.prev_logw
+                            + smc.fk.logpt(smc.t, self.prev_X, smc.X[n]))
+                    WXn = rs.exp_and_normalise(lwXn)
+                    As[m] = rs.multinomial_once(WXn)
+                tot_ntries += ntries
             mod_Phi = (prev_Phi[As]
                        + smc.fk.add_func(smc.t, self.prev_X[As], smc.X[n]))
             self.Phi[n] = np.average(mod_Phi, axis=0)
-        self.nprop.append(nprop)
+        self.nprop.append(tot_ntries)
 
     def save_for_later(self, smc):
         self.prev_X = smc.X
         self.prev_W = smc.W
+        self.prev_logw = smc.wgts.lw
