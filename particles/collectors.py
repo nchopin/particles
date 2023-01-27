@@ -438,3 +438,5 @@ class Paris(Collector, OnlineSmootherMixin):
         self.prev_X = smc.X
         self.prev_W = smc.W
         self.prev_logw = smc.wgts.lw
+
+

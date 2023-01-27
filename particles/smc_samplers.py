@@ -11,11 +11,11 @@ from a sequence of arbitrary probability distributions (and approximate their
 normalising constants).  Applications include sequential and non-sequential
 Bayesian inference, rare-event simulation, etc.  For more background on
 (standard) SMC samplers, see Chapter 17 (and references therein). For the
-waste-free variant, see Dau & Chopin (2020).
+waste-free variant, see Dau & Chopin (2022).
 
 The following type of sequences of distributions are implemented: 
 
-* SMC tempering: target distribution at time t as a density of the form
+* SMC tempering: target distribution at time t has a density of the form
   mu(theta) L(theta)^{gamma_t}, with gamma_t increasing from 0 to 1. 
 
 * IBIS: target distribution at time t is the posterior of parameter theta
@@ -106,7 +106,11 @@ This piece of code will run a tempering SMC algorithm such that:
 * the waste-free version is implemented; that is, the actual number of
   particles is 100 * 200, but only 200 particles are resampled at each time,
   and then moved through 100 MCMC steps (parameter len_chain)
-  (set parameter wastefree=False to run a standard SMC sampler).
+  (set parameter wastefree=False to run a standard SMC sampler). See Dau &
+  Chopin (2022) for more details (or the notebook on SMC samplers).
+* if you use the waste-free version, you may also compute a single-run estimate
+  of the variance of a particular estimate; see `var_wf`, `Var_logLt` and
+  `Var_phi` for more details.
 * the default MCMC strategy is random walk Metropolis, with a covariance
   proposal set to a fraction of the empirical covariance of the current
   particle sample. See next section for how to use a different MCMC kernel.
@@ -182,9 +186,10 @@ of its sub-classes).
 References
 ==========
 
-Dau, H.D. and Chopin, N (2020). Waste-free Sequential Monte Carlo,
-`arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_
-
+Dau, H.D. and Chopin, N. (2022). Waste-free Sequential Monte Carlo,
+  Journal of the Royal Statistical Society: Series B (Statistical Methodology),
+  vol. 84, p. 114-148. <https://doi.org/10.1111/rssb.12475>, see also on arxiv: 
+  <https://arxiv.org/abs/2011.02328>. 
 
 """
 
@@ -199,6 +204,8 @@ from scipy import optimize, stats, linalg
 import particles
 from particles import resampling as rs
 from particles.state_space_models import Bootstrap
+from particles.collectors import Collector
+from particles.variance_mcmc import MCMC_variance
 
 ###################################
 # Static models
@@ -650,7 +657,6 @@ class MCMCSequenceWF(MCMCSequence):
     """
     def __call__(self, x, target):
         xs = [x]
-        xprev = x
         ars = []
         for _ in range(self.nsteps):
             x = x.copy()
@@ -687,7 +693,6 @@ class AdaptiveMCMCSequence(MCMCSequence):
         prev_ars = x.shared.get('acc_rates', [])
         xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
         return xout
-
 
 #############################
 # FK classes for SMC samplers
@@ -854,6 +859,90 @@ class AdaptiveTempering(FKSMCsampler):
     def summary_format(self, smc):
         msg = FKSMCsampler.summary_format(self, smc)
         return msg + ', tempering exponent=%.3g' % smc.X.shared['exponents'][-1]
+
+
+###########################################################
+# single-run variance estimators for waste-free SMC
+
+def var_wf(smc, phi):
+    """Single-run variance estimate for waste-free SMC.
+
+    One advantage of waste-free SMC samplers is that it is possible to estimate
+    the asymptotic variance of a given estimate from a *single* run. Basically, 
+    the N particles of a waste-free SMC sampler behaves like the states of M
+    (where M is the number of resampled particles) independent, stationary 
+    chains. One may use a variant of one the standard MCMC variance estimators 
+    (e.g. initial sequence) to estimate the variance of a given output. See Dau
+    & Chopin (2022) for more details.
+
+    The user may use this function to compute manually such an estimate for a
+    given test function phi. 
+
+    Parameters
+    ----------
+    smc: smc object
+        the smc algorithm
+    phi: callable
+        test function (takes X as input, returns N scalars) 
+
+    Returns
+    -------
+    estimate: float
+        estimate of the asymptotic variance of the estimate of E[phi(X_t)]
+
+    References
+    ==========
+
+    Dau, H.D. and Chopin, N. (2022). Waste-free Sequential Monte Carlo,
+      Journal of the Royal Statistical Society: Series B (Statistical Methodology),
+      vol. 84, p. 114-148.
+
+    """
+    N0 = smc.W.shape[0]
+    fx = phi(smc.X)
+    fmean = np.average(fx, weights=smc.W)
+    wphi = smc.W * (fx - fmean)
+    wphi_reshaped = np.reshape(wphi, (-1, smc.N), 'C')
+    return MCMC_variance(wphi_reshaped, method='init_seq') * N0**2
+
+class Var_phi(Collector):
+    """Collects single-run estimates of the variance of a given estimate (for a
+    certain function phi) from a waste-free sampler (Dau & Chopin, 2022).
+
+    See the documentation of `var_wf` for more details on single-run variance
+    estimates, and the documentation of module `collectors` for more details on
+    how collectors work.
+    """
+    signature = {'phi': None}
+
+    def fetch(self, smc):
+        return var_wf(smc, self.phi)
+
+class Var_logLt(Collector):
+    """Collects single-run estimates of the variance of log L_t (normalising cst)
+    from a waste-free sampler (Dau & Chopin, 2022).
+
+    See the documentation of `var_wf` for more details on single-run variance
+    estimates, and the documentation of module `collectors` for more details on
+    how collectors work.
+    -----
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.var_prev = 0.
+        self.var_logw = 0.
+
+    def fetch(self, smc):
+        if smc.rs_flag:
+            self.var_prev += self.var_logw
+        # M = smc.N, P=smc.len_chain
+        # MCMC_variance expects a (P, M) array
+        lw_reshaped = np.reshape(smc.wgts.lw, (-1, smc.N), 'C')
+        lwm = lw_reshaped.max()
+        w = np.exp(lw_reshaped-lwm)
+        var_w = MCMC_variance(w, method='init_seq')
+        self.var_logw = var_w / (np.mean(w))**2
+        return self.var_logw + self.var_prev
 
 
 #####################################

@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - distributions: VaryingCovNormal (issue 55 on github)
 - smoothing: FFBS-MCMC, FFBS-hybrid
 - collectors: Paris algorithm (hybrid version)
+- collectors: variance of log-norm cts for waste-free SMC
 
 ## [0.3] - 2021-10-25
 ### Added 

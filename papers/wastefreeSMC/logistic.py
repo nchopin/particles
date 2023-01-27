@@ -96,8 +96,7 @@ for M, K in zip(Ms, Ks):
                 fk = ssps.AdaptiveTempering(model=model, len_chain=lc, 
                                             wastefree=waste)
             pf = particles.SMC(fk=fk, N=N, collect=[Moments], verbose=False)
-            print('%s, waste:%i, nsteps=%i, run %i' % (alg_type, waste,
-                                                       nsteps, i))
+            print('%s, waste:%i, lc=%i, run %i' % (alg_type, waste, lc, i))
             pf.run()
             print('CPU time (min): %.2f' % (pf.cpu_time / 60))
             print('loglik: %f' % pf.logLt)
