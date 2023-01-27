@@ -9,9 +9,10 @@ All notable changes to this project will be documented in this file.
 - distributions: VaryingCovNormal (issue 55 on github)
 - smoothing: FFBS-MCMC, FFBS-hybrid
 - collectors: Paris algorithm (hybrid version)
-- collectors: variance of log-norm cts for waste-free SMC
+- smc_samplers: single-run variance estimates
 
 ## [0.3] - 2021-10-25
+# Blog post: <https://statisfaction.wordpress.com/2021/10/25/particles-0-3-waste-free-smc-fortran-dependency-removed-binary-spaces/>
 ### Added 
 - new module: binary_smc
 - smc_samplers: waste-free SMC (now default)
