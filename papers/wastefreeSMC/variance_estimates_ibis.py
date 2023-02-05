@@ -3,26 +3,27 @@
 
 """
 
-TODO document this xp.
+Single-run variance estimates in waste-free IBIS. 
 
+In IBIS, you approximate at time t the posterior distribution based on
+data y_{0:t}. With waste-free IBIS, it then becomes possible to estimate the
+(Monte Carlo) variance of estimates computed at each time t, such as the
+posterior expectation of a given parameter (again given the data up to time t),
+or the current log-evidence (log of marginal likelihood). Module smc_samplers
+now implements collectors (see module `collectors`) that collect such variance
+estimates. 
 
-Reproduces the first numerical experiment of Dau & Chopin (2020). 
-
-
-Compares standard SMC and waste-free SMC when applied to a tempering sequence
-to sample from the posterior distribution of a logistic regression. Plots
-the boxplots (over 100 runs) of the following estimates: 
-
-* log normalising constant (marginal likelihood)
-* posterior expectation of the average of the p coefficients
-
-Considered dataset: sonar (but see below for other options).
+This script gives an example on how these collectors may be used. It is based
+on the same example as in Chapter 17 of the book: logistic regression, Gaussian
+prior for the coefficients, pima or EEG datasets. 
 
 Reference
 =========
 
-Dau, Hai-Dang, and Nicolas Chopin. "Waste-free Sequential Monte Carlo." arXiv
-preprint arXiv:2011.02328 (2020).  
+Dau, H.D. and Chopin, N. (2022). Waste-free Sequential Monte Carlo,
+  Journal of the Royal Statistical Society: Series B (Statistical Methodology),
+  vol. 84, p. 114-148. <https://doi.org/10.1111/rssb.12475>, see also on arxiv: 
+  <https://arxiv.org/abs/2011.02328>. 
 
 """
 
@@ -38,8 +39,8 @@ from particles import resampling as rs
 from particles import smc_samplers as ssps
 from particles.collectors import Moments
 
-datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
-dataset_name = 'eeg'
+datasets = {'pima': dts.Pima, 'eeg': dts.Eeg}
+dataset_name = 'pima'
 data = datasets[dataset_name]().data
 T, p = data.shape
 
@@ -48,16 +49,12 @@ T, p = data.shape
 # chains (same notations as in the paper)
 # All of the runs are such that N*K or M*P equal N0
 
-if dataset_name == 'sonar':
-    alg_type = 'tempering'
-    N0 = 2 * 10**5
-    M = 200
-elif dataset_name == 'pima':
-    alg_type = 'ibis'
+if dataset_name == 'pima':
+    nruns = 300
     N0 = 10**4
     M = 25
 elif dataset_name == 'eeg':
-    alg_type = 'ibis'
+    nruns = 50
     N0 = 10 ** 4
     M = 25
 
@@ -74,22 +71,19 @@ class LogisticRegression(ssps.StaticModel):
         return - np.logaddexp(0., -lin)
 
 model = LogisticRegression(data=data, prior=prior)
-phi = lambda x: x.theta['beta'][:, 0]
-nruns = 20
+phi = lambda x: x.theta['beta'][:, 0]  # intercept
 results = []
 
 # runs
 print('Dataset: %s' % dataset_name)
 N, lc = M, N0 // M
 res = {'M': M, 'P': lc}
-if alg_type == 'ibis':
-    fk = ssps.IBIS(model=model, len_chain=lc, wastefree=True)
-else:
-    fk = ssps.AdaptiveTempering(model=model, len_chain=lc, 
-                                wastefree=True)
-results = particles.multiSMC(fk=fk, N=N, collect=[Moments, ssps.Var_logLt,
-                                                  ssps.Var_phi(phi=phi)],
-                                 verbose=False, nruns=nruns, nprocs=0)
+
+fk = ssps.IBIS(model=model, len_chain=lc)
+
+results = particles.multiSMC(fk=fk, N=N, nruns=nruns,
+                             collect=[Moments, ssps.Var_logLt, 
+                                      ssps.Var_phi(phi=phi)])
 
 # plots
 #######
@@ -115,7 +109,8 @@ plt.plot(np.var([r['output'].summaries.logLts for r in results], axis=0),
 plt.legend(loc='lower right')
 plt.ylabel(r'var log-likelihood')
 plt.xlabel(r'$t$')
-plt.savefig(f'var_logLt_{dataset_name}.pdf')
+if savefigs:
+    plt.savefig(f'var_logLt_{dataset_name}.pdf')
 
 plt.figure()
 est_int = np.array([[m['mean']['beta'][0] for m in r['output'].summaries.moments]
@@ -138,7 +133,6 @@ plt.ylabel(r'var intercept post expectation')
 plt.xlabel(r'$t$')
 max_when_cropped = upper[50:].max()
 plt.ylim(top=max_when_cropped, bottom=-max_when_cropped / 10)
-plt.savefig(f'var_post_{dataset_name}.pdf')
+if savefigs:
+    plt.savefig(f'var_post_{dataset_name}.pdf')
 
-# TODO
-# * this division by N0 of the var estimates is easy to forget...
