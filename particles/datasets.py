@@ -29,11 +29,12 @@ sub-class for more details on the preprocessing step.
 Dataset           parent class          typical use/model
 ================= ===================== =======================
 `Boston`          `RegressionDataset`   regression
-`Eeg`             `BinaryRegDataset`    logistic regression
+`Eeg`             `BinaryRegDataset`    binary regression
 `GBP_vs_USD_9798` `LogReturnsDataset`   stochastic volatility
+`Liver`           `BinaryRegDataset`    binary regression
 `Nutria`          `Dataset`             population ecology
-`Pima`            `BinaryRegDataset`    logistic regression
-`Sonar`           `BinaryRegDataset`    logistic regression
+`Pima`            `BinaryRegDataset`    binary regression
+`Sonar`           `BinaryRegDataset`    binary regression
 `Neuro`           `Dataset`             neuroscience ssm
 ================= ===================== =======================
 
@@ -248,7 +249,7 @@ class BinaryRegDataset(Dataset):
 class Pima(BinaryRegDataset):
     """Pima Indians Diabetes.
 
-    A data set with 768 observations on 9 variables.
+    A dataset with 768 observations and 9 predictors.
 
     Response: diabetes test.
 
@@ -266,6 +267,31 @@ class Pima(BinaryRegDataset):
 
     """
     file_name = 'pima-indians-diabetes.data'
+
+class Liver(BinaryRegDataset):
+    """Indian liver patient dataset (ILPD).
+
+    A dataset with 579 observations and 10 predictors.
+
+    Response: liver patient or not.
+
+    Predictors:
+        * Age of the patient
+        * Gender of the patient (0 / 1 = Male / Female)
+        * TB Total Bilirubin
+        * DB Direct Bilirubin
+        * Alkphos Alkaline Phosphotase
+        * Sgpt Alamine Aminotransferase
+        * Sgot Aspartate Aminotransferase
+        * TP Total Protiens
+        * ALB Albumin
+        * A/G Ratio Albumin and Globulin Ratio
+
+    Reference
+    ---------
+    `UCI: <https://archive.ics.uci.edu/ml/datasets/ILPD+%28Indian+Liver+Patient+Dataset%29#>`__
+    """
+    file_name = 'indian_liver_patient.csv'
 
 class Eeg(BinaryRegDataset):
     """EEG dataset from UCI repository.

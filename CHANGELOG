@@ -4,12 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- datasets: Liver
 - distributions: LogNormal
 - distributions: Mixture, FlatNormal, mixMissing (to deal with missing data)
 - distributions: VaryingCovNormal (issue 55 on github)
 - smoothing: FFBS-MCMC, FFBS-hybrid
 - collectors: Paris algorithm (hybrid version)
 - smc_samplers: single-run variance estimates
+- smc_samplers: Tempering (fixed exponents)
 
 ## [0.3] - 2021-10-25
 # Blog post: <https://statisfaction.wordpress.com/2021/10/25/particles-0-3-waste-free-smc-fortran-dependency-removed-binary-spaces/>

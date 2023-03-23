@@ -775,32 +775,26 @@ class IBIS(FKSMCsampler):
             return xp
 
 
-class AdaptiveTempering(FKSMCsampler):
-    """Feynman-Kac class for adaptive tempering SMC.
-
+class Tempering(FKSMCsampler):
+    """Feynman-Kac class for tempering SMC (fixed exponents).
+    
     Parameters
     ----------
-    ESSrmin: float
-        Sequence of tempering dist's are chosen so that ESS ~ N * ESSrmin at
-        each step
+    exponents: list-like
+        sequence of tempering exponents (increasing)
 
     See base class for other parameters.
     """
     def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
-                 ESSrmin=0.5):
+                 exponents=None):
         super().__init__(model=model, wastefree=wastefree,
                          len_chain=len_chain, move=move)
-        self.ESSrmin = ESSrmin
+        self.exponents = exponents
+        self.deltas = np.diff(exponents, prepend=0.)
 
-    def time_to_resample(self, smc):
-        self.move.calibrate(smc.W, smc.X)
-        return True  # We *always* resample in tempering
-
-    def done(self, smc):
-        if smc.X is None:
-            return False  # We have not started yet
-        else:
-            return smc.X.shared['exponents'][-1] >= 1.
+    @property
+    def T(self):
+        return len(self.exponents)
 
     def update_path_sampling_est(self, x, delta):
         grid_size = 10
@@ -820,19 +814,8 @@ class AdaptiveTempering(FKSMCsampler):
         return dl
 
     def logG(self, t, xp, x):
-        ESSmin = self.ESSrmin * x.N
-        f = lambda e: rs.essl(e * x.llik) - ESSmin
-        epn = x.shared['exponents'][-1]
-        if f(1. - epn) > 0:  # we're done (last iteration)
-            delta = 1. - epn
-            new_epn = 1.
-            # set 1. manually so that we can safely test == 1.
-        else:
-            delta = optimize.brentq(f, 1.e-12, 1. - epn)  # secant search
-            # left endpoint is >0, since f(0.) = nan if any likelihood = -inf
-            new_epn = epn + delta
-        x.shared['exponents'].append(new_epn)
-        return self.logG_tempering(x, delta)
+        x.shared['exponents'].append(self.exponents[t])
+        return self.logG_tempering(x, self.deltas[t])
 
     def current_target(self, epn):
         def func(x):
@@ -851,14 +834,65 @@ class AdaptiveTempering(FKSMCsampler):
         self.current_target(0.)(x0)
         return x0
 
-    def M(self, t, xp):
-        epn = xp.shared['exponents'][-1]
+    def _M(self, t, xp, epn):
         target = self.current_target(epn)
         return self.move(xp, target)
+
+    def M(self, t, xp):
+        if xp.shared['rs_flag']:
+            return self._M(t, xp, self.exponents[t - 1])
+        else:
+            return xp
 
     def summary_format(self, smc):
         msg = FKSMCsampler.summary_format(self, smc)
         return msg + ', tempering exponent=%.3g' % smc.X.shared['exponents'][-1]
+
+class AdaptiveTempering(Tempering):
+    """Feynman-Kac class for adaptive tempering SMC.
+
+    Parameters
+    ----------
+    ESSrmin: float
+        Sequence of tempering dist's are chosen so that ESS ~ N * ESSrmin at
+        each step
+
+    See base class for other parameters.
+    """
+    def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
+                 ESSrmin=0.5):
+        FKSMCsampler.__init__(self, model=model, wastefree=wastefree,
+                              len_chain=len_chain, move=move)
+        self.ESSrmin = ESSrmin
+
+    def time_to_resample(self, smc):
+        self.move.calibrate(smc.W, smc.X)
+        return True  # We *always* resample in adaptive tempering
+
+    def done(self, smc):
+        if smc.X is None:
+            return False  # We have not started yet
+        else:
+            return smc.X.shared['exponents'][-1] >= 1.
+
+    def logG(self, t, xp, x):
+        ESSmin = self.ESSrmin * x.N
+        f = lambda e: rs.essl(e * x.llik) - ESSmin
+        epn = x.shared['exponents'][-1]
+        if f(1. - epn) > 0:  # we're done (last iteration)
+            delta = 1. - epn
+            new_epn = 1.
+            # set 1. manually so that we can safely test == 1.
+        else:
+            delta = optimize.brentq(f, 1.e-12, 1. - epn)  # secant search
+            # left endpoint is >0, since f(0.) = nan if any likelihood = -inf
+            new_epn = epn + delta
+        x.shared['exponents'].append(new_epn)
+        return self.logG_tempering(x, delta)
+
+    def M(self, t, xp):
+        return self._M(t, xp, xp.shared['exponents'][-1])
+
 
 
 ###########################################################
