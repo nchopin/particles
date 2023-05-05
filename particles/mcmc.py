@@ -42,6 +42,55 @@ models) for more examples and explanations.
 
 .. _tutorial: notebooks/Bayes_estimation_ssm.ipynb
 
+Random walk Metropolis
+======================
+
+Both `GenericRWHM` and `PMMH` rely on a random walk proposal; that is, given
+the current point $\theta$, the proposed point is sampled from a Gaussian
+distribution, with mean $\theta$, and some covariance matrix $\Sigma$ (or
+$\Sigma_t$ at iteration $t$ the adaptive case, see below). Various parameters
+may be set to tune this type of proposal:
+
+* to run a standard random walk Metropolis algorithm, set ``adaptive=False``, and
+  specify the covariance matrix $\Sigma$ through parameter ``rw_cov``.
+  Otherwise, $\Sigma$ is set by default to the identity matrix (which could a
+  terrible choice in certain problems).
+
+* to run an adaptive random walk Metropolis algorithm, where the matrix
+  $\Sigma_t$ is progressively adapted to the past states of the chain, set
+  ``adaptive=True``. In that case, $\Sigma_t$ is set to a fraction of the running
+  estimate of the covariance matrix of the *target* distribution. In that case,
+  ``rw_cov`` is used as a preliminary estimate for that target covariance.
+  See parameter ``scale`` (in the documentation of `GenericRWHM`) for more
+  details on the factor in front of the running estimate, and
+  `VanishCovTracker` for how the running estimate is computed recursively. 
+
+By default, the adaptive version is used. 
+
+Beyond the bootstrap filter within `PMMH`
+========================================
+
+PMMH  runs, at each iteration, a particle filter to approximate the likelihood
+of the considered state-space model. By default, a bootstrap filter is used
+(with default choices for the resampling scheme, and so on). It is possible to
+change the settings of this filtering algorithm, or run a different type of
+algorithm, as follows:
+
+1. You can set parameter `fk_cls` to a `FeynmanKac` subclass such as e.g. 
+   `ssms.GuidedPF` if you wish to use a guided filter (rather than a bootstrap
+   filter). See module `state_space_models` for more details on these
+   `FeynmanKac` subclassed derived from a given state-space model.
+
+2. You can use parameter ``smc_options`` (dict-like) to pass various parameters 
+   to class `SMC` when the algorithm is instantiated.
+
+3. You can even use parameter `smc_cls` to specify a different class for the
+  algorithm itself (rather than SMC). 
+
+4. Finally, if you need something even more general, you can also subclass
+  `PMMH` and redefine method `alg_instance`, which takes as argument ``theta`` (a
+  dict-like object) and returns an algorithm (an instance of class `SMC` or one
+  its subclass). 
 """
 
 from __future__ import division, print_function
@@ -54,7 +103,7 @@ from scipy.linalg import cholesky, LinAlgError
 
 import particles
 from particles import smc_samplers as ssp
-from particles.state_space_models import Bootstrap
+import particles.state_space_models as ssms
 from particles import utils
 
 def msjd(theta):
@@ -288,7 +337,7 @@ class PMMH(GenericRWHM):
 
     def __init__(self, niter=10, verbose=0, ssm_cls=None,
                  smc_cls=particles.SMC, prior=None, data=None, smc_options=None,
-                 fk_cls=Bootstrap, Nx=100, theta0=None, adaptive=True, scale=1.,
+                 fk_cls=ssms.Bootstrap, Nx=100, theta0=None, adaptive=True, scale=1.,
                  rw_cov=None):
         """
         Parameters
@@ -307,7 +356,7 @@ class PMMH(GenericRWHM):
             the data
         smc_options: dict
             options to pass to class SMC
-        fk_cls: (default=Bootstrap)
+        fk_cls: (default=ssms.Bootstrap)
             FeynmanKac class associated to the model
         Nx: int
             number of particles (for the particle filter that evaluates the
@@ -438,7 +487,7 @@ class ParticleGibbs(GenericGibbs):
     Nx: int
         number of x-particles (in the CSMC step)
     fk_cls: FeynmanKac class (default=None)
-        which Feynman-Kac model to use (if None, set to ssm.Bootstrap, however,
+        which Feynman-Kac model to use (if None, set to ssms.Bootstrap, however,
         one may use instead e.g. ssm.GuidedPF)
     regenerate_data: bool (default=False)
         re-generate the data at each step; in the case the algorithm samples
@@ -465,7 +514,7 @@ class ParticleGibbs(GenericGibbs):
                               ssm_cls=ssm_cls, prior=prior, data=data,
                               theta0=theta0, store_x=store_x)
         self.Nx = Nx
-        self.fk_cls = Bootstrap if fk_cls is None else fk_cls
+        self.fk_cls = ssms.Bootstrap if fk_cls is None else fk_cls
         self.regenerate_data = regenerate_data
         self.backward_step = backward_step
 
