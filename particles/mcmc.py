@@ -46,14 +46,14 @@ Random walk Metropolis
 ======================
 
 Both `GenericRWHM` and `PMMH` rely on a random walk proposal; that is, given
-the current point $\theta$, the proposed point is sampled from a Gaussian
-distribution, with mean $\theta$, and some covariance matrix $\Sigma$ (or
-$\Sigma_t$ at iteration $t$ the adaptive case, see below). Various parameters
+the current point theta, the proposed point is sampled from a Gaussian
+distribution, with mean theta, and some covariance matrix Sigma (or
+Sigma_t at iteration t the adaptive case, see below). Various parameters
 may be set to tune this type of proposal:
 
 * to run a standard random walk Metropolis algorithm, set ``adaptive=False``, and
-  specify the covariance matrix $\Sigma$ through parameter ``rw_cov``.
-  Otherwise, $\Sigma$ is set by default to the identity matrix (which could a
+  specify the covariance matrix Sigma through parameter ``rw_cov``.
+  Otherwise, Sigma is set by default to the identity matrix (which could a
   terrible choice in certain problems).
 
 * to run an adaptive random walk Metropolis algorithm, where the matrix
@@ -76,15 +76,15 @@ of the considered state-space model. By default, a bootstrap filter is used
 change the settings of this filtering algorithm, or run a different type of
 algorithm, as follows:
 
-1. You can set parameter `fk_cls` to a `FeynmanKac` subclass such as e.g. 
+1. You can set parameter ``fk_cls`` to a `FeynmanKac` subclass such as e.g. 
    `ssms.GuidedPF` if you wish to use a guided filter (rather than a bootstrap
    filter). See module `state_space_models` for more details on these
-   `FeynmanKac` subclassed derived from a given state-space model.
+   `FeynmanKac` subclasses derived from a given state-space model.
 
 2. You can use parameter ``smc_options`` (dict-like) to pass various parameters 
    to class `SMC` when the algorithm is instantiated.
 
-3. You can even use parameter `smc_cls` to specify a different class for the
+3. You can even use parameter ``smc_cls`` to specify a different class for the
   algorithm itself (rather than SMC). 
 
 4. Finally, if you need something even more general, you can also subclass
@@ -232,7 +232,6 @@ class GenericRWHM(MCMC):
         """
         Parameters
         ----------
-
         niter: int
             number of MCMC iterations
         verbose: int (default=0)
