@@ -191,12 +191,15 @@ class GenericRWHM(MCMC):
         theta0: structured array of size=1 or None
             starting point, simulated from the prior if set to None
         adaptive: True/False
-            whether to use the adaptive version or not
+            If true, random walk covariance matrix is adapted recursively
+            based on past samples; see also scale and rw_cov for extra info.
         scale: positive scalar (default = 1.)
             in the adaptive case, covariance of the proposal is scale^2 times
             (2.38^2 / d) times the current estimate of the target covariance
-        rw_cov: (d, d) array
-            covariance matrix of the random walk proposal (set to I_d if None)
+        rw_cov: (d, d) array (defaults to Identity matrix if not provided)
+            covariance matrix of the random walk proposal if adaptive=False;
+            if adaptive=True, rw_cov is used as a preliminary guess for the
+            covariance matrix of the target. 
         """
         for k in ['niter', 'verbose', 'theta0', 'adaptive']:
             setattr(self, k, locals()[k])
@@ -256,22 +259,11 @@ class BasicRWHM(GenericRWHM):
         """
         Parameters
         ----------
-        niter: int
-            number of MCMC iterations
-        verbose: int (default=0)
-            progress report printed every (niter/verbose) iterations (never if 0)
-        theta0: structured array of lengt=1 (default=None)
-            starting point (if None, starting point is simulated from the
-            prior)
-        adaptive: bool
-            whether the adaptive version should be used
-        scale: positive scalar (default = 1.)
-            in the adaptive case, covariance of the proposal is scale^2 times
-            (2.38 / d) times the current estimate of the target covariance
-        rw_cov: (d, d) array
-            covariance matrix of the random walk proposal (set to I_d if None)
         model: StaticModel object
-            the model that defines the target distribution
+            model that defines the target distribution
+
+        For all the other parameters, see the docstring of the parent class,
+        `GenericRWHM`.
         """
         if model is None:
             raise ValueError('Metropolis(MCMC): model not provided')
@@ -322,13 +314,16 @@ class PMMH(GenericRWHM):
             likelihood)
         theta0: structured array of length=1
             starting point (generated from prior if =None)
-        adaptive: bool
-            whether to use the adaptive version
+        adaptive: True/False
+            If true, random walk covariance matrix is adapted recursively
+            based on past samples; see also scale and rw_cov for extra info.
         scale: positive scalar (default = 1.)
             in the adaptive case, covariance of the proposal is scale^2 times
-            (2.38 / d) times the current estimate of the target covariance
-        rw_cov: (d, d) array
-            covariance matrix of the random walk proposal (set to I_d if None)
+            (2.38^2 / d) times the current estimate of the target covariance
+        rw_cov: (d, d) array (defaults to Identity matrix if not provided)
+            covariance matrix of the random walk proposal if adaptive=False;
+            if adaptive=True, rw_cov is used as a preliminary guess for the
+            covariance matrix of the target. 
         """
         self.ssm_cls = ssm_cls
         self.smc_cls = smc_cls
