@@ -56,21 +56,21 @@ may be set to tune this type of proposal:
   Otherwise, Sigma is set by default to the identity matrix (which could a
   terrible choice in certain problems).
 
-* to run an adaptive random walk Metropolis algorithm, where the matrix
-  $\Sigma_t$ is progressively adapted to the past states of the chain, set
-  ``adaptive=True``. In that case, $\Sigma_t$ is set to a fraction of the running
-  estimate of the covariance matrix of the *target* distribution. In that case,
-  ``rw_cov`` is used as a preliminary estimate for that target covariance.
-  See parameter ``scale`` (in the documentation of `GenericRWHM`) for more
-  details on the factor in front of the running estimate, and
-  `VanishCovTracker` for how the running estimate is computed recursively. 
+* to run an adaptive random walk Metropolis algorithm, where the matrix Sigma_t
+  is progressively adapted to the past states of the chain, set
+  ``adaptive=True``. In that case, Sigma_t is set to a fraction of the running
+  estimate of the covariance matrix of the *target* distribution, and ``rw_cov``
+  is used as a preliminary estimate for that target covariance. See parameter
+  ``scale`` (in the documentation of `GenericRWHM`) for more details on the
+  factor in front of the running estimate, and `VanishCovTracker` for how the
+  running estimate is computed recursively. 
 
 By default, the adaptive version is used. 
 
 Beyond the bootstrap filter within `PMMH`
 ========================================
 
-PMMH  runs, at each iteration, a particle filter to approximate the likelihood
+`PMMH` runs, at each iteration, a particle filter to approximate the likelihood
 of the considered state-space model. By default, a bootstrap filter is used
 (with default choices for the resampling scheme, and so on). It is possible to
 change the settings of this filtering algorithm, or run a different type of
@@ -85,12 +85,12 @@ algorithm, as follows:
    to class `SMC` when the algorithm is instantiated.
 
 3. You can even use parameter ``smc_cls`` to specify a different class for the
-  algorithm itself (rather than SMC). 
+  algorithm itself (a `SMC` subclass instead of `SMC` itself).
 
 4. Finally, if you need something even more general, you can also subclass
   `PMMH` and redefine method `alg_instance`, which takes as argument ``theta`` (a
   dict-like object) and returns an algorithm (an instance of class `SMC` or one
-  its subclass). 
+  its subclasses). 
 """
 
 from __future__ import division, print_function
