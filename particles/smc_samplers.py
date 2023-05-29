@@ -25,6 +25,10 @@ The following type of sequences of distributions are implemented:
   theta-particle, a local particle filter is run to approximate the
   likelihood up to time t; see Chapter 18 in the book.
 
+* Nested sampling: target at time t is prior constrained to likelihood being
+  above threshold l_t, with an increasing sequence of l_t's (inspired by
+  Salomone et al, 2018).
+
 SMC samplers for binary distributions (and variable selection) are implemented
 elsewhere, in module `binary_smc`.
 
@@ -199,7 +203,7 @@ import copy as cp
 import itertools
 import numpy as np
 from numpy import random
-from scipy import optimize, stats, linalg
+from scipy import optimize, stats, linalg, special
 
 import particles
 from particles import resampling as rs
@@ -893,6 +897,89 @@ class AdaptiveTempering(Tempering):
     def M(self, t, xp):
         return self._M(t, xp, xp.shared['exponents'][-1])
 
+
+class NestedSampling(FKSMCsampler):
+    """Feynman-Kac class for the nested sampling SMC algorithm.
+
+    Based on Salomone et al. (2018). Target a time t is prior constrained to
+    likelihood behind above constant lt. 
+
+    Parameters
+    ----------
+    rho: float
+         the next lt is chosen so that the probability the likelihood is above
+         lt is rho. 
+    eps: float
+         algorithm stops when the delta between the two latest log-evidence is
+         below eps.
+
+    See base class for other parameters.
+
+    The successive estimates of the log-evidence is stored in the list
+    `self.X.shared['log_evid']`. 
+
+    Reference
+    ---------
+    Salomone, South L., Drovandi C.  and Kroese D. (2018). Unbiased and Consistent Nested 
+    Sampling via Sequential Monte Carlo, arxiv 1805.03924.
+    """
+    def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
+                 rho=0.1, eps=0.01):
+        FKSMCsampler.__init__(self, model=model, wastefree=wastefree,
+                              len_chain=len_chain, move=move)
+        self.rho = rho
+        self.eps = eps
+
+    def time_to_resample(self, smc):
+        self.move.calibrate(smc.W, smc.X)
+        return True  # We *always* resample
+
+    def done(self, smc):
+        try:
+            lt = smc.X.shared['lts'][-1]
+        except: # attribute does not exist yet, or list is empty
+            lt = 0.
+        return lt == np.inf
+
+    def summary_format(self, smc):
+        msg = FKSMCsampler.summary_format(self, smc)
+        return '%s, loglik=%f' % (msg, smc.X.shared['lts'][-1])
+
+    def logG(self, t, xp, x):
+        lt = np.percentile(x.llik, 100. * (1. - self.rho))
+        Zt = (t * np.log(self.rho) - np.log(x.N) 
+              + special.logsumexp(x.llik[x.llik < lt]))
+        new_evid = rs.log_sum_exp_ab(x.shared['log_evid'][-1], Zt)
+        if np.abs(new_evid - x.shared['log_evid'][-1]) < self.eps:
+            lt = np.inf
+            Zt = (t * np.log(self.rho) - np.log(x.N) 
+                  + special.logsumexp(x.llik))
+            new_evid = rs.log_sum_exp_ab(x.shared['log_evid'][-1], Zt)
+        x.shared['lts'].append(lt)
+        x.shared['log_evid'].append(new_evid)
+        lw = np.where(x.llik >= lt, 0., -np.inf)
+        return lw
+
+    def current_target(self, lt):
+        def func(x):
+            x.lprior = self.model.prior.logpdf(x.theta)
+            x.llik = self.model.loglik(x.theta)
+            if lt == -np.inf:
+                x.lpost = x.lprior.copy()
+            else:
+                x.lpost = np.where(x.llik >= lt, x.lprior, -np.inf)
+                #TODO better name for target density
+        return func
+
+    def _M0(self, N):
+        x0 = ThetaParticles(theta=self.model.prior.rvs(size=N))
+        x0.shared['lts'] = [-np.inf]
+        x0.shared['log_evid'] = [-np.inf]
+        self.current_target(-np.inf)(x0)
+        return x0
+
+    def M(self, t, xp):
+        return self.move(xp, self.current_target(xp.shared['lts'][-1]))
 
 
 ###########################################################

@@ -15,18 +15,12 @@ Warning: takes about 5 hrs to complete.
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 import numpy as np
-import numpy.random as random
-import pandas
-import seaborn as sb
-from scipy import stats
 from statsmodels.tsa.stattools import acf
 
 import particles
 from particles import distributions as dists
 from particles import kalman
 from particles import mcmc
-from particles import smc_samplers
-from particles import state_space_models as ssms
 
 def msjd(theta):
     """Mean squared jumping distance.
