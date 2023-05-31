@@ -946,18 +946,21 @@ class NestedSampling(FKSMCsampler):
         return '%s, loglik=%f' % (msg, smc.X.shared['lts'][-1])
 
     def logG(self, t, xp, x):
-        lt = np.percentile(x.llik, 100. * (1. - self.rho))
+        curr_evid = x.shared['log_evid'][-1]
+        # estimate we would use at the last iteration
         Zt = (t * np.log(self.rho) - np.log(x.N) 
-              + special.logsumexp(x.llik[x.llik < lt]))
-        new_evid = rs.log_sum_exp_ab(x.shared['log_evid'][-1], Zt)
-        if np.abs(new_evid - x.shared['log_evid'][-1]) < self.eps:
+              + special.logsumexp(x.llik))
+        new_evid = rs.log_sum_exp_ab(curr_evid, Zt)
+        if np.abs(new_evid - curr_evid) < self.eps: # stopping criterion
             lt = np.inf
+            lw = np.zeros_like(x.llik)
+        else:
+            lt = np.percentile(x.llik, 100. * (1. - self.rho))
             Zt = (t * np.log(self.rho) - np.log(x.N) 
-                  + special.logsumexp(x.llik))
-            new_evid = rs.log_sum_exp_ab(x.shared['log_evid'][-1], Zt)
+                  + special.logsumexp(x.llik[x.llik <= lt]))
+            lw = np.where(x.llik > lt, 0., -np.inf)
         x.shared['lts'].append(lt)
         x.shared['log_evid'].append(new_evid)
-        lw = np.where(x.llik >= lt, 0., -np.inf)
         return lw
 
     def current_target(self, lt):

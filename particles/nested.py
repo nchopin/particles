@@ -69,7 +69,7 @@ from scipy import linalg, stats
 
 from particles import utils
 from particles.resampling import log_sum_exp_ab as log_sum_exp
-from particles import smc_samplers as smc
+from particles import smc_samplers as ssps
 
 
 def unif_minus_one(N, m):
@@ -113,14 +113,6 @@ class MeanCovTracker(object):
         self.update_mean_cov()
 
 
-class NestedParticles(smc.ThetaParticles):
-    containers = ['theta', 'lprior', 'llik']
-    shared = []
-
-    def __init__(self, theta=None, lprior=None, llik=None):
-        smc.ThetaParticles.__init__(self, theta=theta,
-                                    lprior=lprior, llik=llik)
-
 
 class NestedSampling(object):
     """Base class for nested sampling algorithms.
@@ -157,14 +149,11 @@ class NestedSampling(object):
         self.N = N
         self.eps = eps
 
-    def init_particles(self, th):
-        return NestedParticles(theta=th,
-                               lprior=self.model.prior.logpdf(th),
-                               llik=self.model.loglik(th))
-
     def setup(self):
         th = self.model.prior.rvs(size=self.N)
-        self.x = self.init_particles(th)
+        lp = self.model.prior.logpdf(th)
+        ll = self.model.loglik(th)
+        self.x = ssps.ThetaParticles(theta=th, lprior=lp, llik=ll)
 
     def mutate(self, n, m):
         """ n: index of deleted point
@@ -205,18 +194,20 @@ class NestedSampling(object):
 class Nested_RWmoves(NestedSampling):
     """Nested sampling with (adaptive) random walk Metropolis moves.
     """
-    def __init__(self, nsteps=1, scale=None, **kwargs):
-        NestedSampling.__init__(self, **kwargs)
+    def __init__(self, model=None, N=100, eps=1e-8, nsteps=1, scale=None):
+        super().__init__(model=model, N=N, eps=eps)
         self.nsteps = nsteps
         self.scale = scale
 
     def setup(self):
-        NestedSampling.setup(self)
-        self.tracker = MeanCovTracker(self.x.arr)
+        super().setup()
+        arr = ssps.view_2d_array(self.x.theta)
+        N, d = arr.shape
+        self.tracker = MeanCovTracker(arr)
         if self.scale is None:  # We know dim only after x is set
-            self.scale = 2.38 / np.sqrt(self.x.dim)
-        self.xp = NestedParticles(theta=np.empty(1, dtype=self.x.theta.dtype),
-                                  llik=np.zeros(1), lprior=np.zeros(1))
+            self.scale = 2.38 / np.sqrt(d)
+        self.xp = ssps.ThetaParticles(theta=np.empty(1, dtype=self.x.theta.dtype),
+                                      llik=np.zeros(1), lprior=np.zeros(1))
         self.nacc = 0
 
     def update_xp_fields(self):
@@ -224,18 +215,19 @@ class Nested_RWmoves(NestedSampling):
         self.xp.llik = self.model.loglik(self.xp.theta)
 
     def mutate(self, n, m):
-        self.tracker.remove_point(self.x.arr[n])
+        arr = ssps.view_2d_array(self.x.theta)
+        N, d = arr.shape
+        self.tracker.remove_point(arr[n])
         lmin = self.x.llik[n]
-        self.x.arr[n] = self.x.arr[m]
+        arr[n] = arr[m]
+        xarr = ssps.view_2d_array(self.xp.theta)
         for _ in range(self.nsteps):
             z = self.scale * np.dot(self.tracker.L,
-                                    stats.norm.rvs(size=self.x.dim))
-            self.xp.arr[0] = self.x.arr[n] + z
+                                    stats.norm.rvs(size=d))
+            xarr[0] = arr[n] + z
             self.update_xp_fields()
             if self.xp.llik[0] > lmin:
                 if np.log(random.rand()) < self.xp.lprior - self.x.lprior[n]:
                     self.x.copyto_at(n, self.xp, 0)
                     self.nacc += 1
-        self.tracker.add_point(self.x.arr[n])
-
-
+        self.tracker.add_point(arr[n])
