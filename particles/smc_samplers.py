@@ -906,11 +906,10 @@ class NestedSampling(FKSMCsampler):
 
     Parameters
     ----------
-    rho: float
-         the next lt is chosen so that the probability the likelihood is above
-         lt is rho. 
+    alpha: float
+        next lt is chosen so that probability that L(x) > lt is alpha.
     eps: float
-         algorithm stops when the delta between the two latest log-evidence is
+         algorithm stops when delta between the two latest log-evidence is
          below eps.
 
     See base class for other parameters.
@@ -924,10 +923,10 @@ class NestedSampling(FKSMCsampler):
     Sampling via Sequential Monte Carlo, arxiv 1805.03924.
     """
     def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
-                 rho=0.1, eps=0.01):
+                 alpha=0.1, eps=0.01):
         FKSMCsampler.__init__(self, model=model, wastefree=wastefree,
                               len_chain=len_chain, move=move)
-        self.rho = rho
+        self.alpha = alpha
         self.eps = eps
 
     def time_to_resample(self, smc):
@@ -947,17 +946,20 @@ class NestedSampling(FKSMCsampler):
 
     def logG(self, t, xp, x):
         curr_evid = x.shared['log_evid'][-1]
-        # estimate we would use at the last iteration
-        Zt = (t * np.log(self.rho) - np.log(x.N) 
-              + special.logsumexp(x.llik))
-        new_evid = rs.log_sum_exp_ab(curr_evid, Zt)
-        if np.abs(new_evid - curr_evid) < self.eps: # stopping criterion
+        lt = np.percentile(x.llik, 100. * (1. - self.alpha))
+        # estimate for non-terminal iteration
+        lZt = (t * np.log(self.alpha) - np.log(x.N) 
+              + special.logsumexp(x.llik[x.llik <= lt]))
+        new_evid = rs.log_sum_exp_ab(curr_evid, lZt)
+        # estimate at final time, taking lt=infinity
+        lZt_final = (t * np.log(self.alpha) - np.log(x.N) 
+               + special.logsumexp(x.llik))
+        new_evid_final = rs.log_sum_exp_ab(curr_evid, lZt_final)
+        if np.abs(new_evid - new_evid_final) < self.eps: # stopping criterion
             lt = np.inf
             lw = np.zeros_like(x.llik)
+            new_evid = new_evid_final
         else:
-            lt = np.percentile(x.llik, 100. * (1. - self.rho))
-            Zt = (t * np.log(self.rho) - np.log(x.N) 
-                  + special.logsumexp(x.llik[x.llik <= lt]))
             lw = np.where(x.llik > lt, 0., -np.inf)
         x.shared['lts'].append(lt)
         x.shared['log_evid'].append(new_evid)
