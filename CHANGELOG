@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
+- nested: NS-SMC sampler of Salomone et al (2018)
 - datasets: Liver
 - distributions: LogNormal
 - distributions: Mixture, FlatNormal, mixMissing (to deal with missing data)

@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
-"""Nested sampling. 
+"""Nested sampling (vanilla and SMC).
 
-.. warning:: This module is much less tested than the rest of the package. Also
-   the documentation does not exactly explain how nested sampling works (and this
-   topic is not covered in our book). Thus, refer to e.g. the original papers of
-   Skilling or Chopin and Robert (2010, Biometrika). 
+.. warning:: This module is less tested than the rest of the package.
+Moreover, this documentation does not explain precisely how nested sampling
+works (and this topic is not covered in our book). Thus, refer to e.g. the
+original papers of Skilling or Chopin and Robert (2010, Biometrika). For nested
+sampling SMC, see the paper of Salomone et al (2018).
 
-Overview
-========
+Vanilla nested sampling
+=======================
 
 This module contains classes that implement nested sampling:
 
@@ -19,6 +20,7 @@ This module contains classes that implement nested sampling:
 To use the latter, you need to define first a static model, in the same way as
 in the `smc_samplers` module. For instance::
 
+    import particles
     from particles import smc_samplers as ssp
     from particles import distributions as dists
 
@@ -59,17 +61,50 @@ this::
             # obtained by starting at X[m] and doing a certain number of steps 
             return value 
 
+Nested sampling Sequential Monte Carlo
+======================================
+
+Salomone et al (2018) proposed a SMC sampler inspired by nested sampling. The
+target distribution at time t is the prior constrained to the likelihood being
+larger than constant l_t. These constants may be chosen adaptively: in this
+implementation, the next l_t is set to the ``ESSrmin`` upper-quantile of the
+likelihood of the current points (where ``ESSrmin`` is specified by the user).
+In other words, l_t is chosen so that the ESS equals this value. 
+(``ESSrmin`` corresponds to 1 - rho in Salomone et al's notations.)
+
+This module implements this SMC sampler as `NestedSamplingSMC`, a sub-class of
+`smc_samplers.FKSMCsampler`, which may be used the same way as other SMC
+samplers defined in module `smc_samplers`::
+
+    fk = nested.NestedSamplingSMC(model=toy_model, wastefree=True, ESSrmin=0.3)
+    alg = particles.SMC(fk=fk, N=1_000)
+    alg.run()
+
+Upon completion, the dictionary `alg.X.shared` will contain the successive
+estimates of the log-evidence (log of marginal likelihood, in practice the
+final one is the one you want to use), and the successive values of l_t.
+
+Note that a waste-free version of NS-SMC is run by default, but the original
+paper of Salomone et al (which predates NS-SMC) only considers a standard
+version. (For more details on waste-free SMC vs standard SMC, see module
+`smc_samplers` and the corresponding jupyter notebook.)
+
+Reference
+---------
+Salomone, South L., Drovandi C.  and Kroese D. (2018). Unbiased and Consistent 
+Nested Sampling via Sequential Monte Carlo, arxiv 1805.03924.
+
 """
 
 from __future__ import print_function, division
 
 import numpy as np
 from numpy import random
-from scipy import linalg, stats
+from scipy import linalg, stats, special
 
-from particles import utils
-from particles.resampling import log_sum_exp_ab as log_sum_exp
+from particles import resampling as rs
 from particles import smc_samplers as ssps
+from particles import utils
 
 
 def unif_minus_one(N, m):
@@ -181,7 +216,7 @@ class NestedSampling(object):
         while True:
             self.step()
             b = self.log_weights[-1] + self.points[-1]["llik"]
-            self.lZhats.append(log_sum_exp(self.lZhats[-1], b))
+            self.lZhats.append(rs.log_sum_exp_ab(self.lZhats[-1], b))
             if self.stopping_time():
                 break
             next_lw = self.log_weights[-1] - 1. / self.N
@@ -231,3 +266,94 @@ class Nested_RWmoves(NestedSampling):
                     self.x.copyto_at(n, self.xp, 0)
                     self.nacc += 1
         self.tracker.add_point(arr[n])
+
+#############################
+## NS-SMC
+
+class NestedSamplingSMC(ssps.FKSMCsampler):
+    """Feynman-Kac class for the nested sampling SMC algorithm.
+
+    Based on Salomone et al. (2018). Target a time t is prior constrained to
+    likelihood being above constant lt. 
+
+    Parameters
+    ----------
+    ESSrmin: float
+        next lt is chosen so that probability that L(x) > lt is ESSrmin.
+    eps: float
+         algorithm stops when delta between the two latest log-evidence is
+         below eps.
+
+    See base class for other parameters.
+
+    The successive estimates of the log-evidence is stored in the list
+    `self.X.shared['log_evid']`. 
+
+    Reference
+    ---------
+    Salomone, South L., Drovandi C.  and Kroese D. (2018). Unbiased and Consistent Nested 
+    Sampling via Sequential Monte Carlo, arxiv 1805.03924.
+    """
+    def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
+                 ESSrmin=0.1, eps=0.01):
+        super().__init__(model=model, wastefree=wastefree,
+                         len_chain=len_chain, move=move)
+        self.ESSrmin = ESSrmin
+        self.eps = eps
+
+    def time_to_resample(self, smc):
+        self.move.calibrate(smc.W, smc.X)
+        return True  # We *always* resample
+
+    def done(self, smc):
+        try:
+            lt = smc.X.shared['lts'][-1]
+        except: # attribute does not exist yet, or list is empty
+            lt = 0.
+        return lt == np.inf
+
+    def summary_format(self, smc):
+        msg = super().summary_format(smc)
+        return '%s, loglik=%f' % (msg, smc.X.shared['lts'][-1])
+
+    def logG(self, t, xp, x):
+        curr_evid = x.shared['log_evid'][-1]
+        lt = np.percentile(x.llik, 100. * (1. - self.ESSrmin))
+        # estimate for non-terminal iteration
+        lZt = (t * np.log(self.ESSrmin) - np.log(x.N) 
+              + special.logsumexp(x.llik[x.llik <= lt]))
+        new_evid = rs.log_sum_exp_ab(curr_evid, lZt)
+        # estimate at final time, taking lt=infinity
+        lZt_final = (t * np.log(self.ESSrmin) - np.log(x.N) 
+               + special.logsumexp(x.llik))
+        new_evid_final = rs.log_sum_exp_ab(curr_evid, lZt_final)
+        if np.abs(new_evid - new_evid_final) < self.eps: # stopping criterion
+            lt = np.inf
+            lw = np.zeros_like(x.llik)
+            new_evid = new_evid_final
+        else:
+            lw = np.where(x.llik > lt, 0., -np.inf)
+        x.shared['lts'].append(lt)
+        x.shared['log_evid'].append(new_evid)
+        return lw
+
+    def current_target(self, lt):
+        def func(x):
+            x.lprior = self.model.prior.logpdf(x.theta)
+            x.llik = self.model.loglik(x.theta)
+            if lt == -np.inf:
+                x.lpost = x.lprior.copy()
+            else:
+                x.lpost = np.where(x.llik >= lt, x.lprior, -np.inf)
+                #TODO better name for target density
+        return func
+
+    def _M0(self, N):
+        x0 = ssps.ThetaParticles(theta=self.model.prior.rvs(size=N))
+        x0.shared['lts'] = [-np.inf]
+        x0.shared['log_evid'] = [-np.inf]
+        self.current_target(-np.inf)(x0)
+        return x0
+
+    def M(self, t, xp):
+        return self.move(xp, self.current_target(xp.shared['lts'][-1]))

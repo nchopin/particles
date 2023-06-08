@@ -2,14 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-
-TODO 
-
-Reference
-=========
-
-Dau, Hai-Dang, and Nicolas Chopin. "Waste-free Sequential Monte Carlo." arXiv
-preprint arXiv:2011.02328 (2020).  
+Compare the performance of tempering SMC and nested sampling SMC on a simple
+logistic example.
 
 """
 
@@ -22,6 +16,7 @@ import seaborn as sb
 import particles
 from particles import datasets as dts
 from particles import distributions as dists
+from particles import nested
 from particles import resampling as rs
 from particles import smc_samplers as ssps
 from particles.collectors import Moments
@@ -30,12 +25,6 @@ datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
 dataset_name = 'pima'  # choose one of the three
 data = datasets[dataset_name]().data
 T, p = data.shape
-
-# Standard SMC: N is number of particles, K is number of MCMC steps
-# Waste-free SMC: M is number of resampled particles, P is length of MCMC
-# chains (same notations as in the paper)
-# All of the runs are such that N*K or M*P equal N0
-
 
 # prior & model
 scales = 5. * np.ones(p)
@@ -49,7 +38,7 @@ class LogisticRegression(ssps.StaticModel):
         lin = np.matmul(theta['beta'], data[t, :])
         return - np.logaddexp(0., -lin)
 
-nruns = 20
+nruns = 100
 results = []
 model = LogisticRegression(data=data, prior=prior)
 
@@ -67,7 +56,8 @@ def out_func(pf):
 results = []
 algs = ['nested', 'tempering']
 for a in alphas:
-    fks = {'nested': ssps.NestedSampling(model=model, len_chain=lc, alpha=a),
+    fks = {'nested': nested.NestedSamplingSMC(model=model, len_chain=lc,
+                                              ESSrmin=a),
            'tempering': ssps.AdaptiveTempering(model=model, len_chain=lc,
                                                ESSrmin=a)}
     res = particles.multiSMC(fk=fks, N=N, verbose=False, nruns=nruns,
@@ -76,8 +66,7 @@ for a in alphas:
         r['alpha'] = a
     results += res
 
-grand_mean = np.mean([r['est'] for r in results if r['fk'] == 'tempering'])
-#TODO use all results when NS becomes stable
+grand_mean = np.mean([r['est'] for r in results])
 for r in results:
     r['mse'] = (r['est'] - grand_mean)**2
 

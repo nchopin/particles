@@ -898,95 +898,6 @@ class AdaptiveTempering(Tempering):
         return self._M(t, xp, xp.shared['exponents'][-1])
 
 
-class NestedSampling(FKSMCsampler):
-    """Feynman-Kac class for the nested sampling SMC algorithm.
-
-    Based on Salomone et al. (2018). Target a time t is prior constrained to
-    likelihood behind above constant lt. 
-
-    Parameters
-    ----------
-    alpha: float
-        next lt is chosen so that probability that L(x) > lt is alpha.
-    eps: float
-         algorithm stops when delta between the two latest log-evidence is
-         below eps.
-
-    See base class for other parameters.
-
-    The successive estimates of the log-evidence is stored in the list
-    `self.X.shared['log_evid']`. 
-
-    Reference
-    ---------
-    Salomone, South L., Drovandi C.  and Kroese D. (2018). Unbiased and Consistent Nested 
-    Sampling via Sequential Monte Carlo, arxiv 1805.03924.
-    """
-    def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
-                 alpha=0.1, eps=0.01):
-        FKSMCsampler.__init__(self, model=model, wastefree=wastefree,
-                              len_chain=len_chain, move=move)
-        self.alpha = alpha
-        self.eps = eps
-
-    def time_to_resample(self, smc):
-        self.move.calibrate(smc.W, smc.X)
-        return True  # We *always* resample
-
-    def done(self, smc):
-        try:
-            lt = smc.X.shared['lts'][-1]
-        except: # attribute does not exist yet, or list is empty
-            lt = 0.
-        return lt == np.inf
-
-    def summary_format(self, smc):
-        msg = FKSMCsampler.summary_format(self, smc)
-        return '%s, loglik=%f' % (msg, smc.X.shared['lts'][-1])
-
-    def logG(self, t, xp, x):
-        curr_evid = x.shared['log_evid'][-1]
-        lt = np.percentile(x.llik, 100. * (1. - self.alpha))
-        # estimate for non-terminal iteration
-        lZt = (t * np.log(self.alpha) - np.log(x.N) 
-              + special.logsumexp(x.llik[x.llik <= lt]))
-        new_evid = rs.log_sum_exp_ab(curr_evid, lZt)
-        # estimate at final time, taking lt=infinity
-        lZt_final = (t * np.log(self.alpha) - np.log(x.N) 
-               + special.logsumexp(x.llik))
-        new_evid_final = rs.log_sum_exp_ab(curr_evid, lZt_final)
-        if np.abs(new_evid - new_evid_final) < self.eps: # stopping criterion
-            lt = np.inf
-            lw = np.zeros_like(x.llik)
-            new_evid = new_evid_final
-        else:
-            lw = np.where(x.llik > lt, 0., -np.inf)
-        x.shared['lts'].append(lt)
-        x.shared['log_evid'].append(new_evid)
-        return lw
-
-    def current_target(self, lt):
-        def func(x):
-            x.lprior = self.model.prior.logpdf(x.theta)
-            x.llik = self.model.loglik(x.theta)
-            if lt == -np.inf:
-                x.lpost = x.lprior.copy()
-            else:
-                x.lpost = np.where(x.llik >= lt, x.lprior, -np.inf)
-                #TODO better name for target density
-        return func
-
-    def _M0(self, N):
-        x0 = ThetaParticles(theta=self.model.prior.rvs(size=N))
-        x0.shared['lts'] = [-np.inf]
-        x0.shared['log_evid'] = [-np.inf]
-        self.current_target(-np.inf)(x0)
-        return x0
-
-    def M(self, t, xp):
-        return self.move(xp, self.current_target(xp.shared['lts'][-1]))
-
-
 ###########################################################
 # single-run variance estimators for waste-free SMC
 
@@ -1192,5 +1103,5 @@ class SMC2(FKSMCsampler):
         return x.lpost - old_lpost
 
     def summary_format(self, smc):
-        msg = FKSMCsampler.summary_format(self, smc)
+        msg = super().summary_format(smc)
         return msg + ', Nx=%i' % smc.X.pfs[0].N
