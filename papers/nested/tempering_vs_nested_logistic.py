@@ -2,8 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-Compare the performance of tempering SMC and nested sampling SMC on a simple
-logistic example.
+Compare the performance of tempering SMC and nested sampling SMC (introduced by
+Salomone et al, 2019) on a simple logistic example (essentially adapted from
+the chapter on SMC samplers in the book).
+
+Reference
+---------
 
 """
 

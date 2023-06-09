@@ -10,6 +10,9 @@ This package was developed to complement the following book:
 
 by Nicolas Chopin and Omiros Papaspiliopoulos. 
 
+It now also implements algorithms and methods introduced after the book was
+published, see below. 
+
 ## Features ##
 
 * **particle filtering**: bootstrap filter, guided filter, APF.
@@ -23,7 +26,7 @@ by Nicolas Chopin and Omiros Papaspiliopoulos.
   and generating RQMC sequences. 
 
 * **FFBS (forward filtering backward sampling)**: standard, O(N^2) variant, and
-  faster variants based on either MCMC, pure rejection, or the hybrid scheme ;
+  faster variants based on either MCMC, pure rejection, or the hybrid scheme;
   see Dau & Chopin (2022) for a discussion. The QMC version of Gerber and
   Chopin (2017, Bernoulli) is also implemented.
 

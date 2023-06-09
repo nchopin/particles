@@ -43,6 +43,28 @@ However, in the maintainer's experience, conda is usually less hassle, and
 runs faster (because it install a more efficient version of low-level libraries
 such as BLAS). 
 
+Local installation, organisation of the package
+===============================================
+
+You are strongly recommended to install the package *locally* (in a folder in
+hour home directory). The installation instructions in the following sections
+explains how to do it. 
+
+The reason why it is better to do a local install is that you will have easier
+access to the scripts in the package. In particular: 
+
+* Folder ``book`` contains all the scripts that were used to perform the
+  experiments and generate the plots in the book. Each sub-folder corresponds
+  to a different chapter. 
+
+* Folder ``papers`` contains scripts that reproduce some of the experiments of
+  relevant papers. Each sub-folder corresponds to a different paper, and
+  contains a ``README.md`` which gives the reference of the paper. 
+
+The rest of the package is organised in a completely standard manner (modules
+are in folder ``particles``, documentation is in ``docs``, etc.).
+
+
 Installation: recommended method
 ================================
 

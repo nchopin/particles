@@ -19,8 +19,11 @@ Figures 12.2 and 12.3), except that:
     * we add the Paris algorithm to the comparison
     * we stop at time T=100 (instead of T=10^4)
 
-Note that we implement the hybrid version of Paris (where, after N attempt, we
-switch to the more expensive algorithm). 
+Note that we implement the hybrid version of Paris (where, after N attempts, we
+switch to the more expensive algorithm). See Dau & Chopin (2022) for more
+explanations. The short version: the running time of the standard (non hybrid)
+version of Paris may have infinite expectation. The running time of the hybrid
+variant is random but bounded. 
 """
 
 from __future__ import division, print_function
