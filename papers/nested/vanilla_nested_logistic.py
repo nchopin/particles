@@ -11,6 +11,7 @@ pima), then the estimates have lower empirical variance but high bias.
 """
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from particles import datasets as dts
 from particles import distributions as dists
@@ -48,7 +49,20 @@ def worker(N=1000, nsteps=50):
     alg.run()
     return {'est': alg.lZhats[-1], 'T': len(alg.lZhats), 'cpu': alg.cpu_time}
 
-nruns = 20
-results = multiplexer(f=worker, nruns=nruns, nprocs=0)
+nruns = 10
+nsteps = [10, 20, 30, 40, 50]
+results = multiplexer(f=worker, nsteps=nsteps, nruns=nruns, nprocs=0)
 
+true_val = -392.8684  # average over may runs SMC sampler runs
+for r in results:
+    r['bias'] = np.abs(r['est'] - true_val)
+
+# PLOTS
+#######
+plt.style.use('ggplot')
+
+plt.figure()
+bias_vs_ns = [np.mean([r['bias'] for r in results if r['nsteps'] == n])
+              for n in nsteps]
+plt.plot(nsteps, bias_vs_ns)
 # For the record, log evidence for pima ~ -392.8684

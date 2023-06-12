@@ -47,7 +47,7 @@ Local installation, organisation of the package
 ===============================================
 
 You are strongly recommended to install the package *locally* (in a folder in
-hour home directory). The installation instructions in the following sections
+your home directory). The installation instructions in the following sections
 explains how to do it. 
 
 The reason why it is better to do a local install is that you will have easier
