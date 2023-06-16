@@ -12,6 +12,7 @@ pima), then the estimates have lower empirical variance but high bias.
 
 import numpy as np
 from matplotlib import pyplot as plt
+import seaborn as sb
 
 from particles import datasets as dts
 from particles import distributions as dists
@@ -62,7 +63,9 @@ for r in results:
 plt.style.use('ggplot')
 
 plt.figure()
-bias_vs_ns = [np.mean([r['bias'] for r in results if r['nsteps'] == n])
-              for n in nsteps]
-plt.plot(nsteps, bias_vs_ns)
-# For the record, log evidence for pima ~ -392.8684
+sb.boxplot(y=[r['bias'] for r in results],
+           x=[r['nsteps'] for r in results])
+plt.xlabel('nr steps')
+plt.ylabel('error log-evidence')
+plt.show()
+plt.savefig(f'{dataset_name}_bias_vanilla.pdf')
