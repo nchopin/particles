@@ -17,10 +17,8 @@ from __future__ import division, print_function
 from matplotlib import pyplot as plt
 import numpy as np
 import seaborn as sb
-sb.set_palette("dark")
 
 import particles
-from particles import distributions as dists
 from particles import kalman
 from particles import state_space_models
 
@@ -54,6 +52,12 @@ Ns = [100, 1000]
 T = 100
 results = particles.multiSMC(fk=fk_mod(T), N=Ns, nruns=nruns)
 
+# PLOTS
+#######
+def pctl(x):
+    return np.percentile(ll, x, axis=0)
+
+sb.set_palette("dark")
 for N in Ns:
     # plot MSE of log-lik estimate vs time
     ll = np.array([r['output'].summaries.logLts for r in results if r['N'] == N])
@@ -62,7 +66,6 @@ for N in Ns:
 
     # confidence intervals + most extreme paths
     plt.figure()
-    pctl = lambda x: np.percentile(ll, x, axis=0)
     plt.fill_between(np.arange(T), pctl(10), pctl(90), color='gray', alpha=0.5,
                      label='80% range')
     plt.fill_between(np.arange(T), pctl(25), pctl(75), color='black', alpha=0.5,

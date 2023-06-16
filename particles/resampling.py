@@ -133,6 +133,7 @@ import numpy as np
 from numpy import random
 from numba import jit
 
+
 def exp_and_normalise(lw):
     """Exponentiate, then normalise (so that sum equals one).
 
@@ -183,10 +184,11 @@ def essl(lw):
 
     """
     w = np.exp(lw - lw.max())
-    return (w.sum())**2 / np.sum(w**2)
+    return (w.sum()) ** 2 / np.sum(w ** 2)
+
 
 class Weights(object):
-    """ A class to store N log-weights, and automatically compute normalised
+    """A class to store N log-weights, and automatically compute normalised
     weights and their ESS.
 
     Parameters
@@ -214,13 +216,13 @@ class Weights(object):
     def __init__(self, lw=None):
         self.lw = lw
         if lw is not None:
-            self.lw[np.isnan(self.lw)] = - np.inf
+            self.lw[np.isnan(self.lw)] = -np.inf
             m = self.lw.max()
             w = np.exp(self.lw - m)
             s = w.sum()
             self.log_mean = m + np.log(s / self.N)
             self.W = w / s
-            self.ESS = 1. / np.sum(self.W ** 2)
+            self.ESS = 1.0 / np.sum(self.W ** 2)
 
     @property
     def N(self):
@@ -239,6 +241,7 @@ class Weights(object):
             return self.__class__(lw=delta)
         else:
             return self.__class__(lw=self.lw + delta)
+
 
 def log_sum_exp(v):
     """Log of the sum of the exp of the arguments.
@@ -287,22 +290,22 @@ def log_sum_exp_ab(a, b):
 def log_mean_exp(v, W=None):
     """Returns log of (weighted) mean of exp(v).
 
-       Parameters
-       ----------
-       v: ndarray
-           data, should be such that v.shape[0] = N
+    Parameters
+    ----------
+    v: ndarray
+        data, should be such that v.shape[0] = N
 
-       W: (N,) ndarray, optional
-            normalised weights (>=0, sum to one)
+    W: (N,) ndarray, optional
+         normalised weights (>=0, sum to one)
 
-       Returns
-       -------
-       ndarray
-           mean (or weighted mean, if W is provided) of vector exp(v)
+    Returns
+    -------
+    ndarray
+        mean (or weighted mean, if W is provided) of vector exp(v)
 
-       See also
-       --------
-       log_sum_exp
+    See also
+    --------
+    log_sum_exp
 
     """
     m = v.max()
@@ -329,9 +332,10 @@ def wmean_and_var(W, x):
         {'mean':weighted_means, 'var':weighted_variances}
     """
     m = np.average(x, weights=W, axis=0)
-    m2 = np.average(x**2, weights=W, axis=0)
-    v = m2 - m**2
-    return {'mean': m, 'var': v}
+    m2 = np.average(x ** 2, weights=W, axis=0)
+    v = m2 - m ** 2
+    return {"mean": m, "var": v}
+
 
 def wmean_and_cov(W, x):
     """Weighted mean and covariance matrix.
@@ -352,6 +356,7 @@ def wmean_and_cov(W, x):
     cov = np.cov(x.T, aweights=W, ddof=0)
     return m, cov
 
+
 def wmean_and_var_str_array(W, x):
     """Weighted mean and variance of each component of a structured array.
 
@@ -371,7 +376,8 @@ def wmean_and_var_str_array(W, x):
     v = np.empty_like(m)
     for p in x.dtype.names:
         m[p], v[p] = wmean_and_var(W, x[p]).values()
-    return {'mean': m, 'var': v}
+    return {"mean": m, "var": v}
+
 
 def _wquantiles(W, x, alphas):
     N = W.shape[0]
@@ -381,9 +387,10 @@ def _wquantiles(W, x, alphas):
     quantiles = []
     for a, n in zip(alphas, indices):
         prev = np.clip(n - 1, 0, N - 2)
-        q = np.interp(a, cw[prev:prev+2], x[order[prev:prev+2]])
+        q = np.interp(a, cw[prev : prev + 2], x[order[prev : prev + 2]])
         quantiles.append(q)
     return quantiles
+
 
 def wquantiles(W, x, alphas=(0.25, 0.50, 0.75)):
     """Quantiles for weighted data.
@@ -404,10 +411,12 @@ def wquantiles(W, x, alphas=(0.25, 0.50, 0.75)):
     if len(x.shape) == 1:
         return _wquantiles(W, x, alphas=alphas)
     elif len(x.shape) == 2:
-        return np.array([_wquantiles(W, x[:, i], alphas=alphas)
-                         for i in range(x.shape[1])])
+        return np.array(
+            [_wquantiles(W, x[:, i], alphas=alphas) for i in range(x.shape[1])]
+        )
 
-def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0,75)):
+
+def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0, 75)):
     """quantiles for weighted data stored in a structured array.
 
     Parameters
@@ -426,6 +435,7 @@ def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0,75)):
 
     """
     return {p: wquantiles(W, x[p], alphas) for p in x.dtype.names}
+
 
 ####################
 # Resampling schemes
@@ -449,6 +459,7 @@ rs_doc = """\
      M ancestor variables, drawn from range 0, ..., N-1
 """
 
+
 def resampling_scheme(func):
     """Decorator for resampling schemes."""
 
@@ -461,28 +472,29 @@ def resampling_scheme(func):
     modif_func.__doc__ = func.__doc__ + rs_doc
     return modif_func
 
+
 def resampling(scheme, W, M=None):
     try:
         return rs_funcs[scheme](W, M=M)
     except KeyError:
-        raise ValueError('%s: not a valid resampling scheme' % scheme)
+        raise ValueError("%s: not a valid resampling scheme" % scheme)
 
 
 @jit(nopython=True)
 def inverse_cdf(su, W):
     """Inverse CDF algorithm for a finite distribution.
 
-        Parameters
-        ----------
-        su: (M,) ndarray
-            M sorted uniform variates (i.e. M ordered points in [0,1]).
-        W: (N,) ndarray
-            a vector of N normalized weights (>=0 and sum to one)
+    Parameters
+    ----------
+    su: (M,) ndarray
+        M sorted uniform variates (i.e. M ordered points in [0,1]).
+    W: (N,) ndarray
+        a vector of N normalized weights (>=0 and sum to one)
 
-        Returns
-        -------
-        A: (M,) ndarray
-            a vector of M indices in range 0, ..., N-1
+    Returns
+    -------
+    A: (M,) ndarray
+        a vector of M indices in range 0, ..., N-1
     """
     j = 0
     s = W[0]
@@ -554,35 +566,32 @@ def multinomial(W, M):
     """Multinomial resampling.
 
     Popular resampling scheme, which amounts to sample N independently from
-    the multinomial distribution that generates n with probability W^n. 
+    the multinomial distribution that generates n with probability W^n.
 
     This resampling scheme is *not* recommended for various reasons; basically
     schemes like stratified / systematic / SSP tends to introduce less noise,
-    and may be faster too (in particular systematic). 
+    and may be faster too (in particular systematic).
     """
     return inverse_cdf(uniform_spacings(M), W)
 
 
 @resampling_scheme
 def stratified(W, M):
-    """Stratified resampling.
-    """
+    """Stratified resampling."""
     su = (random.rand(M) + np.arange(M)) / M
     return inverse_cdf(su, W)
 
 
 @resampling_scheme
 def systematic(W, M):
-    """Systematic resampling.
-    """
+    """Systematic resampling."""
     su = (random.rand(1) + np.arange(M)) / M
     return inverse_cdf(su, W)
 
 
 @resampling_scheme
 def residual(W, M):
-    """Residual resampling.
-    """
+    """Residual resampling."""
     N = W.shape[0]
     A = np.empty(M, dtype=np.int64)
     MW = M * W
@@ -604,14 +613,14 @@ def ssp(W, M):
 
     SSP stands for Srinivasan Sampling Process. This resampling scheme is
     discussed in Gerber et al (2019). Basically, it has similar properties as
-    systematic resampling (number of off-springs is either k or k + 1, with 
+    systematic resampling (number of off-springs is either k or k + 1, with
     k <= N W^n < k +1), and in addition is consistent. See that paper for more
     details.
 
     Reference
     =========
-    Gerber M., Chopin N. and Whiteley N. (2019). Negative association, ordering 
-    and convergence of resampling methods. Ann. Statist. 47 (2019), no. 4, 2236–2260. 
+    Gerber M., Chopin N. and Whiteley N. (2019). Negative association, ordering
+    and convergence of resampling methods. Ann. Statist. 47 (2019), no. 4, 2236–2260.
     """
     N = W.shape[0]
     MW = M * W
@@ -620,16 +629,16 @@ def ssp(W, M):
     u = random.rand(N - 1)
     i, j = 0, 1
     for k in range(N - 1):
-        delta_i = min(xi[j], 1. - xi[i])  # increase i, decr j
-        delta_j = min(xi[i], 1. - xi[j])  # the opposite
+        delta_i = min(xi[j], 1.0 - xi[i])  # increase i, decr j
+        delta_j = min(xi[i], 1.0 - xi[j])  # the opposite
         sum_delta = delta_i + delta_j
         # prob we increase xi[i], decrease xi[j]
-        pj = delta_i / sum_delta if sum_delta > 0. else 0. 
+        pj = delta_i / sum_delta if sum_delta > 0.0 else 0.0
         # sum_delta = 0. => xi[i] = xi[j] = 0.
         if u[k] < pj:  # swap i, j, so that we always inc i
             j, i = i, j
             delta_i = delta_j
-        if xi[j] < 1. - xi[i]:
+        if xi[j] < 1.0 - xi[i]:
             xi[i] += delta_i
             j = k + 2
         else:
@@ -643,7 +652,7 @@ def ssp(W, M):
             nr_children[last_ij] += 1
     if np.sum(nr_children) != M:
         # file a bug report with the vector of weights that causes this
-        raise ValueError('ssp resampling: wrong size for output')
+        raise ValueError("ssp resampling: wrong size for output")
     return np.arange(N).repeat(nr_children)
 
 
@@ -651,7 +660,7 @@ def ssp(W, M):
 def killing(W, M):
     """Killing resampling.
 
-    This resampling scheme was not described in the book. For each particle, 
+    This resampling scheme was not described in the book. For each particle,
     one either keeps the current value (with probability W[i] / W.max()), or
     replaces it by a draw from the multinomial distribution.
 
@@ -659,8 +668,8 @@ def killing(W, M):
     """
     N = W.shape[0]
     if M != N:
-        raise ValueError('killing resampling defined only for M=N')
-    killed = (np.random.rand(N) * W.max() >= W)
+        raise ValueError("killing resampling defined only for M=N")
+    killed = np.random.rand(N) * W.max() >= W
     nkilled = killed.sum()
     A = np.arange(N)
     A[killed] = multinomial(W, nkilled)
@@ -680,21 +689,21 @@ def idiotic(W, M):
 class MultinomialQueue(object):
     """On-the-fly generator for the multinomial distribution.
 
-       To obtain k1,k2, ... draws from the multinomial distribution with
-       weights W, do::
+    To obtain k1,k2, ... draws from the multinomial distribution with
+    weights W, do::
 
-           g = MulinomialQueue(M,W)
-           first_set_of_draws = g.dequeue(k1)
-           second_set_of_draws = g.dequeue(k2)
-           # ... and so on
+        g = MulinomialQueue(M,W)
+        first_set_of_draws = g.dequeue(k1)
+        second_set_of_draws = g.dequeue(k2)
+        # ... and so on
 
-       At initialisation, a vector of size M is created, and each time dequeue(k)
-       is invoked, the next k draws are produced. When all the draws have been
-       "served", a new vector of size M is generated. (If no value is given
-       for M, we take M=N, the length of vector W.)
+    At initialisation, a vector of size M is created, and each time dequeue(k)
+    is invoked, the next k draws are produced. When all the draws have been
+    "served", a new vector of size M is generated. (If no value is given
+    for M, we take M=N, the length of vector W.)
 
-       In this way, we have on average a O(1) complexity for each draw,
-       without knowing in advance how many draws will be needed.
+    In this way, we have on average a O(1) complexity for each draw,
+    without knowing in advance how many draws will be needed.
     """
 
     def __init__(self, W, M=None):
@@ -710,16 +719,18 @@ class MultinomialQueue(object):
     def dequeue(self, k):
         """Outputs *k* draws from the multinomial distribution."""
         if self.j + k <= self.M:
-            out = self.A[self.j:(self.j + k)]
+            out = self.A[self.j : (self.j + k)]
             self.j += k
         elif k <= self.M:
             out = np.empty(k, dtype=np.int64)
             nextra = self.j + k - self.M
-            out[:(k - nextra)] = self.A[self.j:]
+            out[: (k - nextra)] = self.A[self.j :]
             self.enqueue()
-            out[(k - nextra):] = self.A[:nextra]
+            out[(k - nextra) :] = self.A[:nextra]
             self.j = nextra
         else:
-            raise ValueError('MultinomialQueue: k must be <= M (the max \
-                             capacity of the queue)')
+            raise ValueError(
+                "MultinomialQueue: k must be <= M (the max \
+                             capacity of the queue)"
+            )
         return out

@@ -10,7 +10,6 @@ import sklearn.linear_model as lin
 import particles
 from particles import datasets
 from particles import distributions as dists
-from particles import resampling as rs
 from particles import smc_samplers as ssps
 from particles import binary_smc as bin
 

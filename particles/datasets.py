@@ -48,8 +48,10 @@ from __future__ import division, print_function
 import numpy as np
 import os.path
 
+
 def get_path(file_name):
-    return os.path.join(os.path.dirname(__file__), 'datasets', file_name)
+    return os.path.join(os.path.dirname(__file__), "datasets", file_name)
+
 
 class Dataset(object):
     """Base class for datasets.
@@ -57,7 +59,8 @@ class Dataset(object):
     The pre-processing step does nothing: attributes ``raw_data`` and ``data``
     point to the same object.
     """
-    load_opts = {'delimiter': ','}
+
+    load_opts = {"delimiter": ","}
 
     def preprocess(self, raw_data, **kwargs):
         return raw_data
@@ -65,6 +68,7 @@ class Dataset(object):
     def __init__(self, **kwargs):
         self.raw_data = np.loadtxt(get_path(self.file_name), **self.load_opts)
         self.data = self.preprocess(self.raw_data, **kwargs)
+
 
 class Nutria(Dataset):
     """Nutria dataset.
@@ -85,7 +89,9 @@ class Nutria(Dataset):
       selection  via  adaptive particle Markov chain Monte Carlo, arXiv:1005.2238
 
     """
-    file_name = 'nutria.txt'
+
+    file_name = "nutria.txt"
+
 
 class Neuro(Dataset):
     """Neuroscience experiment data from Temereanca et al (2008).
@@ -103,10 +109,13 @@ class Neuro(Dataset):
     * Temereanca et al (2008).  Rapid changes in thalamic firing synchrony during
       repetitive whisker stimulation, J. of Neuroscience.
     """
-    file_name = 'thaldata.csv'
+
+    file_name = "thaldata.csv"
+
 
 #######################################
 # Log-return datasets
+
 
 class LogReturnsDataset(Dataset):
     """Log returns dataset.
@@ -118,22 +127,25 @@ class LogReturnsDataset(Dataset):
     """
 
     def preprocess(self, raw_data):
-        """compute log-returns.
-        """
-        return 100. * np.diff(np.log(raw_data), axis=0)
+        """compute log-returns."""
+        return 100.0 * np.diff(np.log(raw_data), axis=0)
+
 
 class GBP_vs_USD_9798(LogReturnsDataset):
-    """ GBP vs USD daily rates in 1997-98.
+    """GBP vs USD daily rates in 1997-98.
 
     A time-series of 751 currency rates.
 
     Source: I forgot, sorry!
     """
-    file_name = 'GBP_vs_USD_9798.txt'
-    load_opts = {'skiprows':2, 'usecols':(3,), 'comments':'(C)'}
+
+    file_name = "GBP_vs_USD_9798.txt"
+    load_opts = {"skiprows": 2, "usecols": (3,), "comments": "(C)"}
+
 
 #######################################
 # Regression datasets
+
 
 def prepare_predictors(predictors, add_intercept=True, scale=0.5):
     """Rescale predictors and (optionally) add an intercept.
@@ -159,11 +171,12 @@ def prepare_predictors(predictors, add_intercept=True, scale=0.5):
     if add_intercept:
         n, p = preds.shape
         out = np.empty((n, p + 1))
-        out[:, 0] = 1. # intercept
+        out[:, 0] = 1.0  # intercept
         out[:, 1:] = rescaled_preds
     else:
         out = rescaled_preds
     return out
+
 
 class RegressionDataset(Dataset):
     """Regression dataset.
@@ -176,10 +189,12 @@ class RegressionDataset(Dataset):
     The ``data`` attribute is tuple (preds, response), where first (resp. second)
     element is a 2D (resp. 1D) numpy array.
     """
+
     def preprocess(self, raw_data):
         response = raw_data[:, -1]
         preds = prepare_predictors(raw_data[:, :-1])
         return preds, response
+
 
 class Boston(RegressionDataset):
     """Boston house-price data of Harrison et al (1978).
@@ -191,27 +206,52 @@ class Boston(RegressionDataset):
     `UCI archive <https://archive.ics.uci.edu/ml/machine-learning-databases/housing/>`__
 
     """
-    predictor_names = ['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS',
-                       'RAD', 'TAX', 'PTRATIO', 'B', 'LSAT']
-    response_name = ['MEDV']
-    file_name = 'boston_house_prices.csv'
-    load_opts = {'delimiter': ',', 'skiprows': 2}
+
+    predictor_names = [
+        "CRIM",
+        "ZN",
+        "INDUS",
+        "CHAS",
+        "NOX",
+        "RM",
+        "AGE",
+        "DIS",
+        "RAD",
+        "TAX",
+        "PTRATIO",
+        "B",
+        "LSAT",
+    ]
+    response_name = ["MEDV"]
+    file_name = "boston_house_prices.csv"
+    load_opts = {"delimiter": ",", "skiprows": 2}
+
 
 class Concrete(RegressionDataset):
-    """Concrete compressive strength data of Yeh (1998). 
+    """Concrete compressive strength data of Yeh (1998).
 
-    A dataset with 1030 observations and 9 predictors. 
+    A dataset with 1030 observations and 9 predictors.
 
     Reference
     ---------
     `UCI archive <https://archive.ics.uci.edu/ml/machine-learning-databases/concrete/compressive/>`__
 
     """
-    predictor_names = ['cement', 'blast', 'fly ash', 'water', 'superplasticizer', 
-                       'coarse aggregate', 'fine aggregate', 'age']
-    response_name = ['strength']
-    file_name = 'concrete.csv'
-    load_opts = {'delimiter': ',', 'skiprows': 1}
+
+    predictor_names = [
+        "cement",
+        "blast",
+        "fly ash",
+        "water",
+        "superplasticizer",
+        "coarse aggregate",
+        "fine aggregate",
+        "age",
+    ]
+    response_name = ["strength"]
+    file_name = "concrete.csv"
+    load_opts = {"delimiter": ",", "skiprows": 1}
+
 
 class BinaryRegDataset(Dataset):
     """Binary regression (classification) dataset.
@@ -238,13 +278,15 @@ class BinaryRegDataset(Dataset):
     the class.
 
     """
+
     def preprocess(self, raw_data, return_y=False):
-        response = 2 * raw_data[:, -1] - 1  # 0/1 -> -1/1
+        response = 2 * raw_data[:, -1] - 1  # 0/1 -> -1/1
         preds = prepare_predictors(raw_data[:, :-1])
         if return_y:
             return preds, response
         else:
             return preds * response[:, np.newaxis]
+
 
 class Pima(BinaryRegDataset):
     """Pima Indians Diabetes.
@@ -266,7 +308,9 @@ class Pima(BinaryRegDataset):
     `Source: <https://cran.r-project.org/web/packages/mlbench/index.html>`__
 
     """
-    file_name = 'pima-indians-diabetes.data'
+
+    file_name = "pima-indians-diabetes.data"
+
 
 class Liver(BinaryRegDataset):
     """Indian liver patient dataset (ILPD).
@@ -291,22 +335,26 @@ class Liver(BinaryRegDataset):
     ---------
     `UCI: <https://archive.ics.uci.edu/ml/datasets/ILPD+%28Indian+Liver+Patient+Dataset%29#>`__
     """
-    file_name = 'indian_liver_patient.csv'
+
+    file_name = "indian_liver_patient.csv"
+
 
 class Eeg(BinaryRegDataset):
     """EEG dataset from UCI repository.
 
-    A dataset with 122 observations and 64 predictors. 
+    A dataset with 122 observations and 64 predictors.
 
     * Response: alcohic vs control
-    * predictors: EEG measurements 
+    * predictors: EEG measurements
 
     Reference
     ---------
     `UCI: <https://archive.ics.uci.edu/ml/datasets/eeg+database>`__
     """
-    file_name = 'eeg_eye_state.data'
-    load_opts = {'delimiter': ',', 'skiprows': 19}
+
+    file_name = "eeg_eye_state.data"
+    load_opts = {"delimiter": ",", "skiprows": 19}
+
 
 class Sonar(BinaryRegDataset):
     """Sonar dataset from UCI repository.
@@ -320,6 +368,6 @@ class Sonar(BinaryRegDataset):
     `Link <https://archive.ics.uci.edu/ml/datasets/connectionist+bench+(sonar,+mines+vs.+rocks)>`__
 
     """
-    file_name = 'sonar.all-data'
-    load_opts = {'delimiter':',',
-                 'converters':{60: lambda x: 1 if x ==b'R' else 0}}
+
+    file_name = "sonar.all-data"
+    load_opts = {"delimiter": ",", "converters": {60: lambda x: 1 if x == b"R" else 0}}

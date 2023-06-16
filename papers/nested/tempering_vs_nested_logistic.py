@@ -13,7 +13,6 @@ Reference
 
 from matplotlib import pyplot as plt
 import numpy as np
-from numpy import random
 import pandas
 import seaborn as sb
 
@@ -21,9 +20,7 @@ import particles
 from particles import datasets as dts
 from particles import distributions as dists
 from particles import nested
-from particles import resampling as rs
 from particles import smc_samplers as ssps
-from particles.collectors import Moments
 
 datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
 dataset_name = 'pima'  # choose one of the three

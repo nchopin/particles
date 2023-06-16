@@ -19,10 +19,8 @@ Warning: takes more than 10 hrs to complete.
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 import numpy as np
-import numpy.random as random
 import pandas
 import seaborn as sb
-from scipy import stats
 from statsmodels.tsa.stattools import acf
 
 import particles
@@ -108,7 +106,8 @@ thin = int(niter / 100)  # compute average (of variances) over 100 points
 thetas = algos['mh'].chain.theta[(burnin - 1)::thin]
 fks = {k: ssms.Bootstrap(ssm=ReparamLinGauss(**smc_samplers.rec_to_dict(th)), data=data)
                         for k, th in enumerate(thetas)}
-outf = lambda pf: pf.logLt
+def outf(pf):
+    return pf.logLt
 print('Computing variances of log-lik estimates as a function of N')
 results = particles.multiSMC(fk=fks, N=Nxs, nruns=4, nprocs=0, out_func=outf)
 df = pandas.DataFrame(results)

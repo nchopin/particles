@@ -172,6 +172,7 @@ err_msg_missing_cst = """
     This is required for smoothing algorithms based on rejection
     """
 
+
 class StateSpaceModel(object):
     """Base class for state-space models.
 
@@ -214,38 +215,38 @@ class StateSpaceModel(object):
     """
 
     def __init__(self, **kwargs):
-        if hasattr(self, 'default_params'):
+        if hasattr(self, "default_params"):
             self.__dict__.update(self.default_params)
         self.__dict__.update(kwargs)
 
     def _error_msg(self, method):
-        return ('method ' + method + ' not implemented in class%s' %
-                self.__class__.__name__)
+        return (
+            "method " + method + " not implemented in class%s" % self.__class__.__name__
+        )
 
     @classmethod
     def state_container(cls, N, T):
         law_X0 = cls().PX0()
         dim = law_X0.dim
         shape = [N, T]
-        if dim>1:
+        if dim > 1:
             shape.append(dim)
         return np.empty(shape, dtype=law_X0.dtype)
 
     def PX0(self):
         "Law of X_0 at time 0"
-        raise NotImplementedError(self._error_msg('PX0'))
+        raise NotImplementedError(self._error_msg("PX0"))
 
     def PX(self, t, xp):
-        " Law of X_t at time t, given X_{t-1} = xp"
-        raise NotImplementedError(self._error_msg('PX'))
+        "Law of X_t at time t, given X_{t-1} = xp"
+        raise NotImplementedError(self._error_msg("PX"))
 
     def PY(self, t, xp, x):
-        """Conditional distribution of Y_t, given the states.
-        """
-        raise NotImplementedError(self._error_msg('PY'))
+        """Conditional distribution of Y_t, given the states."""
+        raise NotImplementedError(self._error_msg("PY"))
 
     def proposal0(self, data):
-        raise NotImplementedError(self._error_msg('proposal0'))
+        raise NotImplementedError(self._error_msg("proposal0"))
 
     def proposal(self, t, xp, data):
         """Proposal kernel (to be used in a guided or auxiliary filter).
@@ -259,7 +260,7 @@ class StateSpaceModel(object):
         data: list-like
             data
         """
-        raise NotImplementedError(self._error_msg('proposal'))
+        raise NotImplementedError(self._error_msg("proposal"))
 
     def upper_bound_log_pt(self, t):
         """Upper bound for log of transition density.
@@ -270,12 +271,13 @@ class StateSpaceModel(object):
 
     def add_func(self, t, xp, x):
         """Additive function."""
-        raise NotImplementedError(self._error_msg('add_func'))
+        raise NotImplementedError(self._error_msg("add_func"))
 
     def simulate_given_x(self, x):
         lag_x = [None] + x[:-1]
-        return [self.PY(t, xp, x).rvs(size=1)
-                for t, (xp, x) in enumerate(zip(lag_x, x))]
+        return [
+            self.PY(t, xp, x).rvs(size=1) for t, (xp, x) in enumerate(zip(lag_x, x))
+        ]
 
     def simulate(self, T):
         """Simulate state and observation processes.
@@ -315,6 +317,7 @@ class Bootstrap(particles.FeynmanKac):
         the Feynman-Kac representation of the bootstrap filter for the
         considered state-space model
     """
+
     def __init__(self, ssm=None, data=None):
         self.ssm = ssm
         self.data = data
@@ -380,13 +383,17 @@ class GuidedPF(Bootstrap):
 
     def logG(self, t, xp, x):
         if t == 0:
-            return (self.ssm.PX0().logpdf(x)
-                    + self.ssm.PY(0, xp, x).logpdf(self.data[0])
-                    - self.ssm.proposal0(self.data).logpdf(x))
+            return (
+                self.ssm.PX0().logpdf(x)
+                + self.ssm.PY(0, xp, x).logpdf(self.data[0])
+                - self.ssm.proposal0(self.data).logpdf(x)
+            )
         else:
-            return (self.ssm.PX(t, xp).logpdf(x)
-                    + self.ssm.PY(t, xp, x).logpdf(self.data[t])
-                    - self.ssm.proposal(t, xp, self.data).logpdf(x))
+            return (
+                self.ssm.PX(t, xp).logpdf(x)
+                + self.ssm.PY(t, xp, x).logpdf(self.data[t])
+                - self.ssm.proposal(t, xp, self.data).logpdf(x)
+            )
 
     def Gamma0(self, u):
         return self.ssm.proposal0(self.data).ppf(u)
@@ -394,9 +401,11 @@ class GuidedPF(Bootstrap):
     def Gamma(self, t, xp, u):
         return self.ssm.proposal(t, xp, self.data).ppf(u)
 
-class APFMixin():
+
+class APFMixin:
     def logeta(self, t, x):
         return self.ssm.logeta(t, x, self.data)
+
 
 class AuxiliaryPF(GuidedPF, APFMixin):
     """Auxiliary particle filter for a given state-space model.
@@ -437,6 +446,7 @@ class AuxiliaryBootstrap(Bootstrap, APFMixin):
 # Specific state-space models
 ################################
 
+
 class StochVol(StateSpaceModel):
     r"""Univariate stochastic volatility model.
 
@@ -446,39 +456,40 @@ class StochVol(StateSpaceModel):
         X_t & = \mu + \rho(X_{t-1}-\mu) + \sigma U_t, \quad U_t\sim N(0,1) \\
         Y_t|X_t=x_t & \sim N(0, e^{x_t}) \\
     """
-    default_params = {'mu': -1.02, 'rho': 0.9702, 'sigma': .178}
+    default_params = {"mu": -1.02, "rho": 0.9702, "sigma": 0.178}
     # values taken from Pitt & Shephard (1999)
 
     def sig0(self):
         """std of X_0"""
-        return self.sigma / np.sqrt(1. - self.rho**2)
+        return self.sigma / np.sqrt(1.0 - self.rho ** 2)
 
     def PX0(self):
         return dists.Normal(loc=self.mu, scale=self.sig0())
 
     def EXt(self, xp):
         """compute E[x_t|x_{t-1}]"""
-        return (1. - self.rho) * self.mu + self.rho * xp
+        return (1.0 - self.rho) * self.mu + self.rho * xp
 
     def PX(self, t, xp):
         return dists.Normal(loc=self.EXt(xp), scale=self.sigma)
 
     def PY(self, t, xp, x):
-        return dists.Normal(loc=0., scale=np.exp(0.5 * x))
+        return dists.Normal(loc=0.0, scale=np.exp(0.5 * x))
 
     def _xhat(self, xst, sig, yt):
-        return xst + 0.5 * sig**2 * (yt**2 * np.exp(-xst) - 1.)
+        return xst + 0.5 * sig ** 2 * (yt ** 2 * np.exp(-xst) - 1.0)
 
     def proposal0(self, data):
         # Pitt & Shephard
-        return dists.Normal(loc=self._xhat(0., self.sig0(), data[0]),
-                            scale=self.sig0())
+        return dists.Normal(
+            loc=self._xhat(0.0, self.sig0(), data[0]), scale=self.sig0()
+        )
 
     def proposal(self, t, xp, data):
         # Pitt & Shephard
-        return dists.Normal(loc=self._xhat(self.EXt(xp),
-                                           self.sigma, data[t]),
-                            scale=self.sigma)
+        return dists.Normal(
+            loc=self._xhat(self.EXt(xp), self.sigma, data[t]), scale=self.sigma
+        )
 
     def logeta(self, t, x, data):
         # Pitt & Shephard
@@ -486,8 +497,9 @@ class StochVol(StateSpaceModel):
         xstmmu = xst - self.mu
         xhat = self._xhat(xst, self.sigma, data[t + 1])
         xhatmmu = xhat - self.mu
-        return (0.5 / self.sigma**2 * (xhatmmu**2 - xstmmu**2)
-                - 0.5 * data[t + 1]**2 * np.exp(-xst) * (1. + xstmmu))
+        return 0.5 / self.sigma ** 2 * (xhatmmu ** 2 - xstmmu ** 2) - 0.5 * data[
+            t + 1
+        ] ** 2 * np.exp(-xst) * (1.0 + xstmmu)
 
 
 class StochVolLeverage(StochVol):
@@ -521,17 +533,18 @@ class StochVolLeverage(StochVol):
     for this class.
     """
 
-    default_params = {'mu': -1.02, 'rho': 0.9702, 'sigma': .178, 'phi': 0.}
+    default_params = {"mu": -1.02, "rho": 0.9702, "sigma": 0.178, "phi": 0.0}
 
     def PY(self, t, xp, x):
         # u is realisation of noise U_t, conditional on X_t, X_{t-1}
-        if t==0:
+        if t == 0:
             u = (x - self.mu) / self.sig0()
         else:
             u = (x - self.EXt(xp)) / self.sigma
         std_x = np.exp(0.5 * x)
-        return dists.Normal(loc=std_x * self.phi * u,
-                            scale=std_x * np.sqrt(1. - self.phi**2))
+        return dists.Normal(
+            loc=std_x * self.phi * u, scale=std_x * np.sqrt(1.0 - self.phi ** 2)
+        )
 
 
 class Gordon_etal(StateSpaceModel):
@@ -540,48 +553,62 @@ class Gordon_etal(StateSpaceModel):
     .. math::
 
         X_0 & \sim N(0, 2^2) \\
-        X_t & = b X_{t-1} + c X_{t-1}/(1+X_{t-1}^2) + d*\cos(e*(t-1)) + \sigma_X V_t, \quad V_t \sim N(0,1) \\
+        X_t & = b X_{t-1} + c X_{t-1}/(1+X_{t-1}^2) + d*\cos(e*(t-1)) 
+                + \sigma_X V_t, \quad V_t \sim N(0,1) \\
         Y_t|X_t=x_t         & \sim N(a*x_t^2, 1)
     """
-    default_params = {'a': 0.05, 'b': .5, 'c': 25., 'd': 8., 'e': 1.2,
-                      'sigmaX': 3.162278}  # = sqrt(10)
+    default_params = {
+        "a": 0.05,
+        "b": 0.5,
+        "c": 25.0,
+        "d": 8.0,
+        "e": 1.2,
+        "sigmaX": 3.162278,
+    }  # = sqrt(10)
 
     def PX0(self):
-        return dists.Normal(scale=2.)
+        return dists.Normal(scale=2.0)
 
     def PX(self, t, xp):
-        return dists.Normal(loc=self.b * xp + self.c * xp / (1. + xp**2)
-                            + self.d * np.cos(self.e * (t - 1)),
-                            scale=self.sigmaX)
+        return dists.Normal(
+            loc=self.b * xp
+            + self.c * xp / (1.0 + xp ** 2)
+            + self.d * np.cos(self.e * (t - 1)),
+            scale=self.sigmaX,
+        )
 
     def PY(self, t, xp, x):
-        return dists.Normal(loc=self.a * x**2)
+        return dists.Normal(loc=self.a * x ** 2)
 
 
 class BearingsOnly(StateSpaceModel):
-    """ Bearings-only tracking SSM.
+    """Bearings-only tracking SSM."""
 
-    """
-    default_params = {'sigmaX': 2.e-4, 'sigmaY': 1e-3,
-                      'x0': np.array([3e-3, -3e-3, 1., 1.])}
+    default_params = {
+        "sigmaX": 2.0e-4,
+        "sigmaY": 1e-3,
+        "x0": np.array([3e-3, -3e-3, 1.0, 1.0]),
+    }
 
     def PX0(self):
-        return dists.IndepProd(dists.Normal(loc=self.x0[0], scale=self.sigmaX),
-                               dists.Normal(loc=self.x0[1], scale=self.sigmaX),
-                               dists.Dirac(loc=self.x0[2]),
-                               dists.Dirac(loc=self.x0[3])
-                               )
+        return dists.IndepProd(
+            dists.Normal(loc=self.x0[0], scale=self.sigmaX),
+            dists.Normal(loc=self.x0[1], scale=self.sigmaX),
+            dists.Dirac(loc=self.x0[2]),
+            dists.Dirac(loc=self.x0[3]),
+        )
 
     def PX(self, t, xp):
-        return dists.IndepProd(dists.Normal(loc=xp[:, 0], scale=self.sigmaX),
-                               dists.Normal(loc=xp[:, 1], scale=self.sigmaX),
-                               dists.Dirac(loc=xp[:, 0] + xp[:, 2]),
-                               dists.Dirac(loc=xp[:, 1] + xp[:, 3])
-                               )
+        return dists.IndepProd(
+            dists.Normal(loc=xp[:, 0], scale=self.sigmaX),
+            dists.Normal(loc=xp[:, 1], scale=self.sigmaX),
+            dists.Dirac(loc=xp[:, 0] + xp[:, 2]),
+            dists.Dirac(loc=xp[:, 1] + xp[:, 3]),
+        )
 
     def PY(self, t, xp, x):
         angle = np.arctan(x[:, 3] / x[:, 2])
-        angle[x[:, 2] < 0.] += np.pi
+        angle[x[:, 2] < 0.0] += np.pi
         return dists.Normal(loc=angle, scale=self.sigmaY)
 
 
@@ -593,15 +620,15 @@ class DiscreteCox(StateSpaceModel):
         X_t             & = \mu + \phi(X_{t-1}-\mu) + U_t,   U_t ~ N(0, sigma^2) \\
         X_0             & \sim N(\mu, \sigma^2/(1-\phi**2))
     """
-    default_params = {'mu': 0., 'sigma': 1., 'phi': 0.95}
+    default_params = {"mu": 0.0, "sigma": 1.0, "phi": 0.95}
 
     def PX0(self):
-        return dists.Normal(loc=self.mu,
-                            scale=self.sigma / np.sqrt(1. - self.phi**2))
+        return dists.Normal(
+            loc=self.mu, scale=self.sigma / np.sqrt(1.0 - self.phi ** 2)
+        )
 
     def PX(self, t, xp):
-        return dists.Normal(loc=self.mu + self.phi * (xp - self.mu),
-                            scale=self.sigma)
+        return dists.Normal(loc=self.mu + self.phi * (xp - self.mu), scale=self.sigma)
 
     def PY(self, t, xp, x):
         return dists.Poisson(rate=np.exp(x))
@@ -615,7 +642,8 @@ class MVStochVol(StateSpaceModel):
     Y_t(k) = exp(X_t(k)/2)*V_t(k) for k=1,...,d
     V_t ~ N(0,corY)
     """
-    default_params = {'mu': 0., 'covX': None, 'corY': None, 'F': None}  # TODO
+
+    default_params = {"mu": 0.0, "covX": None, "corY": None, "F": None}  # TODO
 
     def offset(self):
         return self.mu - np.dot(self.F, self.mu)
@@ -624,8 +652,7 @@ class MVStochVol(StateSpaceModel):
         return dists.MvNormal(loc=self.mu, cov=self.covX)
 
     def PX(self, t, xp):
-        return dists.MvNormal(loc=np.dot(xp, self.F.T) + self.offset(),
-                              cov=self.covX)
+        return dists.MvNormal(loc=np.dot(xp, self.F.T) + self.offset(), cov=self.covX)
 
     def PY(self, t, xp, x):
         return dists.MvNormal(scale=np.exp(0.5 * x), cov=self.corY)
@@ -640,15 +667,21 @@ class ThetaLogistic(StateSpaceModel):
         X_t & = X_{t-1} + \tau_0 - \tau_1 * \exp(\tau_2 * X_{t-1}) + U_t, \quad U_t \sim N(0, \sigma_X^2) \\
         Y_t & \sim X_t + V_t, \quad   V_t \sim N(0, \sigma_Y^2)
     """
-    default_params = {'tau0':.15, 'tau1':.12, 'tau2':.1, 'sigmaX': 0.47,
-                      'sigmaY': 0.39}  # values from Peters et al (2010)
+    default_params = {
+        "tau0": 0.15,
+        "tau1": 0.12,
+        "tau2": 0.1,
+        "sigmaX": 0.47,
+        "sigmaY": 0.39,
+    }  # values from Peters et al (2010)
 
     def PX0(self):
-        return dists.Normal(loc=0., scale=1.)
+        return dists.Normal(loc=0.0, scale=1.0)
 
     def PX(self, t, xp):
-        return dists.Normal(loc=xp + self.tau0 - self.tau1 *
-                            np.exp(self.tau2 * xp), scale=self.sigmaX)
+        return dists.Normal(
+            loc=xp + self.tau0 - self.tau1 * np.exp(self.tau2 * xp), scale=self.sigmaX
+        )
 
     def PY(self, t, xp, x):
         return dists.Normal(loc=x, scale=self.sigmaY)

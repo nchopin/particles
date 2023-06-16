@@ -29,7 +29,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sb
-from scipy import stats
 
 import particles
 from particles import kalman
@@ -64,12 +63,13 @@ results_mse = []
 for d in dims:
     for t in range(T):
         # this returns the estimate of E[X_t(1)|Y_{0:t}]
-        estimate = lambda r: r['output'].summaries.moments[t]['mean'][0]
+        def estimate(r):
+            return r['output'].summaries.moments[t]['mean'][0]
         for type_fk in ['guided', 'boot']:
             for qmc in [False, True]:
                 est = np.array( [estimate(r) for r in results
                                  if r['qmc']==qmc and r['fk']==type_fk+'_%i'%d] )
-                if type_fk=='guided' and qmc==False: #reference category
+                if type_fk=='guided' and qmc is False: #reference category
                     base_mean = np.mean(est)
                     base_mse = np.var(est)
                 else:

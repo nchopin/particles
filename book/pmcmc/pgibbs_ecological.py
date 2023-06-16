@@ -11,16 +11,13 @@ from __future__ import division, print_function
 from collections import OrderedDict
 from matplotlib import pyplot as plt
 import numpy as np
-import numpy.random as random
 from scipy import linalg
 from scipy import stats
 from statsmodels.tsa.stattools import acf
 
-import particles
 from particles import datasets as dts
 from particles import distributions as dists
 from particles import mcmc
-from particles import smc_samplers as ssp
 from particles import state_space_models as ssms
 
 # state-space model

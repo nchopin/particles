@@ -31,7 +31,6 @@ import seaborn as sb
 import particles
 from particles import datasets as dts
 from particles import distributions as dists
-from particles import resampling as rs
 from particles import smc_samplers as ssps
 from particles.collectors import Moments
 

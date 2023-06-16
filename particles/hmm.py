@@ -100,11 +100,11 @@ then $Y_{0:1}$, and so on). This is expensive, of course (cost is O(T^2)).
 from __future__ import division, print_function
 
 import numpy as np
-from numpy import random
 
 from particles import resampling as rs
 from particles import distributions as dists
 from particles import state_space_models as ssms
+
 
 class HMM(ssms.StateSpaceModel):
     """Base class for hidden Markov models.
@@ -112,17 +112,19 @@ class HMM(ssms.StateSpaceModel):
     To define a HMM, subclass HMM and define method PY.
     See module hmm for more information (and Chapter 6 of the book).
     """
-    default_params = {'init_dist': None, 'trans_mat': None}
+
+    default_params = {"init_dist": None, "trans_mat": None}
+
     def __init__(self, **kwargs):
         ssms.StateSpaceModel.__init__(self, **kwargs)
         if self.trans_mat is None:
-            raise ValueError('Transition Matrix is missing')
+            raise ValueError("Transition Matrix is missing")
         self.dim = self.trans_mat.shape[0]
         if self.init_dist is None:
-            self.init_dist = np.full(self.dim, 1. / self.dim)
+            self.init_dist = np.full(self.dim, 1.0 / self.dim)
         err_msg = "Wrong shape for trans_mat or init_dist"
         assert self.trans_mat.shape == (self.dim, self.dim), err_msg
-        assert self.init_dist.shape == (self.dim, ), err_msg
+        assert self.init_dist.shape == (self.dim,), err_msg
 
     def PX0(self):
         return dists.Categorical(p=self.init_dist)
@@ -130,14 +132,16 @@ class HMM(ssms.StateSpaceModel):
     def PX(self, t, xp):
         return dists.Categorical(p=self.trans_mat[xp, :])
 
+
 class GaussianHMM(HMM):
-    """Gaussian HMM: :math:`Y_t|X_t=k \sim N(\mu_k, \sigma_k^2)`
-    """
-    default_params = {'mus': None, 'sigmas': None}
+    """Gaussian HMM: :math:`Y_t|X_t=k \sim N(\mu_k, \sigma_k^2)`"""
+
+    default_params = {"mus": None, "sigmas": None}
     default_params.update(HMM.default_params)
 
     def PY(self, t, xp, x):
         return dists.Normal(loc=self.mus[x], scale=self.sigmas[x])
+
 
 class BaumWelch(object):
     """Baum-Welch filtering/smoothing algorithm.
@@ -168,6 +172,7 @@ class BaumWelch(object):
     2. Markov chain {X_t} is homogeneous (i.e. X_t|X_{t-1} does not depend on
     t).
     """
+
     def __init__(self, hmm=None, data=None):
         self.hmm = hmm
         self.data = data
@@ -202,7 +207,7 @@ class BaumWelch(object):
         self.filt_step(self.t, yt)
 
     def next(self):
-        return self.__next__()  # Python 2 compatibility
+        return self.__next__()  # Python 2 compatibility
 
     def __iter__(self):
         return self
@@ -232,9 +237,8 @@ class BaumWelch(object):
             self.forward()
         self.smth = [self.filt[-1]]
         log_trans = np.log(self.hmm.trans_mat)
-        ctg = np.zeros(self.hmm.dim)  # cost to go (log-lik of y_{t+1:T} given x_t=k)
-        for filt, next_ft in reversed(list(zip(self.filt[:-1],
-                                               self.logft[1:]))):
+        ctg = np.zeros(self.hmm.dim)  # cost to go (log-lik of y_{t+1:T} given x_t=k)
+        for filt, next_ft in reversed(list(zip(self.filt[:-1], self.logft[1:]))):
             new_ctg = np.empty(self.hmm.dim)
             for k in range(self.hmm.dim):
                 new_ctg[k] = rs.log_sum_exp(log_trans[k, :] + next_ft + ctg)

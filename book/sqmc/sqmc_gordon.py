@@ -14,7 +14,6 @@ from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np
-from scipy import stats
 
 import particles
 from particles import state_space_models as ssms
@@ -29,8 +28,8 @@ fk = ssms.Bootstrap(ssm=model, data=data)
 if __name__ == "__main__":
     # Actual computation
     Ns = [2**k for k in range(6, 21)]
-    of = lambda pf: {'ll': pf.logLt,
-                     'EXt': [m['mean'] for m in pf.summaries.moments]}
+    def of(pf):
+        return {"ll": pf.logLt, "EXt": [m["mean"] for m in pf.summaries.moments]}
     results = particles.multiSMC(fk=fk, qmc={'smc': False, 'sqmc': True}, N=Ns,
                                  collect=[Moments], nruns=200, nprocs=0,
                                  out_func=of)

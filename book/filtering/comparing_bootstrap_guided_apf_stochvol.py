@@ -17,6 +17,7 @@ from __future__ import division, print_function
 
 from collections import OrderedDict
 from matplotlib import pyplot as plt
+import matplotlib.lines as mlines
 import numpy as np
 import seaborn as sb
 
@@ -66,7 +67,8 @@ for mod, col in zip(['bootstrap', 'guided'], ['0.75', '0.25']):
                      zip(r['output'].summaries.moments, bigpf.summaries.moments)]
                     for r in results if r['fk'] == mod])
     artist = plt.fill_between(np.arange(T), np.percentile(errors, 75, axis=0),
-                              np.percentile(errors, 25, axis=0), facecolor=col, alpha=0.9)
+                              np.percentile(errors, 25, axis=0), 
+                              facecolor=col, alpha=0.9)
     artists.append(artist)
 how_many_APF_traj = 25  # change this if you want more/less trajectories
 for r in [r for r in results if r['fk'] == 'apf'][:how_many_APF_traj]:
@@ -75,7 +77,6 @@ for r in [r for r in results if r['fk'] == 'apf'][:how_many_APF_traj]:
     plt.plot(errors, 'k', alpha=0.8)
 plt.xlabel(r'$t$')
 plt.ylabel('estimate error for ' + r'$E(X_t|Y_{0:t})$')
-import matplotlib.lines as mlines
 black_line = mlines.Line2D([], [], color='black')
 artists.append(black_line)
 plt.legend(artists, models.keys(), loc=3)

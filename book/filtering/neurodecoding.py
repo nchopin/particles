@@ -45,8 +45,9 @@ class NeuralDecoding(ssms.StateSpaceModel):
 
     def __init__(self, delta=0.01, tau=0.3, a=None, b=None, x0=None):
         #a is a vector of size dy, b is a dy*dx array
-        self.delta = delta; self.tau = tau
-        self.a = a; self.b = b; self.x0 = x0
+        self.delta = delta
+        self.tau = tau
+        self.a, self.b, self.x0 = a, b, x0
         self.SigX = np.diag(np.concatenate((np.full(3, delta**3 / 3),
                                             np.full(3,delta))))
         for i in range(3):
@@ -137,7 +138,8 @@ a0 = random.normal(loc=2.5, size=dy)  # from Koyama et al
 # the b's are generated uniformly on the unit sphere in R^6 (see Koyama et al)
 b0 = random.normal(size=(dy, dx))
 b0 = b0 / (linalg.norm(b0, axis=1)[:, np.newaxis])
-delta0 = 0.03; tau0 = 1.
+delta0 = 0.03
+tau0 = 1.
 x0 = np.zeros(dx)
 
 # models
@@ -149,7 +151,8 @@ models['guided'] = ssms.GuidedPF(ssm=chosen_ssm, data=data)
 # models['apf'] = ssms.AuxiliaryPF(ssm=chosen_ssm, data=data)
 # Uncomment this if you want to include the APF in the comparison
 
-N = 10**4; nruns = 50
+N = 10**4
+nruns = 50
 results = particles.multiSMC(fk=models, N=N, nruns=nruns, nprocs=1,
                              collect=[Moments], store_history=True)
 
@@ -164,7 +167,8 @@ t0 = 9
 # check Gaussian approximation is accurate
 plt.figure()
 mu, Q  = chosen_ssm.approx_likelihood(data[t0])
-lG = lambda x: models['boot'].logG(t0, None, x)
+def lG(x):
+    return models['boot'].logG(t0, None, x)
 lGmax = lG(mu[np.newaxis, :])
 for i in range(6):
     plt.subplot(2, 3, i+1)

@@ -15,11 +15,9 @@ while we took rho=0.9)
 from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
-import numpy as np
 # import seaborn as sb
 
 import particles
-from particles import distributions as dists
 from particles import state_space_models
 
 # set up models, simulate and save data

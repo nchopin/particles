@@ -13,9 +13,6 @@ from __future__ import division, print_function
 
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.cm as cm
-import seaborn as sb
-from scipy.optimize import fmin
 
 import particles
 from particles import datasets as dts

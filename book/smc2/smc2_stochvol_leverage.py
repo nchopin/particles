@@ -19,8 +19,6 @@ in parallel, the total CPU time depends on the number of cores.
 
 from __future__ import division, print_function
 
-import warnings
-warnings.filterwarnings("ignore")  # disable silly matplotlib warnings
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -33,6 +31,9 @@ from particles import resampling as rs
 from particles import smc_samplers as ssp
 from particles import state_space_models
 from particles.collectors import Moments
+
+import warnings
+warnings.filterwarnings("ignore")  # disable silly matplotlib warnings
 
 # data
 data = dts.GBP_vs_USD_9798().data

@@ -1,18 +1,14 @@
 """Randomised quasi-Monte Carlo sequences.
 
 """
-TOL = 1e-10
+from scipy.stats import qmc
 
-# temporary: remove when scipy 1.7 is available in conda
-try:
-    from scipy.stats import qmc
-except ImportError:
-    qmc = None
+TOL = 1e-10
 
 
 def _safe_generate(N, eng):
     u = eng.random(N)
-    v = 0.5 + (1. - TOL) * (u - 0.5)
+    v = 0.5 + (1.0 - TOL) * (u - 0.5)
     return v
 
 

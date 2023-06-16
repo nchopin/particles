@@ -103,7 +103,8 @@ ijs = list(itertools.product(range(ng), range(ng)))
 fks = {ij: ssms.Bootstrap(ssm=NeuroXp(rho=rhos[ij[0]], sig2=sig2s[ij[1]]),
                           data=data)
        for ij in ijs}
-outf = lambda pf: pf.logLt
+def outf(pf):
+    return pf.logLt
 nruns = 5
 print('computing log-likelihood on a grid')
 results = particles.multiSMC(fk=fks, N=100, qmc=True, nruns=nruns, nprocs=0,

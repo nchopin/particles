@@ -108,8 +108,7 @@ from particles import utils
 
 
 def unif_minus_one(N, m):
-    """Sample uniformly from 0, ..., N-1, minus m.
-    """
+    """Sample uniformly from 0, ..., N-1, minus m."""
     return random.randint(m + 1, m + N) % N
 
 
@@ -119,7 +118,7 @@ def xxT(x):
 
 
 class MeanCovTracker(object):
-    """Tracks mean and cov of a set of points. 
+    """Tracks mean and cov of a set of points.
 
     Note: points must be given as a (N,d) np.array
     """
@@ -148,18 +147,17 @@ class MeanCovTracker(object):
         self.update_mean_cov()
 
 
-
 class NestedSampling(object):
     """Base class for nested sampling algorithms.
 
     Parameters
     ----------
-    * model: SMCsamplers.StaticModel object 
+    * model: SMCsamplers.StaticModel object
         a static model
     * N: int
         number of simultaneous points
     * eps: positive number
-        the algorithm stops when relative error is smaller than eps 
+        the algorithm stops when relative error is smaller than eps
 
     Returns
     -------
@@ -191,8 +189,8 @@ class NestedSampling(object):
         self.x = ssps.ThetaParticles(theta=th, lprior=lp, llik=ll)
 
     def mutate(self, n, m):
-        """ n: index of deleted point
-            m: index of starting point for MCMC
+        """n: index of deleted point
+        m: index of starting point for MCMC
         """
         raise NotImplementedError
 
@@ -210,25 +208,27 @@ class NestedSampling(object):
     def run(self):
         self.setup()
         self.points = []
-        self.log_weights = [np.log(1. - np.exp(-1. / self.N))]
+        self.log_weights = [np.log(1.0 - np.exp(-1.0 / self.N))]
         self.step()
-        self.lZhats = [self.log_weights[0] + self.points[0]["llik"]] # TODO
+        self.lZhats = [self.log_weights[0] + self.points[0]["llik"]]  # TODO
         while True:
             self.step()
             b = self.log_weights[-1] + self.points[-1]["llik"]
             self.lZhats.append(rs.log_sum_exp_ab(self.lZhats[-1], b))
             if self.stopping_time():
                 break
-            next_lw = self.log_weights[-1] - 1. / self.N
+            next_lw = self.log_weights[-1] - 1.0 / self.N
             self.log_weights.append(next_lw)
             if len(self.log_weights) % self.N == 0:
-                print('iteration %i: log(Z_hat) = %f' % (len(self.log_weights),
-                                                         self.lZhats[-1]))
+                print(
+                    "iteration %i: log(Z_hat) = %f"
+                    % (len(self.log_weights), self.lZhats[-1])
+                )
 
 
 class Nested_RWmoves(NestedSampling):
-    """Nested sampling with (adaptive) random walk Metropolis moves.
-    """
+    """Nested sampling with (adaptive) random walk Metropolis moves."""
+
     def __init__(self, model=None, N=100, eps=1e-8, nsteps=1, scale=None):
         super().__init__(model=model, N=N, eps=eps)
         self.nsteps = nsteps
@@ -241,8 +241,11 @@ class Nested_RWmoves(NestedSampling):
         self.tracker = MeanCovTracker(arr)
         if self.scale is None:  # We know dim only after x is set
             self.scale = 2.38 / np.sqrt(d)
-        self.xp = ssps.ThetaParticles(theta=np.empty(1, dtype=self.x.theta.dtype),
-                                      llik=np.zeros(1), lprior=np.zeros(1))
+        self.xp = ssps.ThetaParticles(
+            theta=np.empty(1, dtype=self.x.theta.dtype),
+            llik=np.zeros(1),
+            lprior=np.zeros(1),
+        )
         self.nacc = 0
 
     def update_xp_fields(self):
@@ -257,8 +260,7 @@ class Nested_RWmoves(NestedSampling):
         arr[n] = arr[m]
         xarr = ssps.view_2d_array(self.xp.theta)
         for _ in range(self.nsteps):
-            z = self.scale * np.dot(self.tracker.L,
-                                    stats.norm.rvs(size=d))
+            z = self.scale * np.dot(self.tracker.L, stats.norm.rvs(size=d))
             xarr[0] = arr[n] + z
             self.update_xp_fields()
             if self.xp.llik[0] > lmin:
@@ -267,14 +269,16 @@ class Nested_RWmoves(NestedSampling):
                     self.nacc += 1
         self.tracker.add_point(arr[n])
 
+
 #############################
 ## NS-SMC
+
 
 class NestedSamplingSMC(ssps.FKSMCsampler):
     """Feynman-Kac class for the nested sampling SMC algorithm.
 
     Based on Salomone et al. (2018). Target a time t is prior constrained to
-    likelihood being above constant lt. 
+    likelihood being above constant lt.
 
     Parameters
     ----------
@@ -287,17 +291,20 @@ class NestedSamplingSMC(ssps.FKSMCsampler):
     See base class for other parameters.
 
     The successive estimates of the log-evidence is stored in the list
-    `self.X.shared['log_evid']`. 
+    `self.X.shared['log_evid']`.
 
     Reference
     ---------
-    Salomone, South L., Drovandi C.  and Kroese D. (2018). Unbiased and Consistent Nested 
-    Sampling via Sequential Monte Carlo, arxiv 1805.03924.
+    Salomone, South L., Drovandi C.  and Kroese D. (2018). Unbiased and Consistent
+    Nested Sampling via Sequential Monte Carlo, arxiv 1805.03924.
     """
-    def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
-                 ESSrmin=0.1, eps=0.01):
-        super().__init__(model=model, wastefree=wastefree,
-                         len_chain=len_chain, move=move)
+
+    def __init__(
+        self, model=None, wastefree=True, len_chain=10, move=None, ESSrmin=0.1, eps=0.01
+    ):
+        super().__init__(
+            model=model, wastefree=wastefree, len_chain=len_chain, move=move
+        )
         self.ESSrmin = ESSrmin
         self.eps = eps
 
@@ -307,34 +314,36 @@ class NestedSamplingSMC(ssps.FKSMCsampler):
 
     def done(self, smc):
         try:
-            lt = smc.X.shared['lts'][-1]
-        except: # attribute does not exist yet, or list is empty
-            lt = 0.
+            lt = smc.X.shared["lts"][-1]
+        except:  # attribute does not exist yet, or list is empty
+            lt = 0.0
         return lt == np.inf
 
     def summary_format(self, smc):
         msg = super().summary_format(smc)
-        return '%s, loglik=%f' % (msg, smc.X.shared['lts'][-1])
+        return "%s, loglik=%f" % (msg, smc.X.shared["lts"][-1])
 
     def logG(self, t, xp, x):
-        curr_evid = x.shared['log_evid'][-1]
-        lt = np.percentile(x.llik, 100. * (1. - self.ESSrmin))
+        curr_evid = x.shared["log_evid"][-1]
+        lt = np.percentile(x.llik, 100.0 * (1.0 - self.ESSrmin))
         # estimate for non-terminal iteration
-        lZt = (t * np.log(self.ESSrmin) - np.log(x.N) 
-              + special.logsumexp(x.llik[x.llik <= lt]))
+        lZt = (
+            t * np.log(self.ESSrmin)
+            - np.log(x.N)
+            + special.logsumexp(x.llik[x.llik <= lt])
+        )
         new_evid = rs.log_sum_exp_ab(curr_evid, lZt)
         # estimate at final time, taking lt=infinity
-        lZt_final = (t * np.log(self.ESSrmin) - np.log(x.N) 
-               + special.logsumexp(x.llik))
+        lZt_final = t * np.log(self.ESSrmin) - np.log(x.N) + special.logsumexp(x.llik)
         new_evid_final = rs.log_sum_exp_ab(curr_evid, lZt_final)
-        if np.abs(new_evid - new_evid_final) < self.eps: # stopping criterion
+        if np.abs(new_evid - new_evid_final) < self.eps:  # stopping criterion
             lt = np.inf
             lw = np.zeros_like(x.llik)
             new_evid = new_evid_final
         else:
-            lw = np.where(x.llik > lt, 0., -np.inf)
-        x.shared['lts'].append(lt)
-        x.shared['log_evid'].append(new_evid)
+            lw = np.where(x.llik > lt, 0.0, -np.inf)
+        x.shared["lts"].append(lt)
+        x.shared["log_evid"].append(new_evid)
         return lw
 
     def current_target(self, lt):
@@ -345,15 +354,16 @@ class NestedSamplingSMC(ssps.FKSMCsampler):
                 x.lpost = x.lprior.copy()
             else:
                 x.lpost = np.where(x.llik >= lt, x.lprior, -np.inf)
-                #TODO better name for target density
+                # TODO better name for target density
+
         return func
 
     def _M0(self, N):
         x0 = ssps.ThetaParticles(theta=self.model.prior.rvs(size=N))
-        x0.shared['lts'] = [-np.inf]
-        x0.shared['log_evid'] = [-np.inf]
+        x0.shared["lts"] = [-np.inf]
+        x0.shared["log_evid"] = [-np.inf]
         self.current_target(-np.inf)(x0)
         return x0
 
     def M(self, t, xp):
-        return self.move(xp, self.current_target(xp.shared['lts'][-1]))
+        return self.move(xp, self.current_target(xp.shared["lts"][-1]))

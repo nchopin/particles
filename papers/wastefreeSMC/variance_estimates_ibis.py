@@ -29,13 +29,11 @@ Dau, H.D. and Chopin, N. (2022). Waste-free Sequential Monte Carlo,
 
 from matplotlib import pyplot as plt
 import numpy as np
-from numpy import random
 import seaborn as sb
 
 import particles
 from particles import datasets as dts
 from particles import distributions as dists
-from particles import resampling as rs
 from particles import smc_samplers as ssps
 from particles.collectors import Moments
 
@@ -71,7 +69,8 @@ class LogisticRegression(ssps.StaticModel):
         return - np.logaddexp(0., -lin)
 
 model = LogisticRegression(data=data, prior=prior)
-phi = lambda x: x.theta['beta'][:, 0]  # intercept
+def phi(x):
+    return x.theta['beta'][:, 0]  # intercept
 results = []
 
 # runs
@@ -101,7 +100,7 @@ plt.figure()
 varest = np.array([r['output'].summaries.var_logLt for r in results]) / N0
 lower = np.percentile(varest, 5, axis=0)
 upper = np.percentile(varest, 95, axis=0)
-label_fill = f'single-run var estimates (5-95% quantiles)'
+label_fill = 'single-run var estimates (5-95% quantiles)'
 plt.fill_between(np.arange(varest.shape[1]), lower, upper, alpha=0.8,
                  color='gray', label=label_fill)
 plt.plot(np.var([r['output'].summaries.logLts for r in results], axis=0),
@@ -123,7 +122,7 @@ fig = plt.figure()
 varest_int = np.array([r['output'].summaries.var_phi for r in results]) / N0
 lower = np.percentile(varest_int, 5, axis=0)
 upper = np.percentile(varest_int, 95, axis=0)
-label_fill = f'single-run variance estimates (5-95% quantiles)'
+label_fill = 'single-run variance estimates (5-95% quantiles)'
 plt.fill_between(np.arange(est_int.shape[1]), lower, upper, alpha=0.8,
                  color='gray', label=label_fill)
 plt.plot(np.var(est_int, axis=0), 

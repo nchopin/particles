@@ -104,12 +104,14 @@ def cartesian_lists(d):
     [ {'a':0, 'b':3}, {'a':0, 'b':4}, ... {'a':2, 'b':5} ]
 
     """
-    return [{k: v for k, v in zip(d.keys(), args)}
-            for args in itertools.product(*d.values())]
+    return [
+        {k: v for k, v in zip(d.keys(), args)}
+        for args in itertools.product(*d.values())
+    ]
 
 
 def cartesian_args(args, listargs, dictargs):
-    """ Compute a list of inputs and outputs for a function
+    """Compute a list of inputs and outputs for a function
     with kw arguments.
 
     args: dict
@@ -122,7 +124,12 @@ def cartesian_args(args, listargs, dictargs):
         (see module doc for more explanation)
 
     """
-    ils = {k: [v, ] for k, v in args.items()}
+    ils = {
+        k: [
+            v,
+        ]
+        for k, v in args.items()
+    }
     ils.update(listargs)
     ils.update({k: v.values() for k, v in dictargs.items()})
     ols = listargs.copy()
@@ -130,7 +137,7 @@ def cartesian_args(args, listargs, dictargs):
     return cartesian_lists(ils), cartesian_lists(ols)
 
 
-def add_to_dict(d, obj, key='output'):
+def add_to_dict(d, obj, key="output"):
     if isinstance(obj, dict):
         d.update(obj)
     else:
@@ -151,7 +158,7 @@ def worker(qin, qout, f):
         qout.put((i, f(**args)))
 
 
-def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
+def distribute_work(f, inputs, outputs=None, nprocs=1, out_key="output"):
     """
     For each input i (a dict) in list **inputs**, evaluate f(**i)
     using multiprocessing if nprocs>1
@@ -167,8 +174,9 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key='output'):
 
     # no multiprocessing
     if nprocs <= 1:
-        return [add_to_dict(op, f(**ip), key=out_key)
-                for ip, op in zip(inputs, outputs)]
+        return [
+            add_to_dict(op, f(**ip), key=out_key) for ip, op in zip(inputs, outputs)
+        ]
 
     delayed_f = joblib.delayed(f)
 
@@ -202,14 +210,13 @@ class seeder(object):
         self.func = func
 
     def __call__(self, **kwargs):
-        seed = kwargs.pop('seed', None)
+        seed = kwargs.pop("seed", None)
         if seed:
             random.seed(seed)
         return self.func(**kwargs)
 
 
-def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
-                **args):
+def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None, **args):
     """Evaluate a function for different parameters, optionally in parallel.
 
     Parameters
@@ -236,11 +243,11 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
 
     """
     if not callable(f):
-        raise ValueError('multiplexer: function f missing, or not callable')
+        raise ValueError("multiplexer: function f missing, or not callable")
     # extra arguments (meant to be arguments for f)
     fixedargs = {} if protected_args is None else protected_args
     listargs, dictargs = {}, {}
-    listargs['run'] = list(range(nruns))
+    listargs["run"] = list(range(nruns))
     for k, v in args.items():
         if isinstance(v, list):
             listargs[k] = v
@@ -251,15 +258,15 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
     # cartesian product
     inputs, outputs = cartesian_args(fixedargs, listargs, dictargs)
     for ip in inputs:
-        ip.pop('run')  # run is not an argument of f, just an id for output
+        ip.pop("run")  # run is not an argument of f, just an id for output
     # distributing different seeds
     if seeding is None:
-        seeding = (nruns > 1)
+        seeding = nruns > 1
     if seeding:
         seeds = distinct_seeds(len(inputs))
         f = seeder(f)
         for ip, op, seed in zip(inputs, outputs, seeds):
-            ip['seed'] = seed
-            op['seed'] = seed
+            ip["seed"] = seed
+            op["seed"] = seed
     # the actual work happens here
     return distribute_work(f, inputs, outputs, nprocs=nprocs)

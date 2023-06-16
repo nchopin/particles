@@ -90,6 +90,7 @@ import numpy as np
 
 import particles.collectors as col
 
+
 def var_estimate(W, phi_x, B):
     r"""Variance estimate based on genealogy tracking.
 
@@ -97,9 +98,10 @@ def var_estimate(W, phi_x, B):
 
         .. math::
 
-           \sum_{n=1}^N \left\{ \sum_{m:B_t^m=n} W_t^m (\varphi(X_t^m) - \mathbb{Q}_t^N(\varphi)) \right\}^2
+           \sum_{n=1}^N \left\{ \sum_{m:B_t^m=n} W_t^m (\varphi(X_t^m)
+                 - \mathbb{Q}_t^N(\varphi)) \right\}^2
 
-    where :math:`\mathbb{Q}_t^N(\varphi)` is the particle estimate 
+    where :math:`\mathbb{Q}_t^N(\varphi)` is the particle estimate
     of :math:`\mathbb{Q}_t(\varphi)`:
 
         .. math::
@@ -128,13 +130,15 @@ def var_estimate(W, phi_x, B):
         out = _sum_over_branches(w_phi, B)
     return out
 
+
 @jit(nopython=True)
 def _sum_over_branches(w_phi, B):
     N = w_phi.shape[0]
     s = np.zeros(N)
     for m in range(N):
         s[B[m]] += w_phi[m]
-    return np.sum(s**2, axis=0)
+    return np.sum(s ** 2, axis=0)
+
 
 class VarColMixin(object):
     def update_B(self, smc):
@@ -151,8 +155,9 @@ class Var(col.Collector, VarColMixin):
     ----------
     phi:  callable
        the test function (default: identity function)
-   """
-    signature = {'phi': None}
+    """
+
+    signature = {"phi": None}
 
     def test_func(self, x):
         if self.phi is None:
@@ -164,13 +169,16 @@ class Var(col.Collector, VarColMixin):
         self.update_B(smc)
         return var_estimate(smc.W, self.test_func(smc.X), self.B)
 
+
 class Var_logLt(col.Collector, VarColMixin):
     """Computes and collects estimates of the variance of the log normalising
     constant estimator.
     """
+
     def fetch(self, smc):
         self.update_B(smc)
         return _sum_over_branches(smc.W, self.B)
+
 
 class Lag_based_var(Var):
     """Computes and collects Olsson and Douc (2019) variance estimates, which
@@ -188,6 +196,7 @@ class Lag_based_var(Var):
        the test function (default: identity function)
 
     """
+
     def fetch(self, smc):
         B = smc.hist.compute_trajectories()
         return [var_estimate(smc.W, self.test_func(smc.X), Bt) for Bt in B][::-1]

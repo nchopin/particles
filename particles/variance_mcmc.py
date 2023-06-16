@@ -44,7 +44,7 @@ def _mean_with_weighted_columns(X: np.ndarray, W: np.ndarray):
     return np.sum(X * W)
 
 def MCMC_variance_weighted(X: np.ndarray, W:np.ndarray, method:str):
-    """Like `MCMC_variance`, but each column of `X` now has a weight W that sums to 1."""
+    """Like `MCMC_variance`, but each column of `X` has a weight W that sums to 1."""
     P, M = X.shape
     return MCMC_variance(M * W * (X - _mean_with_weighted_columns(X, W)), method)
 
@@ -58,15 +58,15 @@ def autocovariance(X: np.ndarray, order: int, mu: float = None, bias=True):
         mu = np.mean(X)
     X = X - mu
     P, M = X.shape
-    if bias:
-        return np.mean(X[0:(P - order)] * X[order:P]) * (P-order)/P # use the biased estimator
-    else:
-        return np.mean(X[0:(P - order)] * X[order:P])  # * (P-order)/P # use the biased estimator
+    if bias: # use the biased estimator
+        return np.mean(X[0:(P - order)] * X[order:P]) * (P-order)/P
+    else:  # * (P-order)/P
+        return np.mean(X[0:(P - order)] * X[order:P])
 
 def autocovariance_fft_single(x, mu=None, bias=True):
     """
     :param x: numpy array of shape (n,)
-    :return: numpy array `res` of shape(n,), where `res[i]` is the i-th order autocorrelation
+    :return: numpy array `res` of shape(n,), where `res[i]` is the i-th autocorrelation
     """
     if mu is None:
         mu = np.mean(x)
@@ -113,10 +113,12 @@ class AutoCovarianceCalculator:
             if self.method is None:
                 self._choose_method()
             if self.method == 'fft':
-                self._covariances = autocovariance_fft_multiple(X=self.X, mu=self.mu, bias=self.bias)
+                self._covariances = autocovariance_fft_multiple(X=self.X, mu=self.mu, 
+                                                                bias=self.bias)
                 assert len(self._covariances) == self.P
             elif self.method == 'direct':
-                self._covariances[k] = autocovariance(X=self.X, order=k, mu=self.mu, bias=self.bias)
+                self._covariances[k] = autocovariance(X=self.X, order=k, 
+                                                      mu=self.mu, bias=self.bias)
             else:
                 raise AssertionError("Method must be either 'fft' or 'direct'")
         return self._covariances[k]
@@ -135,9 +137,11 @@ def MCMC_init_seq(X: np.ndarray, method=None, bias=True):
     """
     initial sequence estimator, see Practical MCMC (Geyer 1992)
     Let c_0, c_1, ... be the sequence of autocorrelations. Then:
+
     * i is an inadmissible index if i is odd and one of the two following conditions is proved to be False:
         * c[i] + c[i-1] >= 0
         * c[i-2] + c[i-3] - c[i] - c[i-1] >= 0
+
     * All c_i are admissible until the first inadmissible index, or when the list runs out.
     """
     covariances = AutoCovarianceCalculator(X=X, method=method, bias=bias)
@@ -174,10 +178,14 @@ def MCMC_Tukey_Hanning(X, method=None, bias=True, adapt_constant=True):
     alpha = 1/4
     P = len(covariances)
     if adapt_constant:
-        c = np.sqrt(3.75*MCMC_variance_naive(X)/np.var(X)) # leave this alone for the moment. In high dimensional settings, it is rare that we can run Markov chain for (a lot) more than 3 autocorrelation time.
+        c = np.sqrt(3.75*MCMC_variance_naive(X)/np.var(X)) 
+        # leave this alone for the moment. In high dimensional settings, it is 
+        # rare that we can run Markov chain for (a lot) more than 3 
+        # autocorrelation time.
     else:
         c = 1
-    b = max(c * P**0.5+1,2); b = int(b)
+    b = max(c * P**0.5+1,2)
+    b = int(b)
     w = [1 - 2*alpha + 2*alpha * np.cos(np.pi*k/b) for k in range(b)]
     w_cov = []
     for i in np.arange(1,b):
@@ -187,12 +195,12 @@ def MCMC_Tukey_Hanning(X, method=None, bias=True, adapt_constant=True):
             w_cov.append(0)
     return w[0] * covariances[0] + 2 * sum(w_cov)
 
-def default_collector(l: List[np.ndarray]) -> np.ndarray:
+def default_collector(ls: List[np.ndarray]) -> np.ndarray:
     gc.collect()
-    return np.r_[tuple(l)]
+    return np.r_[tuple(ls)]
 
 def _weighted_variance_by_columns(x: np.ndarray, W: np.ndarray) -> float:
-    """Calculate the variance of elements of `x` where each column of `x` is weighted by `W`.
+    """Compute variance of elements of `x` where each column of `x` is weighted by `W`.
     :param W: weights, should sum to 1
     """
     P, M = x.shape

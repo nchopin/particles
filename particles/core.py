@@ -98,7 +98,6 @@ See the documentation of `SMC` for more details.
 from __future__ import division, print_function
 
 import numpy as np
-from scipy import stats
 
 from particles import collectors
 from particles import hilbert
@@ -111,6 +110,7 @@ err_msg_missing_trans = """
     Feynman-Kac class %s is missing method logpt, which provides the log-pdf
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
+
 
 class FeynmanKac(object):
     """Abstract base class for Feynman-Kac models.
@@ -139,58 +139,57 @@ class FeynmanKac(object):
     e.g. module `smc_samplers` and the corresponding tutorial in the on-line
     documentation.
     """
+
     # by default, we mutate at every time t
 
     def __init__(self, T):
         self.T = T
 
     def _error_msg(self, meth):
-        return 'method/property %s missing in class %s' % (
-            meth, self.__class__.__name__)
+        return "method/property %s missing in class %s" % (
+            meth,
+            self.__class__.__name__,
+        )
 
     def M0(self, N):
         """Sample N times from initial distribution M_0 of the FK model"""
-        raise NotImplementedError(self._error_msg('M0'))
+        raise NotImplementedError(self._error_msg("M0"))
 
     def M(self, t, xp):
-        """Generate X_t according to kernel M_t, conditional on X_{t-1}=xp
-        """
-        raise NotImplementedError(self._error_msg('M'))
+        """Generate X_t according to kernel M_t, conditional on X_{t-1}=xp"""
+        raise NotImplementedError(self._error_msg("M"))
 
     def logG(self, t, xp, x):
         """Evaluates log of function G_t(x_{t-1}, x_t)"""
-        raise NotImplementedError(self._error_msg('logG'))
+        raise NotImplementedError(self._error_msg("logG"))
 
     def Gamma0(self, u):
         """Deterministic function that transform a uniform variate of dimension
         d_x into a random variable with the same distribution as M0."""
-        raise NotImplementedError(self._error_msg('Gamma0'))
+        raise NotImplementedError(self._error_msg("Gamma0"))
 
     def Gamma(self, t, xp, u):
         """Deterministic function that transform a uniform variate of dimension
         d_x into a random variable with the same distribution as M(self, t, xp).
         """
-        raise NotImplementedError(self._error_msg('Gamma'))
+        raise NotImplementedError(self._error_msg("Gamma"))
 
     def logpt(self, t, xp, x):
-        """Log-density of X_t given X_{t-1}.
-        """
-        raise NotImplementedError(err_msg_missing_trans %
-                                  self.__class__.__name__)
+        """Log-density of X_t given X_{t-1}."""
+        raise NotImplementedError(err_msg_missing_trans % self.__class__.__name__)
 
     @property
     def isAPF(self):
         """Returns true if model is an APF"""
-        return 'logeta' in dir(self)
+        return "logeta" in dir(self)
 
     def done(self, smc):
         """Time to stop the algorithm"""
         return smc.t >= self.T
 
     def time_to_resample(self, smc):
-        """When to resample.
-        """
-        return (smc.aux.ESS < smc.N * smc.ESSrmin)
+        """When to resample."""
+        return smc.aux.ESS < smc.N * smc.ESSrmin
 
     def default_moments(self, W, X):
         """Default moments (see module ``collectors``).
@@ -200,81 +199,85 @@ class FeynmanKac(object):
         return rs.wmean_and_var(W, X)
 
     def summary_format(self, smc):
-        return 't=%i: resample:%s, ESS (end of iter)=%.2f' % (smc.t,
-                                                              smc.rs_flag,
-                                                              smc.wgts.ESS)
+        return "t=%i: resample:%s, ESS (end of iter)=%.2f" % (
+            smc.t,
+            smc.rs_flag,
+            smc.wgts.ESS,
+        )
 
 
 class SMC(object):
     """Metaclass for SMC algorithms.
 
-       Parameters
-       ----------
-       fk: FeynmanKac object
-           Feynman-Kac model which defines which distributions are
-           approximated
-       N: int, optional (default=100)
-           number of particles
-       qmc: bool, optional (default=False)
-           if True use the Sequential quasi-Monte Carlo version (the two
-           options resampling and ESSrmin are then ignored)
-       resampling: {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
-           the resampling scheme to be used (see `resampling` module for more
-           information; default is 'systematic')
-       ESSrmin: float in interval [0, 1], optional
-           resampling is triggered whenever ESS / N < ESSrmin (default=0.5)
-       store_history: bool, int or callable (default=False)
-           whether and when history should be saved; see module `smoothing`
-       verbose: bool, optional
-           whether to print basic info at every iteration (default=False)
-       collect: list of collectors, or 'off' (for turning off summary collections)
-           see module ``collectors``
+    Parameters
+    ----------
+    fk: FeynmanKac object
+        Feynman-Kac model which defines which distributions are
+        approximated
+    N: int, optional (default=100)
+        number of particles
+    qmc: bool, optional (default=False)
+        if True use the Sequential quasi-Monte Carlo version (the two
+        options resampling and ESSrmin are then ignored)
+    resampling: {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
+        the resampling scheme to be used (see `resampling` module for more
+        information; default is 'systematic')
+    ESSrmin: float in interval [0, 1], optional
+        resampling is triggered whenever ESS / N < ESSrmin (default=0.5)
+    store_history: bool, int or callable (default=False)
+        whether and when history should be saved; see module `smoothing`
+    verbose: bool, optional
+        whether to print basic info at every iteration (default=False)
+    collect: list of collectors, or 'off' (for turning off summary collections)
+        see module ``collectors``
 
-       Attributes
-       ----------
+    Attributes
+    ----------
 
-       t : int
-          current time step
-       X : typically a (N,) or (N, d) ndarray (but see documentation)
-           the N particles
-       A : (N,) ndarray (int)
-          ancestor indices: A[n] = m means ancestor of X[n] has index m
-       wgts: `Weights` object
-           An object with attributes lw (log-weights), W (normalised weights)
-           and ESS (the ESS of this set of weights) that represents
-           the main (inferential) weights
-       aux: `Weights` object
-           the auxiliary weights (for an auxiliary PF, see FeynmanKac)
-       cpu_time : float
-           CPU time of complete run (in seconds)
-       hist: `ParticleHistory` object (None if option history is set to False)
-           complete history of the particle system; see module `smoothing`
-       summaries: `Summaries` object (None if option summaries is set to False)
-           each summary is a list of estimates recorded at each iteration. The
-           following summaries are computed by default:
-               + ESSs (the ESS at each time t)
-               + rs_flags (whether resampling was performed or not at each t)
-               + logLts (estimates of the normalising constants)
-           Extra summaries may also be computed (such as moments and online
-           smoothing estimates), see module `collectors`.
+    t : int
+       current time step
+    X : typically a (N,) or (N, d) ndarray (but see documentation)
+        the N particles
+    A : (N,) ndarray (int)
+       ancestor indices: A[n] = m means ancestor of X[n] has index m
+    wgts: `Weights` object
+        An object with attributes lw (log-weights), W (normalised weights)
+        and ESS (the ESS of this set of weights) that represents
+        the main (inferential) weights
+    aux: `Weights` object
+        the auxiliary weights (for an auxiliary PF, see FeynmanKac)
+    cpu_time : float
+        CPU time of complete run (in seconds)
+    hist: `ParticleHistory` object (None if option history is set to False)
+        complete history of the particle system; see module `smoothing`
+    summaries: `Summaries` object (None if option summaries is set to False)
+        each summary is a list of estimates recorded at each iteration. The
+        following summaries are computed by default:
+            + ESSs (the ESS at each time t)
+            + rs_flags (whether resampling was performed or not at each t)
+            + logLts (estimates of the normalising constants)
+        Extra summaries may also be computed (such as moments and online
+        smoothing estimates), see module `collectors`.
 
-       Methods
-       -------
-       run():
-           run the algorithm until completion
-       step()
-           run the algorithm for one step (object self is an iterator)
+    Methods
+    -------
+    run():
+        run the algorithm until completion
+    step()
+        run the algorithm for one step (object self is an iterator)
     """
 
-    def __init__(self,
-                 fk=None,
-                 N=100,
-                 qmc=False,
-                 resampling="systematic",
-                 ESSrmin=0.5,
-                 store_history=False,
-                 verbose=False,
-                 collect=None):
+    def __init__(
+        self,
+        fk=None,
+        N=100,
+        qmc=False,
+        resampling="systematic",
+        ESSrmin=0.5,
+        store_history=False,
+        verbose=False,
+        collect=None,
+    ):
 
         self.fk = fk
         self.N = N
@@ -286,13 +289,13 @@ class SMC(object):
         # initialisation
         self.t = 0
         self.rs_flag = False  # no resampling at time 0, by construction
-        self.logLt = 0.
+        self.logLt = 0.0
         self.wgts = rs.Weights()
         self.aux = None
         self.X, self.Xp, self.A = None, None, None
 
         # summaries computed at every t
-        if collect == 'off':
+        if collect == "off":
             self.summaries = None
         else:
             self.summaries = collectors.Summaries(collect)
@@ -306,18 +309,15 @@ class SMC(object):
         return self.wgts.W
 
     def reset_weights(self):
-        """Reset weights after a resampling step.
-        """
+        """Reset weights after a resampling step."""
         if self.fk.isAPF:
-            lw = (rs.log_mean_exp(self.logetat, W=self.W)
-                  - self.logetat[self.A])
+            lw = rs.log_mean_exp(self.logetat, W=self.W) - self.logetat[self.A]
             self.wgts = rs.Weights(lw=lw)
         else:
             self.wgts = rs.Weights()
 
     def setup_auxiliary_weights(self):
-        """Compute auxiliary weights (for APF).
-        """
+        """Compute auxiliary weights (for APF)."""
         if self.fk.isAPF:
             self.logetat = self.fk.logeta(self.t - 1, self.X)
             self.aux = self.wgts.add(self.logetat)
@@ -379,8 +379,7 @@ class SMC(object):
             self.summaries.collect(self)
 
     def __next__(self):
-        """One step of a particle filter.
-        """
+        """One step of a particle filter."""
         if self.fk.done(self):
             raise StopIteration
         if self.t == 0:
@@ -405,18 +404,18 @@ class SMC(object):
     def run(self):
         """Runs particle filter until completion.
 
-           Note: this class implements the iterator protocol. This makes it
-           possible to run the algorithm step by step::
+        Note: this class implements the iterator protocol. This makes it
+        possible to run the algorithm step by step::
 
-               pf = SMC(fk=...)
-               next(pf)  # performs one step
-               next(pf)  # performs one step
-               for _ in range(10):
-                   next(pf)  # performs 10 steps
-               pf.run()  # runs the remaining steps
+            pf = SMC(fk=...)
+            next(pf)  # performs one step
+            next(pf)  # performs one step
+            for _ in range(10):
+                next(pf)  # performs 10 steps
+            pf.run()  # runs the remaining steps
 
-           In that case, attribute `cpu_time` records the CPU cost of the last
-           command only.
+        In that case, attribute `cpu_time` records the CPU cost of the last
+        command only.
         """
         for _ in self:
             pass
@@ -426,7 +425,6 @@ class SMC(object):
 
 
 class _picklable_f(object):
-
     def __init__(self, fun):
         self.fun = fun
 
@@ -521,6 +519,11 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
     `utils.multiplexer`: for more details on the syntax.
     """
     f = _identity if out_func is None else _picklable_f(out_func)
-    return utils.multiplexer(f=f, nruns=nruns, nprocs=nprocs, seeding=True,
-                             protected_args={'collect': collect},
-                             **args)
+    return utils.multiplexer(
+        f=f,
+        nruns=nruns,
+        nprocs=nprocs,
+        seeding=True,
+        protected_args={"collect": collect},
+        **args
+    )

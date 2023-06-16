@@ -31,15 +31,12 @@ Dau, H.D. and Chopin, N. (2022). Waste-free Sequential Monte Carlo,
 
 from matplotlib import pyplot as plt
 import numpy as np
-from numpy import random
 import seaborn as sb
 
 import particles
 from particles import datasets as dts
 from particles import distributions as dists
-from particles import resampling as rs
 from particles import smc_samplers as ssps
-from particles.collectors import Moments
 
 datasets = {'pima': dts.Pima, 'sonar': dts.Sonar}
 dataset_name = 'pima'
@@ -73,7 +70,8 @@ class LogisticRegression(ssps.StaticModel):
         return - np.logaddexp(0., -lin)
 
 model = LogisticRegression(data=data, prior=prior)
-phi = lambda x: x.theta['beta'][:, 0]  # intercept
+def phi(x):
+    return x.theta['beta'][:, 0]  # intercept
 results = []
 
 # runs
