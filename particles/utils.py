@@ -1,22 +1,27 @@
 # -*- coding: utf-8 -*-
 
 """
-Non-numerical utilities (notably for parallel computation).
+Non-numerical utilities (mostly for parallel computation).
 
 Overview
 ========
 
-This module gathers several non-numerical utilities. The only one of direct
-interest to the user is the `multiplexer` function, which we now describe
-briefly.
+This module gathers several non-numerical utilities, mostly related to parallel
+computation. The most useful such utility, `multiplexer` is described in the
+next section. More low-level functions are described briefly in a following
+section. 
+
+Multiplexer
+===========
 
 Say we have some function ``f``, which takes only keyword arguments::
 
     def f(x=0, y=0, z=0):
         return x + y + z**2
 
-We wish to evaluate f repetitively for a range of x, y and/or z values.
-To do so, we may use function multiplexer as follows::
+We wish to evaluate f repetitively for a range of x, y and/or z values,
+optionally in parallel (using several CPU cores). To do so, we may use 
+function `multiplexer` as follows::
 
     results = multiplexer(f=f, x=3, y=[2, 4, 6], z=[3, 5])
 
@@ -41,7 +46,7 @@ but the output reports the corresponding keys, i.e.::
     ]
 
 This is useful when f takes as arguments complex objects that you would like to
-replace by more legible labels; e.g. option ` model` of class `SMC`.
+replace by more legible labels; e.g. argument `fk` for class `SMC`.
 
 `multiplexer` also accepts three extra keyword arguments (whose name may not
 therefore be used as keyword arguments for function f):
@@ -56,16 +61,31 @@ therefore be used as keyword arguments for function f):
   seed; see below.
 
 .. warning ::
-    Library `multiprocessing` generates identical workers, up to the state of
-    the Numpy random generator. If your function involves random numbers: (a)
-    set option ``seeding`` to True (otherwise, you will get
-    identical results from all your workers); (b) make sure the function f does
-    not rely on scipy frozen distributions, as these distributions also
-    freeze the states. For instance, do not use any frozen distribution when
-    defining your own Feynman-Kac object.
+    Parallel computation relies on library `joblib`. This library generates
+    identical workers, up to the state of the Numpy random generator. If your
+    function involves random numbers, make sure that (a) option ``seeding`` is
+    set to True (otherwise, you will get identical results from workers with
+    the same inputs); (b) that the function f does not rely on scipy frozen
+    distributions, as these distributions also freeze the states. For instance,
+    do not use any frozen distribution when defining your own Feynman-Kac
+    object.
 
 .. seealso :: `multiSMC`
 
+Low-level utilities
+===================
+
+These low-level utilities might be useful to more advanced users in certain
+specific scenarios.
+
+* `distribute_work`: evaluate the same function for different inputs,
+  optionally in parallel. (Useful if multiplexer is not flexible enough for
+  you, i.e. you want something more general that a cartesian product for the
+  inputs).
+
+* `distinct_seeds`: generate (randomly) pairwise distinct RNG seeds.
+
+* `timer`: a decorator to measure the CPU time of a function call.
 """
 
 from __future__ import division, print_function
@@ -124,12 +144,7 @@ def cartesian_args(args, listargs, dictargs):
         (see module doc for more explanation)
 
     """
-    ils = {
-        k: [
-            v,
-        ]
-        for k, v in args.items()
-    }
+    ils = { k: [ v, ] for k, v in args.items() }
     ils.update(listargs)
     ils.update({k: v.values() for k, v in dictargs.items()})
     ols = listargs.copy()
@@ -146,7 +161,7 @@ def add_to_dict(d, obj, key="output"):
 
 
 def worker(qin, qout, f):
-    """Worker for muliprocessing.
+    """Worker for multi-processing.
 
     A worker repeatedly picks a dict of arguments in the queue and computes
     f for this set of arguments, until the input queue is empty.
@@ -158,14 +173,43 @@ def worker(qin, qout, f):
         qout.put((i, f(**args)))
 
 
-def distribute_work(f, inputs, outputs=None, nprocs=1, out_key="output"):
+def distribute_work(f, inputs, outputs=None, nprocs=1, out_key="output",
+                    joblib_verbose=0):
     """
-    For each input i (a dict) in list **inputs**, evaluate f(**i)
-    using multiprocessing if nprocs>1
+    Evaluate the same function for different inputs, optionally in parallel.
 
-    The result has the same format as the inputs: a list of dicts,
-    taken from outputs, and updated with f(**i).
-    If outputs is None, it is set to inputs.
+    Parameters
+    ----------
+    f: callable (takes only keyword arguments)
+        the function to evaluate 
+    inputs: list of dicts
+        list of input arguments for each function call
+    outputs: list of dicts (default: set to inputs)
+        initialise the list of outputs (one per call)
+    nprocs: int (default: 1)
+        if positive, number of processors is set to this value;
+        if not, number of processors is set to max number + nprocs
+        (e.g. nprocs=0 means all the available processors should be used)
+    out_key: string
+        name of the key for the output of each function call
+
+    Returns
+    -------
+    outputs: list of dicts
+
+    Note
+    ----
+    outputs if first initialised by argument `outputs`. Then each dict in this
+    this list is updated as follows when the corresponding function call is
+    performed:
+
+    * if f returns a dict, then each (key, value) pair in that dict is added to
+      to the output dict. 
+
+    * if f returns an object which is not a dict, then a single (key, value) 
+      pair is added, with key given by argument `out_key`, and value the output 
+      of f.
+
     """
     if outputs is None:
         outputs = [ip.copy() for ip in inputs]
@@ -174,14 +218,14 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key="output"):
 
     # no multiprocessing
     if nprocs <= 1:
-        return [
-            add_to_dict(op, f(**ip), key=out_key) for ip, op in zip(inputs, outputs)
-        ]
+        return [add_to_dict(op, f(**ip), key=out_key) 
+                for ip, op in zip(inputs, outputs)]
 
     delayed_f = joblib.delayed(f)
 
     # multiprocessing
-    pool = joblib.Parallel(n_jobs=nprocs, backend="loky")
+    pool = joblib.Parallel(n_jobs=nprocs, backend="loky",
+                           verbose=joblib_verbose)
     results = pool(delayed_f(**ip) for ip in inputs)
     for i, r in enumerate(results):
         add_to_dict(outputs[i], r)
@@ -216,7 +260,8 @@ class seeder(object):
         return self.func(**kwargs)
 
 
-def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None, **args):
+def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None, 
+                joblib_verbose=0, **args):
     """Evaluate a function for different parameters, optionally in parallel.
 
     Parameters
@@ -225,9 +270,10 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None, **
         function f to evaluate, must take only kw arguments as inputs
     nruns: int
         number of evaluations of f for each set of arguments
-    nprocs: int
-        if <=0, set to actual number of physical processors plus nprocs
-        (i.e. -1 => number of cpus on your machine minus one)
+    nprocs: int (default: 1)
+        number of processors to use. If nprocs <=0, number of processors
+        is set to nprocs plus number of available processors; e.g. nprocs=0
+        means use all the cores.
         Default is 1, which means no multiprocessing
     seeding: bool (default: True if nruns > 1, False otherwise)
         whether to seed the pseudo-random generator (with distinct
@@ -269,4 +315,5 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None, **
             ip["seed"] = seed
             op["seed"] = seed
     # the actual work happens here
-    return distribute_work(f, inputs, outputs, nprocs=nprocs)
+    return distribute_work(f, inputs, outputs=outputs, nprocs=nprocs,
+                           joblib_verbose=joblib_verbose)
