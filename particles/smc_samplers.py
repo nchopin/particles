@@ -620,13 +620,24 @@ class ArrayMetropolis(ArrayMCMC):
 
 
 class ArrayRandomWalk(ArrayMetropolis):
-    """Gaussian random walk Metropolis."""
+    """Gaussian random walk Metropolis.
+
+    Covariance of random walk proposal is set to (2.38/d^{1/2}) times the empirical
+    covariance matrix of the (weighted) particles. If this empirical matrix is
+    not positive definite (LinAlgError is raised when computing the Cholesky
+    decomposition), then it is replaced by a diagonal matrix (with the same
+    diagonal elements).
+    """
 
     def calibrate(self, W, x):
         arr = view_2d_array(x.theta)
         N, d = arr.shape
         m, cov = rs.wmean_and_cov(W, arr)
         scale = 2.38 / np.sqrt(d)
+        try:
+            chol = linalg.cholesky(cov, lower=True)
+        except linalg.LinAlgError:
+            chol = np.diag(np.sqrt(np.diag(cov)))
         x.shared["chol_cov"] = scale * linalg.cholesky(cov, lower=True)
 
     def proposal(self, x, xprop):
