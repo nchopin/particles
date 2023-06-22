@@ -10,10 +10,8 @@ from particles import distributions as dists
 HALFLOGTWOPI = 0.5 * np.log(2. * np.pi)
 
 class BetterTempering(ssps.AdaptiveTempering):
-    def __init__(
-        self, model=None, wastefree=True, len_chain=10, move=None, 
-        chisq=1.
-    ):
+    def __init__(self, model=None, wastefree=True, len_chain=10, move=None, 
+                 chisq=1.):
         super().__init__(
             model=model, wastefree=wastefree, len_chain=len_chain, move=move
         )
@@ -57,22 +55,26 @@ class GaussianBridge(ssps.TemperingBridge):
         # return (-(0.5/self.sigma**2) * np.sum(theta**2, axis=1) 
         #         - self.log_norm_cst)
 
-dims = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500]
+dims = [10, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 650, 700,
+        750, 800]
 nruns = 3
 N = 400
 
 fks = {d: BetterTempering(model=GaussianBridge(dim=d), 
                           move=ssps.MCMCSequenceWF(mcmc=ArrayDiagRandomWalk(),
-                                                   len_chain=5 * d)) 
+                                                   len_chain=4 * d)) 
        for d in dims}
 
-results = particles.multiSMC(fk=fks, nruns=nruns, N=N, verbose=True)
+results = particles.multiSMC(fk=fks, nruns=nruns, N=N, verbose=True,
+                             joblib_verbose=50)
 
 ## PLOTS
 #######
 plt.style.use('ggplot')
 plt.scatter([r['fk'] for r in results],
             [r['output'].t for r in results])
+plt.xlim(left=1)
+plt.ylim(bottom=0)
 plt.xlabel('dim')
 plt.ylabel('nr tempering steps')
 plt.savefig('gaussian_nr_tempering_steps_vs_dim.pdf')
