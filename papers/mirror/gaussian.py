@@ -71,6 +71,8 @@ results = particles.multiSMC(fk=fks, nruns=nruns, N=N, verbose=True,
 ## PLOTS
 #######
 plt.style.use('ggplot')
+
+plt.figure()
 plt.scatter([r['fk'] for r in results],
             [r['output'].t for r in results])
 plt.xlim(left=1)
@@ -79,4 +81,9 @@ plt.xlabel('dim')
 plt.ylabel('nr tempering steps')
 plt.savefig('gaussian_nr_tempering_steps_vs_dim.pdf')
 
-
+plt.figure()
+rmax = [r for r in results if r['fk'] == max(dims)][0]
+plt.plot(rmax['output'].X.shared['exponents'])
+plt.xlabel('iteration t')
+plt.ylabel('tempering exponent')
+plt.savefig('gaussian_temperatures.pdf')

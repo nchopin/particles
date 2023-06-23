@@ -174,7 +174,7 @@ def worker(qin, qout, f):
 
 
 def distribute_work(f, inputs, outputs=None, nprocs=1, out_key="output",
-                    joblib_verbose=0):
+                    joblib_verbose=10):
     """
     Evaluate the same function for different inputs, optionally in parallel.
 
@@ -192,6 +192,9 @@ def distribute_work(f, inputs, outputs=None, nprocs=1, out_key="output",
         (e.g. nprocs=0 means all the available processors should be used)
     out_key: string
         name of the key for the output of each function call
+    joblib_verbose: int (default: 10)
+        verbose parameter for `joblib.Parallel` (progress report for parallel
+        tasks)
 
     Returns
     -------
@@ -261,7 +264,7 @@ class seeder(object):
 
 
 def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None, 
-                joblib_verbose=0, **args):
+                joblib_verbose=10, **args):
     """Evaluate a function for different parameters, optionally in parallel.
 
     Parameters
@@ -280,6 +283,9 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None,
         seeds) before each evaluation of function f.
     protected_args: dict
         args protected from cartesian product (even if they are lists)
+    joblib_verbose: int (default: 10)
+        verbose parameter for `joblib.Parallel` (progress report for parallel
+        tasks), between 0 (no output) and 10.
     **args:
         keyword arguments for function f.
 
