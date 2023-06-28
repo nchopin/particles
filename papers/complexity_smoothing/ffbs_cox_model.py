@@ -25,7 +25,7 @@ see the book or below for a definition of psi_t.
 
 Compared to the book, the range of N values is slightly different (from 200 to
 51200, vs 50 to 12800). Also, this time we use a box-plot for CPU vs N; this
-shows more clearly that the CPU time of variant 2 has a large variability.  
+shows more clearly that the CPU time of variant 2 has a large variability.
 
 """
 
@@ -102,8 +102,6 @@ results = utils.multiplexer(f=smoothing_worker, method=methods, N=Ns,
 # =====
 savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
-palette = sb.dark_palette("lightgray", n_colors=5, reverse=False)
-sb.set_palette(palette)
 rc('text', usetex=True)  # latex
 
 pretty_names = {}
@@ -123,7 +121,6 @@ res_nofon = [r for r in results if r['method'] != 'FFBS_purereject']
 sb.violinplot(y=[np.mean(r['est']) for r in res_nofon],
               x=[r['N'] for r in res_nofon],
               hue=[pretty_names[r['method']] for r in res_nofon],
-              palette=palette,
               flierprops={'marker': 'o',
                           'markersize': 4,
                           'markerfacecolor': 'k'})
@@ -138,7 +135,6 @@ plt.figure()
 sb.boxplot(y=[r['cpu'] for r in results],
         x=[r['N'] for r in results],
         hue=[pretty_names[r['method']] for r in results],
-        palette=palette,
         flierprops={'marker': 'o',
             'markersize': 4,
             'markerfacecolor': 'k'})
