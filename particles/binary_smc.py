@@ -46,7 +46,6 @@ import numpy as np
 import scipy as sp
 from numpy import random
 from scipy.special import expit, logit
-from sklearn.linear_model import LinearRegression, LogisticRegression
 
 from particles import distributions as dists
 from particles import smc_samplers as ssps
