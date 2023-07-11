@@ -1,5 +1,5 @@
-**qmc**
-*******
+**rqmc**
+*********
 
 .. automodule:: particles.rqmc
 

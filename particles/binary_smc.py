@@ -26,7 +26,18 @@ More precisely, this module implements:
 * Various sub-classes of `smc_samplers.StaticModel` that implements Bayesian
   variable selection. 
 
-See also the script in papers/binarySMC for numerical experiments. 
+See also the scripts in papers/binarySMC for numerical experiments. 
+
+
+References
+----------
+
+* Dau, H. D., & Chopin, N. (2022). Waste-free sequential monte carlo. 
+  Journal of the Royal Statistical Society Series B: Statistical Methodology, 
+  84(1), 114-148.
+
+* Schäfer, C., & Chopin, N. (2013). Sequential Monte Carlo on large binary sampling 
+  spaces. Statistics and Computing, 23, 163-184.
 
 """
 
