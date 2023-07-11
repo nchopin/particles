@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - collectors: Paris algorithm (hybrid version)
 - smc_samplers: single-run variance estimates
 - smc_samplers: Tempering (fixed exponents)
+- smc_samplers: AdaptiveTempering has a new argument, max_iter, to put a cap on the number of iterations
 
 ## [0.3] - 2021-10-25
 # Blog post: <https://statisfaction.wordpress.com/2021/10/25/particles-0-3-waste-free-smc-fortran-dependency-removed-binary-spaces/>

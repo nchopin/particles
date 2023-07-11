@@ -894,20 +894,22 @@ class AdaptiveTempering(Tempering):
     See base class for other parameters.
     """
 
-    def __init__(
-        self, model=None, wastefree=True, len_chain=10, move=None, ESSrmin=0.5
-    ):
+    def __init__(self, model=None, wastefree=True, len_chain=10, move=None, 
+                 ESSrmin=0.5, max_iter=1000):
         FKSMCsampler.__init__(
             self, model=model, wastefree=wastefree, len_chain=len_chain, move=move
         )
         self.ESSrmin = ESSrmin
+        self.max_iter = max_iter
 
     def time_to_resample(self, smc):
         self.move.calibrate(smc.W, smc.X)
         return True  # We *always* resample in adaptive tempering
 
     def done(self, smc):
-        if smc.X is None:
+        if smc.t >= self.max_iter:
+            return True
+        elif smc.X is None:
             return False  # We have not started yet
         else:
             return smc.X.shared["exponents"][-1] >= 1.0
