@@ -15,7 +15,7 @@ build:
     # rust: "1.64"
     # golang: "1.19"
 
-format: all
+formats: all
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
