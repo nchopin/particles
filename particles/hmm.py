@@ -261,7 +261,7 @@ class BaumWelch(object):
         """
         if not self.filt:
             self.forward()
-        paths = np.empty((len(self.filt), N), np.int)
+        paths = np.empty((len(self.filt), N), np.int64)
         paths[-1, :] = rs.multinomial(self.filt[-1], M=N)
         log_trans = np.log(self.hmm.trans_mat)
         for t, f in reversed(list(enumerate(self.filt[:-1]))):

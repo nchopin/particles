@@ -386,7 +386,7 @@ def view_2d_array(theta):
     """Returns a view to record array theta which behaves
     like a (N,d) float array.
     """
-    v = theta.view(np.float)
+    v = theta.view(float)
     N = theta.shape[0]
     v.shape = (N, -1)
     # raise an error if v cannot be reshaped without creating a copy

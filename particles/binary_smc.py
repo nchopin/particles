@@ -42,7 +42,7 @@ from particles import smc_samplers as ssps
 
 
 def all_binary_words(p):
-    out = np.zeros((2 ** p, p), dtype=np.bool)
+    out = np.zeros((2 ** p, p), dtype=bool)
     ns = np.arange(2 ** p)
     for i in range(p):
         out[:, i] = (ns % 2 ** (i + 1)) // 2 ** i
@@ -55,7 +55,7 @@ def log_no_warn(x):
 
 
 class Bernoulli(dists.ProbDist):
-    dtype = "bool"  # TODO only dist to have this dtype
+    dtype = bool
 
     def __init__(self, p):
         self.p = p
@@ -96,7 +96,7 @@ class NestedLogistic(dists.DiscreteDist):
             return expit(self.coeffs[i, i] + lin)
 
     def rvs(self, size=1):
-        out = np.empty((size, self.dim), dtype=np.bool)
+        out = np.empty((size, self.dim), dtype=bool)
         for i in range(self.dim):
             out[:, i] = Bernoulli(self.predict_prob(out, i)).rvs(size=size)
         return out
@@ -219,7 +219,7 @@ class VariableSelection(ssps.StaticModel):
             return chol_and_friends(gamma, self.xtx, self.xty, self.iv2)
 
     def sig2_full(self):
-        gamma_full = np.ones((1, self.p), dtype=np.bool)
+        gamma_full = np.ones((1, self.p), dtype=bool)
         _, _, btb = chol_and_friends(gamma_full, self.xtx, self.xty, 0.0)
         return (self.yty - btb) / self.n
 

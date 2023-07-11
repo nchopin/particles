@@ -55,7 +55,7 @@ def hilbert_sort(x):
         return np.argsort(x, axis=0)
     xs = invlogit((x - np.mean(x, axis=0)) / np.std(x, axis=0))
     maxint = np.floor(2 ** (62 / d))
-    xint = np.floor(xs * maxint).astype(np.int)
+    xint = np.floor(xs * maxint).astype(np.int64)
     return np.argsort(hilbert_array(xint))
 
 
