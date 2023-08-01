@@ -24,14 +24,18 @@ The long version: **particles** requires the following libraries:
 * `SciPy <http://www.scipy.org/>`_ 
 * `numba <https://numba.pydata.org/>`_
 * `joblib <https://joblib.readthedocs.io/>`_
+* `scikit-learn <https://scikit-learn.org/>`_
 
-In addition, it is **strongly recommended** to install the following plotting
+In addition, it is **strongly recommended** to install the following 
 libraries:  
 
 * `Matplotlib <http://matplotlib.org/>`_
 * `seaborn <https://seaborn.pydata.org/>`_
+* `pandas <https://pandas.pydata.org/>`_
+* `statsmodels <https://www.statsmodels.org/>`_
 
-Most of the examples require these libraries to plot results. 
+Most of the examples require the first two libraries to plot the results;
+some of the example requires the other two.
 
 Again, the easiest way to install all these libraries in one go is to simply
 install the Anaconda_ distribution.  Manual installation is of course also

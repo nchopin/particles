@@ -4,4 +4,5 @@ numpy
 scipy
 ipython
 nbsphinx
-scikit_learn
+scikit-learn
+setuptools
