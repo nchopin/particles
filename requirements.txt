@@ -4,4 +4,4 @@ numpy
 scipy
 ipython
 nbsphinx
-sklearn
+scikit-learn
