@@ -6,3 +6,5 @@ ipython
 nbsphinx
 scikit-learn
 setuptools
+seaborn
+matplotlib
