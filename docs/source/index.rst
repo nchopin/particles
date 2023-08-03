@@ -15,11 +15,10 @@ The documentation refers sometimes to the book for some theoretical details,
 but otherwise is meant to be self-sufficient. 
 
 To get an overview of what **particles** can do, we strongly recommend that you
-have a look at the **notebook tutorials** first (in the `overview` section).  
+have a look at the **notebook tutorials** first (see `overview` section).  
 
-Finally, most things are self-documented in particles with docstrings; this
-means you may access the documentation of any object using the Python ``help``
-command::
+To get help on a specific module, class, function, etc., see the indices below,
+or use the ``help`` command in python::
 
     from particles import resampling as rs
     help(rs)  # help on module resampling 
@@ -32,10 +31,4 @@ command::
    installation    
    modules
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

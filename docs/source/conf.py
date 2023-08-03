@@ -22,9 +22,6 @@ import os
 
 # -- General configuration ------------------------------------------------
 
-# not sure this is really needed for ReadTheDocs...
-# autodoc_mock_imports = ['particles.lowdiscrepancy']
-
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
@@ -65,7 +62,7 @@ author = u'Nicolas Chopin'
 # built documents.
 #
 # The short X.Y version.
-version = u'0.1'
+version = u'0.3'
 # The full version, including alpha/beta/rc tags.
 release = u'alpha'
 

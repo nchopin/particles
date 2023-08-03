@@ -1,25 +1,11 @@
+API Reference
+=============
+
 Modules
-=======
+-------
 
-Here is a list of the modules available in ``particles``:
+.. autosummary::
+   :toctree: _autosummary
+   :recursive:
 
-.. toctree::
-   :maxdepth: 1
-
-   binary_smc
-   collectors
-   core
-   datasets
-   distributions 
-   hilbert
-   hmm
-   kalman
-   mcmc
-   nested
-   resampling
-   rqmc
-   smc_samplers
-   smoothing
-   state_space_models
-   utils
-   variance_estimators
+   particles

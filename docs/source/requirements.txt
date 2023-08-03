@@ -1,0 +1,10 @@
+joblib
+numba
+numpy=1.23
+scipy
+ipython
+nbsphinx
+scikit-learn
+setuptools
+seaborn
+matplotlib
