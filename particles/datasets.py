@@ -49,7 +49,7 @@ import os.path
 def get_path(file_name):
     return os.path.join(os.path.dirname(__file__), 'datasets', file_name)
 
-class Dataset(object):
+class Dataset:
     """Base class for datasets.
 
     The pre-processing step does nothing: attributes ``raw_data`` and ``data``

@@ -137,7 +137,7 @@ class GaussianHMM(HMM):
     def PY(self, t, xp, x):
         return dists.Normal(loc=self.mus[x], scale=self.sigmas[x])
 
-class BaumWelch(object):
+class BaumWelch:
     """Baum-Welch filtering/smoothing algorithm.
 
     Parameters

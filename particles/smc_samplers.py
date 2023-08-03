@@ -201,7 +201,7 @@ from particles.state_space_models import Bootstrap
 # Static models
 
 
-class StaticModel(object):
+class StaticModel:
     """Base class for static models.
 
     To define a static model, sub-class `StaticModel`, and define method
@@ -382,7 +382,7 @@ def gen_concatenate(*xs):
         return xs[0].concatenate(*xs)
 
 
-class ThetaParticles(object):
+class ThetaParticles:
     """Base class for particle systems for SMC samplers.
 
     This is a rather generic class for packing together information on N
@@ -483,7 +483,7 @@ class ThetaParticles(object):
 #############################
 # Basic importance sampler
 
-class ImportanceSampler(object):
+class ImportanceSampler:
     """Importance sampler.
 
     Basic implementation of importance sampling, with the same interface
@@ -528,7 +528,7 @@ class ImportanceSampler(object):
 ##################################
 # MCMC steps (within SMC samplers)
 
-class ArrayMCMC(object):
+class ArrayMCMC:
     """Base class for a (single) MCMC step applied to an array.
 
     To implement a particular MCMC scheme, subclass ArrayMCMC and define method

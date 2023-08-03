@@ -84,7 +84,7 @@ def reject_sv(m, s, y):
     return x
 
 
-class SVmixin(object):
+class SVmixin:
     def update_theta(self, theta, x):
         return theta
 

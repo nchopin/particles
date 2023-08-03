@@ -440,7 +440,7 @@ class LinearGauss(MVLinearGauss):
 # Kalman filter/smoother class
 #################################
 
-class Kalman(object):
+class Kalman:
     """ Kalman filter/smoother.
 
 

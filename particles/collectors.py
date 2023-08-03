@@ -212,7 +212,7 @@ import numpy as np
 from particles import resampling as rs
 
 
-class Summaries(object):
+class Summaries:
     """Class to store and update summaries.
 
     Attribute ``summaries`` of ``SMC`` objects is an instance of this class.
@@ -231,7 +231,7 @@ class Summaries(object):
             col.collect(smc)
 
 
-class Collector(object):
+class Collector:
     """Base class for collectors.
 
     To subclass `Collector`:
@@ -330,7 +330,7 @@ class Fixed_lag_smooth(Collector):
         return np.average(self.test_func(Xs), weights=smc.W)
 
 
-class OnlineSmootherMixin(object):
+class OnlineSmootherMixin:
     """Mix-in for on-line smoothing algorithms.
     """
     def fetch(self, smc):

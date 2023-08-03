@@ -56,7 +56,7 @@ class NeuroXp(ssms.StateSpaceModel):
     def upper_bound_log_pt(self, t):
         return - 0.5 * np.log(2. * np.pi * self.sig2)
 
-class MinusLogLikEvaluator(object):
+class MinusLogLikEvaluator:
     def __init__(self, N=1000):
         self.N = N
         self.args = []

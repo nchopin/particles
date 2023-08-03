@@ -154,7 +154,7 @@ def generate_hist_obj(option, smc):
     else:
         raise ValueError('store_history: invalid option')
 
-class PartialParticleHistory(object):
+class PartialParticleHistory:
     """Partial history.
 
     History that records the particle system only at certain times.
@@ -170,7 +170,7 @@ class PartialParticleHistory(object):
             self.X[t] = smc.X
             self.wgts[t] = smc.wgts
 
-class RollingParticleHistory(object):
+class RollingParticleHistory:
     """Rolling window history.
 
     History that keeps only the k most recent particle systems. Based on

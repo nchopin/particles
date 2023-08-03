@@ -71,7 +71,7 @@ def msjd(theta):
     return s
 
 
-class MCMC(object):
+class MCMC:
     """MCMC base class.
 
     To subclass MCMC, define methods:
@@ -135,7 +135,7 @@ class MCMC(object):
 # Random walk Metropolis samplers
 
 
-class VanishCovTracker(object):
+class VanishCovTracker:
     """Tracks the vanishing mean and covariance of a sequence of points.
 
     Computes running mean and covariance of points

@@ -211,7 +211,7 @@ import numpy.linalg as nla
 HALFLOG2PI = 0.5 * np.log(2. * np.pi)
 
 
-class ProbDist(object):
+class ProbDist:
     """Base class for probability distributions.
 
     To define a probability distribution class, subclass ProbDist, and define

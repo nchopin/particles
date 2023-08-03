@@ -194,7 +194,7 @@ def distinct_seeds(k):
     return np.arange(0, k * bw, bw) + random.randint(bw, size=k)
 
 
-class seeder(object):
+class seeder:
     def __init__(self, func):
         self.func = func
 

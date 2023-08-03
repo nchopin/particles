@@ -109,7 +109,7 @@ err_msg_missing_trans = """
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
 
-class FeynmanKac(object):
+class FeynmanKac:
     """Abstract base class for Feynman-Kac models.
 
     To actually define a Feynman-Kac model, one must sub-class FeymanKac,
@@ -202,7 +202,7 @@ class FeynmanKac(object):
                                                               smc.wgts.ESS)
 
 
-class SMC(object):
+class SMC:
     """Metaclass for SMC algorithms.
 
        Parameters
@@ -419,7 +419,7 @@ class SMC(object):
 ####################################################
 
 
-class _picklable_f(object):
+class _picklable_f:
 
     def __init__(self, fun):
         self.fun = fun

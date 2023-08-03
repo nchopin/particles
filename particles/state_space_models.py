@@ -169,7 +169,7 @@ err_msg_missing_cst = """
     This is required for smoothing algorithms based on rejection
     """
 
-class StateSpaceModel(object):
+class StateSpaceModel:
     """Base class for state-space models.
 
     To define a state-space model class, you must sub-class `StateSpaceModel`,

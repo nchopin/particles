@@ -80,7 +80,7 @@ def xxT(x):
     return np.dot(v, v.T)
 
 
-class MeanCovTracker(object):
+class MeanCovTracker:
     """Tracks mean and cov of a set of points. 
 
     Note: points must be given as a (N,d) np.array
@@ -119,7 +119,7 @@ class NestedParticles(smc.ThetaParticles):
                                     lprior=lprior, llik=llik)
 
 
-class NestedSampling(object):
+class NestedSampling:
     """Base class for nested sampling algorithms.
 
     Parameters
