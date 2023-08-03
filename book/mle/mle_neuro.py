@@ -125,7 +125,7 @@ def EM(rho0, sig20, N=100, maxiter=100, xatol=1e-2):
     rhos, sig2s, lls = [rho0], [sig20], []
     while len(rhos) < maxiter + 1:
         new_rho, new_sig2, ll = EM_step(rhos[-1], sig2s[-1], N=N)
-        print('rho: %.3f, sigma^2: %.3f' % (new_rho, new_sig2))
+        print('rho: {:.3f}, sigma^2: {:.3f}'.format(new_rho, new_sig2))
         rhos.append(new_rho)
         sig2s.append(new_sig2)
         lls.append(ll)
@@ -156,7 +156,7 @@ def grad(rho, sig2, N=100):
     grad_sig2 = 0.5 * (sr2 / sig2**2 - (T + 1) / sig2)
     srx = np.mean(sum(r * x for r, x in zip(residuals[1:], paths[:-1])))
     grad_rho = srx / sig2
-    print('grads: %.3f, %3f' % (grad_rho, grad_sig2))
+    print('grads: {:.3f}, {:3f}'.format(grad_rho, grad_sig2))
     return grad_rho, grad_sig2
 
 def grad_ascent_step(rho, sig2, N=100, lambdat=1e-4):
@@ -171,7 +171,7 @@ for _ in range(100):
     new_rho, new_sig2 = grad_ascent_step(rhos_ga[-1], sig2s_ga[-1], lambdat=1e-6)
     rhos_ga.append(new_rho)
     sig2s_ga.append(new_sig2)
-    print('rho=%.3f, sig2=%.3f' % (rhos_ga[-1], sig2s_ga[-1]))
+    print('rho={:.3f}, sig2={:.3f}'.format(rhos_ga[-1], sig2s_ga[-1]))
 
 save_results({'rhos_ga': rhos_ga, 'sig2s_ga': sig2s_ga})
 

@@ -142,7 +142,7 @@ class FeynmanKac:
         self.T = T
 
     def _error_msg(self, meth):
-        return 'method/property %s missing in class %s' % (
+        return 'method/property {} missing in class {}'.format(
             meth, self.__class__.__name__)
 
     def M0(self, N):

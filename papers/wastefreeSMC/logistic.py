@@ -138,5 +138,5 @@ for plot, func in plots.items():
         ax.set(xlabel=xlab, title=title, ylabel=ylab)
         fig.tight_layout()
     if savefigs:
-        fig.savefig('%s_boxplots_%s.pdf' % (dataset_name, plot))
+        fig.savefig('{}_boxplots_{}.pdf'.format(dataset_name, plot))
 

@@ -139,7 +139,7 @@ class NestedLogistic(dists.DiscreteDist):
                     coeffs[i, i] = logit(ph[i])
         print(ph)
         sparsity = (np.sum(coeffs!=0.) - dim) / (0.5 * dim * (dim - 1))
-        print('edgy: %f, sparsity: %f' % (np.average(edgy), sparsity))
+        print('edgy: {:f}, sparsity: {:f}'.format(np.average(edgy), sparsity))
         return cls(coeffs, edgy)
 
 def corr_bin(pi, pj, pij):

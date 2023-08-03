@@ -655,7 +655,7 @@ class TransformedDist(ProbDist):
         self.base_dist = base_dist
 
     def error_msg(self, method):
-        return 'method %s not defined in class %s' % (method, self.__class__)
+        return 'method {} not defined in class {}'.format(method, self.__class__)
 
     def f(self, x):
         raise NotImplementedError(self.error_msg('f'))
