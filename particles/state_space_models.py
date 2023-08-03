@@ -69,7 +69,7 @@ details:
           default_stoch_vol_model = SimplifiedStochVol()  # sigma=1., rho=0.8
     * There is no need to define a ``__init__()`` method, as it is already
       defined by the parent class. (This parent ``__init__()`` simply takes
-      care of the default parameters, and may be overrided if needed.)
+      care of the default parameters, and may be overridden if needed.)
 
 Now that our state-space model is properly defined, what can we do with it?
 First, we may simulate states and data from it::

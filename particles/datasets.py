@@ -223,7 +223,7 @@ class BinaryRegDataset(Dataset):
 
         1. rescaling the predictors (mean=0, std dev=0.5)
         2. adding an intercept (constant predictor)
-        3. optionally, appling the "flip sign" trick.
+        3. optionally, applying the "flip sign" trick.
 
     Point 3 refers to the fact that the likelihood of a binary regression
     models depends only on the vectors:
