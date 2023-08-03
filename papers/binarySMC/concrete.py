@@ -27,7 +27,7 @@ colkeys = list(cols.keys())
 for i, k in enumerate(colkeys):
     for j in range(i):
         k2 = colkeys[j]
-        cols['{} x {}'.format(k, k2)] = cols[k] * cols[k2]
+        cols[f'{k} x {k2}'] = cols[k] * cols[k2]
 
 # add intercept last
 cols['intercept'] = np.ones(n)

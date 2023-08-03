@@ -79,7 +79,7 @@ def reject_sv(m, s, y):
         if np.log(u) < -0.5 * y**2 * (np.exp(-x) - np.exp(-m) * (1. + m - x)):
             break
         if ntries > 1000:
-            print('1000 failed attempt, m,s,y={:f}, {:f}, {:f}'.format(m, s, y))
+            print(f'1000 failed attempt, m,s,y={m:f}, {s:f}, {y:f}')
             break
     return x
 
