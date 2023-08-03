@@ -9,7 +9,6 @@ in particular Figure 13.4.
 
 """
 
-from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np

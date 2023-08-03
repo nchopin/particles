@@ -200,7 +200,6 @@ omit ``ppf`` if you do not plan to use SQMC (Sequential quasi Monte Carlo).
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict  # see prior
 import numpy as np

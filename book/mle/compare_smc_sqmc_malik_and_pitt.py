@@ -14,7 +14,6 @@
     Note: takes 2-3 hrs.
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from numpy import random

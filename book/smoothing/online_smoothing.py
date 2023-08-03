@@ -18,7 +18,6 @@ See Chapter 12 (smoothing) for more details; in particular Figures 12.2 and
 
 """
 
-from __future__ import division, print_function
 
 from functools import partial
 

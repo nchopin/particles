@@ -93,7 +93,6 @@ See the documentation of `SMC` for more details.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from scipy import stats

@@ -14,7 +14,6 @@ is a smoothing distribution, i.e. the distribution of X_{0:T} given Y_{0:T}).
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict
 import time

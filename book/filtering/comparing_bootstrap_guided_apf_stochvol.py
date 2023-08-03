@@ -12,7 +12,6 @@ See Section 10.4.2 and Figure 10.3 in the book for a discussion.
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict
 from matplotlib import pyplot as plt

@@ -124,7 +124,6 @@ contains a few basic functions to deal with log-weights:
 
 """
 
-from __future__ import division, print_function
 
 import functools
 import numpy as np

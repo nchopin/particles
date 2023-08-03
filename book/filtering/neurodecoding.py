@@ -11,7 +11,6 @@ density x_t --> log f_t(y_t|x_t), obtained by Newton-Raphson.
 See Section 10.4.3 and Figures 10.4-10.5 in the book for a discussion.
 
 """
-from __future__ import division, print_function
 
 from collections import OrderedDict
 import numpy as np

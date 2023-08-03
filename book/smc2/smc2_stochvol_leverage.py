@@ -16,7 +16,6 @@ in parallel, the total CPU time depends on the number of cores.
 (With 50+ cores, it should take 2 hrs as well.)
 """
 
-from __future__ import division, print_function
 
 import warnings
 warnings.filterwarnings("ignore")  # disable silly matplotlib warnings

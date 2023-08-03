@@ -96,7 +96,6 @@ would compute all the intermediate smoothing distributions (for data $Y_0$,
 then $Y_{0:1}$, and so on). This is expensive, of course (cost is O(T^2)).
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from numpy import random

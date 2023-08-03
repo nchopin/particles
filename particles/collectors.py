@@ -205,7 +205,6 @@ time by the ``fetch`` method.
 
 """
 
-from __future__ import division, print_function
 
 from numpy import random
 import numpy as np

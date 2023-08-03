@@ -25,7 +25,6 @@ Note: MLE is (rho, sigma2) = (0.9981, 0.1089)
 
 """
 
-from __future__ import division, print_function
 
 import itertools
 import matplotlib

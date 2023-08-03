@@ -5,7 +5,6 @@ Particle Gibbs (with or without the backward step) for the Theta-logistic
 model (2nd numerical example in Chapter 16 on PMCMC, Figures 16.8 to 16.10).
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict
 from matplotlib import pyplot as plt

@@ -42,7 +42,6 @@ adds an intercept) predictors/features for a regression or classification task.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 import os.path

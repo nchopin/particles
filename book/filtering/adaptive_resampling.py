@@ -15,7 +15,6 @@ Warning: takes about 30 min to complete (on a single core; change nprocs to
 zero to use all cores).
 """
 
-from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np

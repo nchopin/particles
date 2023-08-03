@@ -8,7 +8,6 @@ Notes: this script uses multi-processing to speed things up; this may not work
 on certain OSes (see documentation). Set option nprocs to 1 to disable 
 multiprocessing. 
 """
-from __future__ import division, print_function
 
 import numpy as np
 from matplotlib import pyplot as plt

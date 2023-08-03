@@ -66,7 +66,6 @@ therefore be used as keyword arguments for function f):
 
 """
 
-from __future__ import division, print_function
 
 import functools
 import itertools

@@ -11,7 +11,6 @@ while we took rho=0.9)
 
 """
 
-from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np

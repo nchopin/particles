@@ -28,7 +28,6 @@ shows more clearly that the CPU time of variant 2 has a large variability.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 import seaborn as sb  # box-plots

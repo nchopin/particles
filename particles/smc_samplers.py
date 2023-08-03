@@ -186,7 +186,6 @@ Dau, H.D. and Chopin, N (2020). Waste-free Sequential Monte Carlo,
 
 """
 
-from __future__ import absolute_import, division, print_function
 
 import copy as cp
 import itertools

@@ -8,7 +8,6 @@ Chapter 13 (MLE) for more details.
 Note: takes less than one minute.
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from matplotlib import pyplot as plt

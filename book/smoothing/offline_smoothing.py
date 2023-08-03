@@ -26,7 +26,6 @@ switches to the expensive method after N failed attempts; see Dau & Chopin,
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 import seaborn as sb  # box-plots

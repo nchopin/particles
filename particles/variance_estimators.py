@@ -83,7 +83,6 @@ References
 
 """
 
-from __future__ import division, print_function
 
 from numba import jit
 import numpy as np
