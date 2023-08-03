@@ -1,6 +1,6 @@
 joblib
 numba
-numpy=1.23
+numpy==1.23
 scipy
 ipython
 nbsphinx
