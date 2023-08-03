@@ -103,8 +103,8 @@ typical_run = [r for r in runs if r['fk']=='smc2_qmc'][0]['output']
 plt.figure()
 for i, p in enumerate(prior.laws.keys()):
     plt.subplot(2, 2, i + 1)
-    q25, q50, q75 = [[typical_run.summaries.moments[t][p][j] for t in range(T)]
-                for j in [5, 10, 15]]
+    q25, q50, q75 = ([typical_run.summaries.moments[t][p][j] for t in range(T)]
+                for j in [5, 10, 15])
     plt.fill_between(range(T), q25, q75, color='gray')
     plt.plot(range(T), q50, 'k')
     plt.title(r'$\%s$' % p)
