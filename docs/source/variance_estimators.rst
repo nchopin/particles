@@ -11,6 +11,7 @@ Module summary
 .. autosummary::
     :toctree: _autosummary
     :nosignatures: 
+    :recursive:
 
     var_estimate
     Var

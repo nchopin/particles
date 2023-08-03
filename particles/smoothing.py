@@ -47,7 +47,7 @@ then:
 Partial History
 ===============
 
-Here are some examples on one may record history only at certain times::
+Here are some examples on how one may record history only at certain times::
 
     # store every other 10 iterations
     smc = SMC(fk=fk, N=100, store_history=lambda t: (t % 10) == 0)
@@ -227,12 +227,12 @@ class ParticleHistory(RollingParticleHistory):
 
     Attributes
     ----------
-    X: list
+    X : list
         X[t] is the object that represents the N particles at iteration t
-    wgts: list
+    wgts : list
         wgts[t] is a `Weights` object (see module `resampling`) that represents
         the N weights at time t
-    A: list
+    A : list
         A[t] is the vector of ancestor indices at time t
 
     """
@@ -286,12 +286,12 @@ class ParticleHistory(RollingParticleHistory):
 
         Parameter
         ---------
-        M: int
+        M : int
             number of trajectories to generate
 
         Returns
         -------
-        paths: a list of ndarrays
+        paths : a list of ndarrays
             paths[t][n] is component t of trajectory m.
         """
         idx = self._init_backward_sampling(M)
@@ -313,14 +313,14 @@ class ParticleHistory(RollingParticleHistory):
 
         Parameters
         ----------
-        M: int
+        M : int
             number of trajectories to generate
-        nsteps: int (default: 1)
+        nsteps : int,  default: 1
             number of independent Metropolis steps
 
         Returns
         -------
-        paths: a list of ndarrays
+        paths : a list of ndarrays
             paths[t][n] is component t of trajectory m.
 
         References
@@ -352,15 +352,15 @@ class ParticleHistory(RollingParticleHistory):
 
         Parameters
         ----------
-        M: int
+        M : int
             number of trajectories to generate
-        max_trials: int (default: M)
+        max_trials : int, default: M
             max number of rejection steps before we switch to the expensive
             method.
 
         Returns
         -------
-        paths: a list of ndarrays
+        paths : a list of ndarrays
             paths[t][n] is component t of trajectory m.
 
         Note
@@ -479,14 +479,14 @@ class ParticleHistory(RollingParticleHistory):
 
         Parameters
         ----------
-        t: time, in range 0 <= t < T-1
-        info: SMC object
+        t : time, in range 0 <= t < T-1
+        info : SMC object
             the information filter
-        phi: function
+        phi : function
             test function, a function of (X_t,X_{t+1})
-        loggamma: function
+        loggamma : function
             a function of (X_{t+1})
-        linear_cost: bool
+        linear_cost : bool
             if True, use the O(N) variant (basic version is O(N^2))
 
         Returns
@@ -562,26 +562,27 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
 
     Parameters
     ----------
-    method: string
+    method : string
          ['FFBS_purereject', 'FFBS_hybrid', FFBS_MCMC', 'FFBS_ON2', 'FFBS_QMC',
           'two-filter_ON', 'two-filter_ON_prop', 'two-filter_ON2']
-    N: int
+    N : int
         number of particles
-    fk: Feynman-Kac object
+    fk : Feynman-Kac object
         The Feynman-Kac model for the forward filter
-    fk_info: Feynman-Kac object (default=None)
+    fk_info : Feynman-Kac object (default=None)
         the Feynman-Kac model for the information filter; if None,
         set to the same Feynman-Kac model as fk, with data in reverse
-    add_func: function, with signature (t, x, xf)
+    add_func : function, with signature (t, x, xf)
         additive function, at time t, for particles x=x_t and xf=x_{t+1}
-    log_gamma: function
+    log_gamma : function
         log of function gamma (see book)
 
     Returns
     -------
     a dict with fields:
-        est: a ndarray of length T
-        cpu_time
+    
+    * est: a ndarray of length T
+    * cpu_time
 
     Notes
     -----

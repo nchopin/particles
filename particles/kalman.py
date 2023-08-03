@@ -302,10 +302,11 @@ class MVLinearGauss(ssms.StateSpaceModel):
     The only mandatory parameters are `covX` and `covY` (from which the
     dimensions dx and dy of, respectively, X_t, and Y_t, are deduced). The
     default values for the other parameters are:
-        * `mu0`:: an array of zeros (of size dx)
-        * `cov0`: cov_X
-        * `F`: Identity matrix of shape (dx, dx)
-        * `G`: (dy, dx) matrix such that G[i, j] = 1[i=j]
+
+    * `mu0` : an array of zeros (of size dx)
+    * `cov0`: cov_X
+    * `F` : Identity matrix of shape (dx, dx)
+    * `G` : (dy, dx) matrix such that G[i, j] = 1[i=j]
 
     Note
     ----

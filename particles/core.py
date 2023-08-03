@@ -129,10 +129,10 @@ class FeynmanKac(object):
     define methods:
 
         * `Gamma0(self, u)`: deterministic function such that, if u~U([0,1]^d),
-        then Gamma0(u) has the same distribution as X_0
+          then Gamma0(u) has the same distribution as X_0
         * `Gamma(self, xp, u)`: deterministic function that, if U~U([0,1]^d)
-        then Gamma(xp, U) has the same distribution as kernel M_t(x_{t-1}, dx_t)
-        for x_{t-1}=xp
+          then Gamma(xp, U) has the same distribution as kernel M_t(x_{t-1}, dx_t)
+          for x_{t-1}=xp
 
     Usually, a collection of N particles will be simply a numpy array of
     shape (N,) or (N,d). However, this is not a strict requirement, see
@@ -210,24 +210,24 @@ class SMC(object):
 
        Parameters
        ----------
-       fk: FeynmanKac object
+       fk : FeynmanKac object
            Feynman-Kac model which defines which distributions are
            approximated
-       N: int, optional (default=100)
+       N : int, optional (default=100)
            number of particles
-       qmc: bool, optional (default=False)
+       qmc : bool, optional (default=False)
            if True use the Sequential quasi-Monte Carlo version (the two
            options resampling and ESSrmin are then ignored)
-       resampling: {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
+       resampling : {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
            the resampling scheme to be used (see `resampling` module for more
            information; default is 'systematic')
-       ESSrmin: float in interval [0, 1], optional
+       ESSrmin : float in interval [0, 1], optional
            resampling is triggered whenever ESS / N < ESSrmin (default=0.5)
-       store_history: bool, int or callable (default=False)
+       store_history : bool, int or callable (default=False)
            whether and when history should be saved; see module `smoothing`
-       verbose: bool, optional
+       verbose : bool, optional
            whether to print basic info at every iteration (default=False)
-       collect: list of collectors, or 'off' (for turning off summary collections)
+       collect : list of collectors, or 'off' (for turning off summary collections)
            see module ``collectors``
 
        Attributes
@@ -239,28 +239,25 @@ class SMC(object):
            the N particles
        A : (N,) ndarray (int)
           ancestor indices: A[n] = m means ancestor of X[n] has index m
-       wgts: `Weights` object
+       wgts : `Weights` object
            An object with attributes lw (log-weights), W (normalised weights)
            and ESS (the ESS of this set of weights) that represents
            the main (inferential) weights
-       aux: `Weights` object
+       aux : `Weights` object
            the auxiliary weights (for an auxiliary PF, see FeynmanKac)
        cpu_time : float
            CPU time of complete run (in seconds)
-       hist: `ParticleHistory` object (None if option history is set to False)
+       hist : `ParticleHistory` object (None if option history is set to False)
            complete history of the particle system; see module `smoothing`
-       summaries: `Summaries` object (None if option summaries is set to False)
+       summaries : `Summaries` object (None if option summaries is set to False)
            each summary is a list of estimates recorded at each iteration. The
-           following summaries are computed by default:
-               + ESSs (the ESS at each time t)
-               + rs_flags (whether resampling was performed or not at each t)
-               + logLts (estimates of the normalising constants)
+           summaries computed by default are ESSs, rs_flags, logLts. 
            Extra summaries may also be computed (such as moments and online
            smoothing estimates), see module `collectors`.
 
        Methods
        -------
-       run():
+       run()
            run the algorithm until completion
        step()
            run the algorithm for one step (object self is an iterator)
@@ -498,18 +495,18 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
 
     Parameters
     ----------
-    * nruns: int, optional
+    * nruns : int, optional
         number of runs (default is 10)
-    * nprocs: int, optional
+    * nprocs : int, optional
         number of processors to use; if negative, number of cores not to use.
         Default value is 1 (no multiprocessing)
-    * out_func: callable, optional
+    * out_func : callable, optional
         function to transform the output of each SMC run. (If not given, output
         will be the complete SMC object).
-    * collect: list of collectors, or 'off'
+    * collect : list of collectors, or 'off'
         this particular argument of class SMC may be a list, hence it is "protected"
         from Cartesianisation
-    * args: dict
+    * args : dict
         arguments passed to SMC class (except collect)
 
     Returns

@@ -11,6 +11,7 @@ Module summary
 .. autosummary::
     :toctree: _autosummary
     :nosignatures: 
+    :recursive:
 
     BayesianVS
     BayesianVS_gprior

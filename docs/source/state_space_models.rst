@@ -11,6 +11,7 @@ Summary of module
 .. autosummary::
     :toctree: _autosummary
     :nosignatures:
+    :recursive:
 
     StateSpaceModel
     Bootstrap

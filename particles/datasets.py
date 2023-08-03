@@ -96,11 +96,13 @@ class Neuro(Dataset):
         Y_t | X_t = x     \sim Bin(50, logit^{-1}(x))
         X_t = \rho * X_{t-1} + \sigma * U_t,\quad U_t \sim N(0, 1)
 
+
     Reference
     ---------
 
     * Temereanca et al (2008).  Rapid changes in thalamic firing synchrony during
       repetitive whisker stimulation, J. of Neuroscience.
+
     """
     file_name = 'thaldata.csv'
 
@@ -169,8 +171,9 @@ class RegressionDataset(Dataset):
 
     A regression dataset contains p predictors, and one scalar response.
     The pre-processing step consists of:
-        1. rescaling the predictors (mean=0, std dev=0.5)
-        2. adding an intercept (constant predictor)
+
+    1. rescaling the predictors (mean=0, std dev=0.5)
+    2. adding an intercept (constant predictor)
 
     The ``data`` attribute is tuple (preds, response), where first (resp. second)
     element is a 2D (resp. 1D) numpy array.

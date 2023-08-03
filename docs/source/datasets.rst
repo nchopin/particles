@@ -12,6 +12,7 @@ Module summary
 .. autosummary::
     :toctree: _autosummary
     :nosignatures: 
+    :recursive:
 
     prepare_predictors
     Dataset

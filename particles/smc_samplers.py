@@ -870,26 +870,26 @@ class SMC2(FKSMCsampler):
 
     Parameters
     ----------
-    ssm_cls: `StateSpaceModel` subclass
+    ssm_cls : `StateSpaceModel` subclass
         the considered parametric state-space model
-    prior: `StructDist` object
+    prior : `StructDist` object
         the prior
-    data: list-like
+    data : list-like
         the data
-    smc_options: dict
+    smc_options : dict
         options to be passed to each SMC algorithm
-    fk_cls: Feynman-Kac class (default: Bootstrap)
-    init_Nx: int
+    fk_cls : Feynman-Kac class (default: Bootstrap)
+    init_Nx : int
         initial value for N_x
-    ar_to_increase_Nx: float
+    ar_to_increase_Nx : float
         Nx is increased (using an exchange step) each time
         the acceptance rate is above this value (if negative, Nx stays
         constant)
-    wastefree:  bool
+    wastefree : bool
         whether to use the waste-free version (default: True)
-    len_chain:  int
+    len_chain : int
         length of MCMC chain (default: 10)
-    move:   MCMCSequence object
+    move : MCMCSequence object
         MCMC sequence
     """
     def __init__(self, ssm_cls=None, prior=None, data=None, smc_options=None,

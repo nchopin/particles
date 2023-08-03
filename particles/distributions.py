@@ -231,7 +231,7 @@ class ProbDist(object):
 
     """
     dim = 1  # distributions are univariate by default
-    dtype = 'float64'  # distributions are continuous by default
+    dtype = np.float64  # distributions are continuous by default
 
     def shape(self, size):
         if size is None:
@@ -514,7 +514,7 @@ class TruncNormal(ProbDist):
 class DiscreteDist(ProbDist):
     """Base class for discrete probability distributions.
     """
-    dtype = 'int64'
+    dtype = np.int64
 
 
 class Poisson(DiscreteDist):
@@ -812,7 +812,7 @@ class MixMissing(ProbDist):
         l = self.base_dist.logpdf(x)
         ina = np.atleast_1d(np.isnan(x))
         if ina.shape[0] == 1:
-            ina = np.full_like(l, ina, dtype=np.bool)
+            ina = np.full_like(l, ina, dtype=bool)
         l[ina] = np.log(self.pmiss)
         l[np.logical_not(ina)] += np.log(1. - self.pmiss)
         return l
@@ -1033,10 +1033,10 @@ class IndepProd(ProbDist):
     def __init__(self, *dists):
         self.dists = dists
         self.dim = len(dists)
-        if all(d.dtype == 'int64' for d in dists):
-            self.dtype = 'int64'
+        if all(d.dtype == DiscreteDist.dtype for d in dists):
+            self.dtype = DiscreteDist.dtype
         else:
-            self.dtype = 'float64'
+            self.dtype = ProbDist.dtype
 
     def logpdf(self, x):
         return sum([d.logpdf(x[..., i]) for i, d in enumerate(self.dists)])

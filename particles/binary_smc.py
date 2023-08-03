@@ -52,7 +52,7 @@ from particles import distributions as dists
 from particles import smc_samplers as ssps
 
 def all_binary_words(p):
-    out = np.zeros((2**p, p), dtype=np.bool)
+    out = np.zeros((2**p, p), dtype=bool)
     ns = np.arange(2**p)
     for i in range(p):
         out[:, i] = (ns % 2**(i + 1)) // 2**i
@@ -103,7 +103,7 @@ class NestedLogistic(dists.DiscreteDist):
             return expit(self.coeffs[i, i] + lin)
 
     def rvs(self, size=1):
-        out = np.empty((size, self.dim), dtype=np.bool)
+        out = np.empty((size, self.dim), dtype=bool)
         for i in range(self.dim):
             out[:, i] = Bernoulli(self.predict_prob(out, i)).rvs(size=size)
         return out
@@ -131,7 +131,7 @@ class NestedLogistic(dists.DiscreteDist):
                     if np.abs(corr) > corr_thresh:
                         preds.append(j)
                 if preds: 
-                    reg = LogisticRegression(penalty='none')
+                    reg = LogisticRegression(penalty='None')
                     reg.fit(x[:, preds], x[:, i], sample_weight=W)
                     coeffs[i, i] = reg.intercept_
                     coeffs[i, preds] = reg.coef_
@@ -197,10 +197,12 @@ class VariableSelection(ssps.StaticModel):
     """Meta-class for variable selection. 
 
     Represents a Bayesian (or pseudo-Bayesian) posterior where:
-        * the prior is wrt a vector of gamma of indicator variables (whether to
-        include a variable or not)
-        * the likelihood is typically the marginal likelihood of gamma, where
-        the coefficient parameters have been integrated out.
+
+    * the prior is wrt a vector of gamma of indicator variables (whether to
+      include a variable or not)
+    * the likelihood is typically the marginal likelihood of gamma, where
+      the coefficient parameters have been integrated out.
+
     """
     def __init__(self, data=None):
         self.x, self.y = data
@@ -221,7 +223,7 @@ class VariableSelection(ssps.StaticModel):
             return chol_and_friends(gamma, self.xtx, self.xty, self.iv2)
 
     def sig2_full(self):
-        gamma_full = np.ones((1, self.p), dtype=np.bool)
+        gamma_full = np.ones((1, self.p), dtype=bool)
         _, _, btb = chol_and_friends(gamma_full, self.xtx, self.xty, 0.)
         return (self.yty - btb) / self.n
 

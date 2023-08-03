@@ -127,29 +127,28 @@ class NestedSampling(object):
 
     Parameters
     ----------
-    * model: SMCsamplers.StaticModel object 
+    * model : SMCsamplers.StaticModel object 
         a static model
-    * N: int
+    * N : int
         number of simultaneous points
-    * eps: positive number
+    * eps : positive number
         the algorithm stops when relative error is smaller than eps 
 
-    Returns
-    -------
     Upon completion (method run), the NestedSampling object has the
     following attributes:
-        * log_weights: list
-            log of the weight at each iteration:
-            equal to exp(-i/N) - exp(-(i+1)/N) at iteration i
-        * points: list
-             list of points selected at each iteration
-        * lZhats: list
-            log of estimate of normalising constant at each iteration i
-            (typically we use the last one as the practical estimate)
+
+    * log_weights : list
+      log of the weight at each iteration, equal to 
+      exp(-i/N) - exp(-(i+1)/N) at iteration i
+    * points : list
+      list of points selected at each iteration
+    * lZhats : list
+      log of estimate of normalising constant at each iteration i
+      (typically we use the last one as the practical estimate)
 
 
     .. note:: this is the base class; an actual algorithm requires to implement
-    the mutate method, which mutates the selected point through MCMC steps.
+       the mutate method, which mutates the selected point through MCMC steps.
     """
 
     def __init__(self, model=None, N=100, eps=1e-8):
@@ -167,8 +166,8 @@ class NestedSampling(object):
         self.x = self.init_particles(th)
 
     def mutate(self, n, m):
-        """ n: index of deleted point
-            m: index of starting point for MCMC
+        """ n : index of deleted point
+            m : index of starting point for MCMC
         """
         raise NotImplementedError
 

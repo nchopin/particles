@@ -10,6 +10,7 @@ Module summary
 
 .. autosummary::
     :toctree: _autosummary
+    :recursive:
 
     StaticModel
     ThetaParticles
