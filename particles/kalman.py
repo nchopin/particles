@@ -289,7 +289,7 @@ def smoother_step(F, filt, next_pred, next_smth):
 ###############################
 
 class MVLinearGauss(ssms.StateSpaceModel):
-    """Multivariate linear Gaussian model.
+    r"""Multivariate linear Gaussian model.
 
     .. math::
         X_0 & \sim N(\mu_0, cov_0) \\

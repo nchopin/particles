@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""
+r"""
 Illustrates the different off-line particle smoothing algorithms using the
 bootstrap filter of the following model:
 

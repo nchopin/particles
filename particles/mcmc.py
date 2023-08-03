@@ -136,7 +136,7 @@ class MCMC:
 
 
 class VanishCovTracker:
-    """Tracks the vanishing mean and covariance of a sequence of points.
+    r"""Tracks the vanishing mean and covariance of a sequence of points.
 
     Computes running mean and covariance of points
     t^(-alpha) * X_t

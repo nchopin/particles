@@ -86,7 +86,7 @@ class Nutria(Dataset):
     file_name = 'nutria.txt'
 
 class Neuro(Dataset):
-    """Neuroscience experiment data from Temereanca et al (2008).
+    r"""Neuroscience experiment data from Temereanca et al (2008).
 
     Time series of number of activated neurons over 50 experiments. A potential
     state-space model for this dataset is:
@@ -248,7 +248,7 @@ class BinaryRegDataset(Dataset):
             return preds * response[:, np.newaxis]
 
 class Pima(BinaryRegDataset):
-    """Pima Indians Diabetes.
+    r"""Pima Indians Diabetes.
 
     A data set with 768 observations on 9 variables.
 

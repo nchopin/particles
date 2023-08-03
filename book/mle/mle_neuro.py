@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""
+r"""
 Numerical experiment of Chapter 14 (maximum likelihood estimation).
 
 See Figure 14.8 and surrounding discussion.

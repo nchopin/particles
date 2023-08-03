@@ -129,7 +129,7 @@ class HMM(ssms.StateSpaceModel):
         return dists.Categorical(p=self.trans_mat[xp, :])
 
 class GaussianHMM(HMM):
-    """Gaussian HMM: :math:`Y_t|X_t=k \sim N(\mu_k, \sigma_k^2)`
+    r"""Gaussian HMM: :math:`Y_t|X_t=k \sim N(\mu_k, \sigma_k^2)`
     """
     default_params = {'mus': None, 'sigmas': None}
     default_params.update(HMM.default_params)

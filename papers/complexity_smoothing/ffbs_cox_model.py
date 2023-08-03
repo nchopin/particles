@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""
+r"""
 Adapts the offline smoothing example in the book (see Figs 12.4 and 12.5) to
 compare various FFBS algorithms (including the new variants, introduced and
 discussed in Dau & Chopin, 2022):

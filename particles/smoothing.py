@@ -337,7 +337,7 @@ class ParticleHistory(RollingParticleHistory):
         return self._output_backward_sampling(idx)
 
     def backward_sampling_reject(self, M, max_trials=None):
-        """Rejection-based backward sampling.
+        r"""Rejection-based backward sampling.
 
         Because of the issues with the pure rejection method discussed in Dau
         and Chopin (2022), i.e. execution time is random and may have infinite
