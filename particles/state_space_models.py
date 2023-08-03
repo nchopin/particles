@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""
 State-space models as Python objects.
 

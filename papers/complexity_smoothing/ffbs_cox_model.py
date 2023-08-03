@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Adapts the offline smoothing example in the book (see Figs 12.4 and 12.5) to

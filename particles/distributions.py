@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Probability distributions as Python objects.
 

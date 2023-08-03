@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Numerical experiment of Chapter 14 (maximum likelihood estimation).

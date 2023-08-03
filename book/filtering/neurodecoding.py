@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Third numerical experiment of Chapter 10 (Particle filtering).
 

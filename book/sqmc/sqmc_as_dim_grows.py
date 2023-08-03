@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Illustrate how dimension affects performance of SQMC, by comparing four

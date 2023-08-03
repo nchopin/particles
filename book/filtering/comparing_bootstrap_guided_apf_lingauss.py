@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare bootstrap, guided and auxiliary particle filters on a linear Gaussian

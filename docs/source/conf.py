@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # particles documentation build configuration file, created by
 # sphinx-quickstart on Wed Feb 28 20:48:55 2018.

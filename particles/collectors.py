@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""Objects that collect summaries at each iteration of a SMC algorithm.
 
 Overview

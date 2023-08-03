@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Adaptive resampling means that we resample every time the ESS gets smaller

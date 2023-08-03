@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 MCMC (Markov chain Monte Carlo) and related algorithms.
 

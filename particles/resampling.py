@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Resampling and related numerical algorithms.
 

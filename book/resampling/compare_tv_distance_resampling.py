@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Comparison of resampling schemes (Fig. 9.2 in resampling Chapter): 

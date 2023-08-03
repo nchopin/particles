@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Particle Gibbs (with or without the backward step) for the Theta-logistic

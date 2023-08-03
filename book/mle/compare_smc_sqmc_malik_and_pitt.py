@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """ Produces Figure 13.7 that compares likelihood estimates obtained from:
 

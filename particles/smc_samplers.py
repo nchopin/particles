@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Classical and waste-free SMC samplers.
 

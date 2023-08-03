@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""
 Basic implementation of the Kalman filter (and smoother).
 

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Nested sampling. 
 
 .. warning:: This module is much less tested than the rest of the package. Also

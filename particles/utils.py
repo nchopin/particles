@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Non-numerical utilities (notably for parallel computation).
 

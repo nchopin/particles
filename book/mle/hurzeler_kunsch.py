@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Plots Figure 13.5 which illustrates Hürzeler and Künsch's method for using CRN

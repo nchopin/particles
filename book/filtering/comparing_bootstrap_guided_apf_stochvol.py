@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """Compare bootstrap, guided and APF filters on a stochastic volatility model.
 

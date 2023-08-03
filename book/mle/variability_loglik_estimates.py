@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Figures 13.3 and 14 (MLE chapter): variability of the log-likelihood estimate:

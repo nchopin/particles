@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare performance of SMC and SQMC on the popular toy example of Gordon et

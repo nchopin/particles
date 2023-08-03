@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """ 
 Plot the contours of the log-likelihood of a theta-logistic model; 
