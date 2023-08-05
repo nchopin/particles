@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-"""
+r"""
 Illustrates the different off-line particle smoothing algorithms using the
 bootstrap filter of the following model:
 
@@ -27,7 +26,6 @@ switches to the expensive method after N failed attempts; see Dau & Chopin,
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 import seaborn as sb  # box-plots

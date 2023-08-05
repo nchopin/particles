@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Nested sampling. 
 
 .. warning:: This module is much less tested than the rest of the package. Also
@@ -61,7 +59,6 @@ this::
 
 """
 
-from __future__ import print_function, division
 
 import numpy as np
 from numpy import random
@@ -83,7 +80,7 @@ def xxT(x):
     return np.dot(v, v.T)
 
 
-class MeanCovTracker(object):
+class MeanCovTracker:
     """Tracks mean and cov of a set of points. 
 
     Note: points must be given as a (N,d) np.array
@@ -122,7 +119,7 @@ class NestedParticles(smc.ThetaParticles):
                                     lprior=lprior, llik=llik)
 
 
-class NestedSampling(object):
+class NestedSampling:
     """Base class for nested sampling algorithms.
 
     Parameters

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare bootstrap, guided and auxiliary particle filters on a linear Gaussian
@@ -10,7 +9,6 @@ This generates three of the plots of Chapter 10 on particle filtering (Figure
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict
 from matplotlib import pyplot as plt

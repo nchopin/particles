@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare performance of SMC and SQMC on the popular toy example of Gordon et
@@ -10,7 +9,6 @@ in particular Figure 13.4.
 
 """
 
-from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np

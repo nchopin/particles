@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Non-numerical utilities (notably for parallel computation).
 
@@ -68,7 +66,6 @@ therefore be used as keyword arguments for function f):
 
 """
 
-from __future__ import division, print_function
 
 import functools
 import itertools
@@ -197,7 +194,7 @@ def distinct_seeds(k):
     return np.arange(0, k * bw, bw) + random.randint(bw, size=k)
 
 
-class seeder(object):
+class seeder:
     def __init__(self, func):
         self.func = func
 

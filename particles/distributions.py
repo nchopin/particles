@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Probability distributions as Python objects.
 
@@ -202,7 +200,6 @@ omit ``ppf`` if you do not plan to use SQMC (Sequential quasi Monte Carlo).
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict  # see prior
 import numpy as np
@@ -214,7 +211,7 @@ import numpy.linalg as nla
 HALFLOG2PI = 0.5 * np.log(2. * np.pi)
 
 
-class ProbDist(object):
+class ProbDist:
     """Base class for probability distributions.
 
     To define a probability distribution class, subclass ProbDist, and define
@@ -658,7 +655,7 @@ class TransformedDist(ProbDist):
         self.base_dist = base_dist
 
     def error_msg(self, method):
-        return 'method %s not defined in class %s' % (method, self.__class__)
+        return f'method {method} not defined in class {self.__class__}'
 
     def f(self, x):
         raise NotImplementedError(self.error_msg('f'))

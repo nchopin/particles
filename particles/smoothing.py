@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 This module implements:
 
@@ -131,7 +129,6 @@ as follows::
 
 """
 
-from __future__ import absolute_import, division, print_function
 
 from collections import deque
 from itertools import islice
@@ -157,7 +154,7 @@ def generate_hist_obj(option, smc):
     else:
         raise ValueError('store_history: invalid option')
 
-class PartialParticleHistory(object):
+class PartialParticleHistory:
     """Partial history.
 
     History that records the particle system only at certain times.
@@ -173,7 +170,7 @@ class PartialParticleHistory(object):
             self.X[t] = smc.X
             self.wgts[t] = smc.wgts
 
-class RollingParticleHistory(object):
+class RollingParticleHistory:
     """Rolling window history.
 
     History that keeps only the k most recent particle systems. Based on
@@ -340,7 +337,7 @@ class ParticleHistory(RollingParticleHistory):
         return self._output_backward_sampling(idx)
 
     def backward_sampling_reject(self, M, max_trials=None):
-        """Rejection-based backward sampling.
+        r"""Rejection-based backward sampling.
 
         Because of the issues with the pure rejection method discussed in Dau
         and Chopin (2022), i.e. execution time is random and may have infinite

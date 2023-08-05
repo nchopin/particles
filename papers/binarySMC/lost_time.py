@@ -31,7 +31,7 @@ for i, k in enumerate(names):
     # interactions
     for j in range(i):
         k2 = names[j]
-        cols['%s x %s' % (k, k2)] = cols[k] * cols[k2]
+        cols[f'{k} x {k2}'] = cols[k] * cols[k2]
 
 rescale = True  # Jim says predictors were centered *and* scaled
 def resc(x):

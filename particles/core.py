@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Core module.
 
@@ -95,7 +93,6 @@ See the documentation of `SMC` for more details.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from scipy import stats
@@ -112,7 +109,7 @@ err_msg_missing_trans = """
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
 
-class FeynmanKac(object):
+class FeynmanKac:
     """Abstract base class for Feynman-Kac models.
 
     To actually define a Feynman-Kac model, one must sub-class FeymanKac,
@@ -145,7 +142,7 @@ class FeynmanKac(object):
         self.T = T
 
     def _error_msg(self, meth):
-        return 'method/property %s missing in class %s' % (
+        return 'method/property {} missing in class {}'.format(
             meth, self.__class__.__name__)
 
     def M0(self, N):
@@ -205,7 +202,7 @@ class FeynmanKac(object):
                                                               smc.wgts.ESS)
 
 
-class SMC(object):
+class SMC:
     """Metaclass for SMC algorithms.
 
        Parameters
@@ -422,7 +419,7 @@ class SMC(object):
 ####################################################
 
 
-class _picklable_f(object):
+class _picklable_f:
 
     def __init__(self, fun):
         self.fun = fun

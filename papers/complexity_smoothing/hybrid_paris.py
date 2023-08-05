@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare different on-line smoothing algorithms based on the bootstrap 
@@ -23,7 +22,6 @@ Note that we implement the hybrid version of Paris (where, after N attempt, we
 switch to the more expensive algorithm). 
 """
 
-from __future__ import division, print_function
 
 from functools import partial
 

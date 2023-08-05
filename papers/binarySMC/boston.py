@@ -24,7 +24,7 @@ for i, k in enumerate(names):
     # interactions
     for j in range(i):
         k2 = names[j]
-        cols['%s x %s' % (k, k2)] = cols[k] * cols[k2]
+        cols[f'{k} x {k2}'] = cols[k] * cols[k2]
 
 center = True  # Christian centered the columns for some reason
 if center:

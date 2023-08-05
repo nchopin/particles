@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """ Produces Figure 13.7 that compares likelihood estimates obtained from:
 
@@ -15,7 +14,6 @@
     Note: takes 2-3 hrs.
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from numpy import random

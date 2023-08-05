@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 CPU time vs N for a PMMH kernel; same setting, model, and so on as in

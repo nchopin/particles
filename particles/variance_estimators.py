@@ -83,7 +83,6 @@ References
 
 """
 
-from __future__ import division, print_function
 
 from numba import jit
 import numpy as np
@@ -136,7 +135,7 @@ def _sum_over_branches(w_phi, B):
         s[B[m]] += w_phi[m]
     return np.sum(s**2, axis=0)
 
-class VarColMixin(object):
+class VarColMixin:
     def update_B(self, smc):
         if smc.t == 0:
             self.B = np.arange(smc.N)

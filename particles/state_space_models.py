@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""
 State-space models as Python objects.
 
@@ -158,7 +156,6 @@ Class                     Comments
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 
@@ -172,7 +169,7 @@ err_msg_missing_cst = """
     This is required for smoothing algorithms based on rejection
     """
 
-class StateSpaceModel(object):
+class StateSpaceModel:
     """Base class for state-space models.
 
     To define a state-space model class, you must sub-class `StateSpaceModel`,

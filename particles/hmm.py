@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Baum-Welch filter/smoother for hidden Markov models.
@@ -97,7 +96,6 @@ would compute all the intermediate smoothing distributions (for data $Y_0$,
 then $Y_{0:1}$, and so on). This is expensive, of course (cost is O(T^2)).
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from numpy import random
@@ -131,7 +129,7 @@ class HMM(ssms.StateSpaceModel):
         return dists.Categorical(p=self.trans_mat[xp, :])
 
 class GaussianHMM(HMM):
-    """Gaussian HMM: :math:`Y_t|X_t=k \sim N(\mu_k, \sigma_k^2)`
+    r"""Gaussian HMM: :math:`Y_t|X_t=k \sim N(\mu_k, \sigma_k^2)`
     """
     default_params = {'mus': None, 'sigmas': None}
     default_params.update(HMM.default_params)
@@ -139,7 +137,7 @@ class GaussianHMM(HMM):
     def PY(self, t, xp, x):
         return dists.Normal(loc=self.mus[x], scale=self.sigmas[x])
 
-class BaumWelch(object):
+class BaumWelch:
     """Baum-Welch filtering/smoothing algorithm.
 
     Parameters
