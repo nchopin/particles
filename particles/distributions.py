@@ -948,7 +948,7 @@ class MvNormal(ProbDist):
         Sigpost = sla.inv(Qpost)
         m = np.full(self.dim, self.loc) if np.isscalar(self.loc) else self.loc
         mupost = Sigpost @ (m @ covinv + Siginv @ np.sum(x, axis=0))
-        # m @ covinv works wether the shape of m is (N, d) or (d)
+        # m @ covinv works whether the shape of m is (N, d) or (d)
         return MvNormal(loc=mupost, cov=Sigpost)
 
 class VaryingCovNormal(MvNormal):
@@ -1097,7 +1097,7 @@ class StructDist(ProbDist):
 
         prior = StructDist({'mu':Normal(), 'sigma':Gamma(a=1., b=1.)})
         # means mu~N(0,1), sigma~Gamma(1, 1) independently
-        x = prior.rvs(size=30)  # returns a stuctured array of length 30
+        x = prior.rvs(size=30)  # returns a structured array of length 30
         print(x['sigma'])  # prints the 30 values for sigma
 
     We may also define a distribution using a chain rule decomposition.

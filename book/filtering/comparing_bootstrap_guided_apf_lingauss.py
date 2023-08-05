@@ -32,7 +32,7 @@ models = OrderedDict()
 models['bootstrap'] = ssms.Bootstrap(ssm=my_ssm, data=data)
 models['guided'] = ssms.GuidedPF(ssm=my_ssm, data=data)
 models['APF'] = ssms.AuxiliaryPF(ssm=my_ssm, data=data)
-# Uncomment line below if you want to include the "Boostrap APF"
+# Uncomment line below if you want to include the "Bootstrap APF"
 # (APF with proposal set to dist. of X_t|X_{t-1}) in the comparison
 #models['bootAPF'] = ssm.AuxiliaryBootstrap(ssm=my_ssm, data=data)
 

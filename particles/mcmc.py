@@ -260,7 +260,7 @@ class BasicRWHM(GenericRWHM):
             number of MCMC iterations
         verbose: int (default=0)
             progress report printed every (niter/verbose) iterations (never if 0)
-        theta0: structured array of lengt=1 (default=None)
+        theta0: structured array of length=1 (default=None)
             starting point (if None, starting point is simulated from the
             prior)
         adaptive: bool

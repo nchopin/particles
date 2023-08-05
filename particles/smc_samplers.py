@@ -128,7 +128,7 @@ In a SMC sampler, a particle sample is represented as a `ThetaParticles`
 object  ``X``, which contains several attributes such as, e.g.:
 
 * ``X.theta``: a structured array of length N, representing the N
-  particles (or alternatively a numpy arrray of shape (N,d))
+  particles (or alternatively a numpy array of shape (N,d))
 
 * ``X.lpost``: a numpy float array of length N, which stores the
   log-target density of the N particles.
