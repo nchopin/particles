@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'particles'
-copyright = u'2018, Nicolas Chopin'
+copyright = u'2018-2023, Nicolas Chopin'
 author = u'Nicolas Chopin'
 
 # The version info for the project you're documenting, acts as replacement for
