@@ -24,10 +24,9 @@ The long version: **particles** requires the following libraries:
 * `SciPy <http://www.scipy.org/>`_ 
 * `numba <https://numba.pydata.org/>`_
 * `joblib <https://joblib.readthedocs.io/>`_
-* `scikit-learn <https://scikit-learn.org/>`_
 
 In addition, it is **strongly recommended** to install the following 
-libraries:  
+libraries (optional ``[extra]`` dependencies):
 
 * `Matplotlib <http://matplotlib.org/>`_
 * `seaborn <https://seaborn.pydata.org/>`_
@@ -55,7 +54,7 @@ The package is available on Github_ and may be installed using git::
     cd some_folder_of_your_choosing
     git clone https://github.com/nchopin/particles.git
     cd particles
-    pip install --user .
+    pip install --user .[extra]
 
 Replace option `--user` by `-e` if you want to install in editable mode; in that
 way you may edit yourself the package (in the folder you chose), and then
@@ -69,7 +68,7 @@ Installation: alternative method
 The package is also available on PyPI_ (the Python package index), so you may
 install it by running pip. On a Linux machine:: 
 
-    pip install --user particles
+    pip install --user particles[extra]
 
 .. _PyPi: https://pypi.python.org/pypi 
 
