@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Comparison of resampling schemes (Fig. 9.2 in resampling Chapter): 
@@ -14,7 +13,6 @@ Comparison of resampling schemes (Fig. 9.2 in resampling Chapter):
     Note: takes about 8 min on my laptop. 
 """
 
-from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np

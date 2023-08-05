@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-"""
+r"""
 Adapts the offline smoothing example in the book (see Figs 12.4 and 12.5) to
 compare various FFBS algorithms (including the new variants, introduced and
 discussed in Dau & Chopin, 2022):
@@ -29,7 +28,6 @@ shows more clearly that the CPU time of variant 2 has a large variability.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 import seaborn as sb  # box-plots

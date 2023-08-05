@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """ 
 Plot the contours of the log-likelihood of a theta-logistic model; 
@@ -9,7 +8,6 @@ Notes: this script uses multi-processing to speed things up; this may not work
 on certain OSes (see documentation). Set option nprocs to 1 to disable 
 multiprocessing. 
 """
-from __future__ import division, print_function
 
 import numpy as np
 from matplotlib import pyplot as plt

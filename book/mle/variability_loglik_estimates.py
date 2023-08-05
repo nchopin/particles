@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Figures 13.3 and 14 (MLE chapter): variability of the log-likelihood estimate:
@@ -12,7 +11,6 @@ Kalman to compute the exact likelihood)
 Warning: takes 2 days and a half to complete without multi-processing! 
 """
 
-from __future__ import division, print_function
 
 from matplotlib import pyplot as plt
 import numpy as np

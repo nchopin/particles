@@ -42,7 +42,6 @@ adds an intercept) predictors/features for a regression or classification task.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 import os.path
@@ -50,7 +49,7 @@ import os.path
 def get_path(file_name):
     return os.path.join(os.path.dirname(__file__), 'datasets', file_name)
 
-class Dataset(object):
+class Dataset:
     """Base class for datasets.
 
     The pre-processing step does nothing: attributes ``raw_data`` and ``data``
@@ -87,7 +86,7 @@ class Nutria(Dataset):
     file_name = 'nutria.txt'
 
 class Neuro(Dataset):
-    """Neuroscience experiment data from Temereanca et al (2008).
+    r"""Neuroscience experiment data from Temereanca et al (2008).
 
     Time series of number of activated neurons over 50 experiments. A potential
     state-space model for this dataset is:
@@ -223,7 +222,7 @@ class BinaryRegDataset(Dataset):
 
         1. rescaling the predictors (mean=0, std dev=0.5)
         2. adding an intercept (constant predictor)
-        3. optionally, appling the "flip sign" trick.
+        3. optionally, applying the "flip sign" trick.
 
     Point 3 refers to the fact that the likelihood of a binary regression
     models depends only on the vectors:
@@ -249,7 +248,7 @@ class BinaryRegDataset(Dataset):
             return preds * response[:, np.newaxis]
 
 class Pima(BinaryRegDataset):
-    """Pima Indians Diabetes.
+    r"""Pima Indians Diabetes.
 
     A data set with 768 observations on 9 variables.
 

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""
 Basic implementation of the Kalman filter (and smoother).
 
@@ -140,7 +138,6 @@ may be defined as follows::
 
 """
 
-from __future__ import division, print_function
 
 import collections
 import numpy as np
@@ -292,7 +289,7 @@ def smoother_step(F, filt, next_pred, next_smth):
 ###############################
 
 class MVLinearGauss(ssms.StateSpaceModel):
-    """Multivariate linear Gaussian model.
+    r"""Multivariate linear Gaussian model.
 
     .. math::
         X_0 & \sim N(\mu_0, cov_0) \\
@@ -443,7 +440,7 @@ class LinearGauss(MVLinearGauss):
 # Kalman filter/smoother class
 #################################
 
-class Kalman(object):
+class Kalman:
     """ Kalman filter/smoother.
 
 

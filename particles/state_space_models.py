@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""
 State-space models as Python objects.
 
@@ -69,7 +67,7 @@ details:
           default_stoch_vol_model = SimplifiedStochVol()  # sigma=1., rho=0.8
     * There is no need to define a ``__init__()`` method, as it is already
       defined by the parent class. (This parent ``__init__()`` simply takes
-      care of the default parameters, and may be overrided if needed.)
+      care of the default parameters, and may be overridden if needed.)
 
 Now that our state-space model is properly defined, what can we do with it?
 First, we may simulate states and data from it::
@@ -158,7 +156,6 @@ Class                     Comments
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 
@@ -172,7 +169,7 @@ err_msg_missing_cst = """
     This is required for smoothing algorithms based on rejection
     """
 
-class StateSpaceModel(object):
+class StateSpaceModel:
     """Base class for state-space models.
 
     To define a state-space model class, you must sub-class `StateSpaceModel`,

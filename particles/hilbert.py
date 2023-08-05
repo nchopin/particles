@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """ Hilbert curve and its inverse, in any dimension.
 
 """

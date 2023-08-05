@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Illustrate how dimension affects performance of SQMC, by comparing four
@@ -22,7 +21,6 @@ or the numerical section of Chapter 13 (SQMC) of the book, especially Figure 13.
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict
 from matplotlib import pyplot as plt

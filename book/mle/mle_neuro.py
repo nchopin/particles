@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-"""
+r"""
 Numerical experiment of Chapter 14 (maximum likelihood estimation).
 
 See Figure 14.8 and surrounding discussion.
@@ -26,7 +25,6 @@ Note: MLE is (rho, sigma2) = (0.9981, 0.1089)
 
 """
 
-from __future__ import division, print_function
 
 import itertools
 import matplotlib
@@ -58,7 +56,7 @@ class NeuroXp(ssms.StateSpaceModel):
     def upper_bound_log_pt(self, t):
         return - 0.5 * np.log(2. * np.pi * self.sig2)
 
-class MinusLogLikEvaluator(object):
+class MinusLogLikEvaluator:
     def __init__(self, N=1000):
         self.N = N
         self.args = []
@@ -127,7 +125,7 @@ def EM(rho0, sig20, N=100, maxiter=100, xatol=1e-2):
     rhos, sig2s, lls = [rho0], [sig20], []
     while len(rhos) < maxiter + 1:
         new_rho, new_sig2, ll = EM_step(rhos[-1], sig2s[-1], N=N)
-        print('rho: %.3f, sigma^2: %.3f' % (new_rho, new_sig2))
+        print(f'rho: {new_rho:.3f}, sigma^2: {new_sig2:.3f}')
         rhos.append(new_rho)
         sig2s.append(new_sig2)
         lls.append(ll)
@@ -158,7 +156,7 @@ def grad(rho, sig2, N=100):
     grad_sig2 = 0.5 * (sr2 / sig2**2 - (T + 1) / sig2)
     srx = np.mean(sum(r * x for r, x in zip(residuals[1:], paths[:-1])))
     grad_rho = srx / sig2
-    print('grads: %.3f, %3f' % (grad_rho, grad_sig2))
+    print(f'grads: {grad_rho:.3f}, {grad_sig2:3f}')
     return grad_rho, grad_sig2
 
 def grad_ascent_step(rho, sig2, N=100, lambdat=1e-4):
@@ -173,7 +171,7 @@ for _ in range(100):
     new_rho, new_sig2 = grad_ascent_step(rhos_ga[-1], sig2s_ga[-1], lambdat=1e-6)
     rhos_ga.append(new_rho)
     sig2s_ga.append(new_sig2)
-    print('rho=%.3f, sig2=%.3f' % (rhos_ga[-1], sig2s_ga[-1]))
+    print(f'rho={rhos_ga[-1]:.3f}, sig2={sig2s_ga[-1]:.3f}')
 
 save_results({'rhos_ga': rhos_ga, 'sig2s_ga': sig2s_ga})
 
