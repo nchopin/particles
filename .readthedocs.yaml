@@ -15,7 +15,7 @@ build:
     # rust: "1.64"
     # golang: "1.19"
 
-formats: all
+# formats: all
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -23,11 +23,10 @@ sphinx:
    fail_on_warning: true
 
 # If using Sphinx, optionally build your docs in additional formats such as PDF
-# formats:
-#    - pdf
+formats:
+   - pdf
 
 # Optionally declare the Python requirements required to build your docs
 python:
   install:
    - method: pip
-   - requirements: docs/source/requirements.txt
