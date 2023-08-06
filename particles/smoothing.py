@@ -326,10 +326,9 @@ class ParticleHistory(RollingParticleHistory):
         algorithms, arXiv:2207.00976
         """
         idx = self._init_backward_sampling(M)
-        for t in reversed(range(self.T -1)):
-                idx[t, :] = self.A[t + 1][idx[t + 1, :]]
-        for i in range(nsteps):
-            for t in reversed(range(self.T - 1)):
+        for t in reversed(range(self.T - 1)):
+            idx[t, :] = self.A[t + 1][idx[t + 1, :]]
+            for i in range(nsteps):
                 prop = rs.multinomial(self.wgts[t].W, M=M)
                 xn = self.X[t + 1][idx[t + 1, :]]
                 lpr_acc = (self.fk.logpt(t + 1, self.X[t][prop], xn)
