@@ -2,9 +2,4 @@ joblib
 numba
 numpy
 scipy
-ipython
-nbsphinx
 scikit-learn
-setuptools
-seaborn
-matplotlib
