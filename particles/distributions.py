@@ -228,7 +228,7 @@ class ProbDist:
 
     """
     dim = 1  # distributions are univariate by default
-    dtype = np.float64  # distributions are continuous by default
+    dtype = float  # distributions are continuous by default
 
     def shape(self, size):
         if size is None:

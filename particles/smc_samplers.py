@@ -183,7 +183,7 @@ References
 Dau, H.D. and Chopin, N. Waste-free Sequential Monte Carlo,
 J. R. Stat. Soc. Ser. B. Stat. Methodol. 84, 1 (2022), 114–148, 
 `arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_, 
-`doi:10.1111/rssb.12475 http://dx.doi.org/10.1111/rssb.12475`_
+`doi:10.1111/rssb.12475 <http://dx.doi.org/10.1111/rssb.12475>`_
 
 """
 
@@ -370,7 +370,7 @@ def view_2d_array(theta):
     """Returns a view to record array theta which behaves
     like a (N,d) float array.
     """
-    v = theta.view(np.float)
+    v = theta.view(float)
     N = theta.shape[0]
     v.shape = (N, - 1)
     # raise an error if v cannot be reshaped without creating a copy

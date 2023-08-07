@@ -35,6 +35,9 @@ extensions = [
     'sphinx.ext.napoleon',
     'nbsphinx',
 ]
+autosummary_generate = True  # Make _autosummary files and include them
+autoclass_content = 'both'  # to also include __init__'s doc, but does not work... 
+
 napoleon_google_docstring = False
 
 # Add any paths that contain templates here, relative to this directory.
@@ -91,7 +94,7 @@ default_role = 'any'
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-#add_module_names = True
+add_module_names = False
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -181,7 +184,7 @@ html_static_path = ['_static']
 #html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+html_show_copyright = False
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -289,6 +292,3 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-# Can't you make this by default??? 
-autosummary_generate = True  # Make _autosummary files and include them
-# autoclass_content = 'both'  # to also include __init__'s doc, but does not work... 

@@ -1,5 +1,0 @@
-joblib
-numba
-numpy
-scipy
-scikit-learn

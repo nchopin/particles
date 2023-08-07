@@ -671,7 +671,7 @@ def idiotic(W, M):
     For testing only. DO NOT USE.
     """
     a = multinomial_once(W)
-    return np.full(M, a, dtype=np.int)
+    return np.full(M, a, dtype=np.int64)
 
 
 class MultinomialQueue:

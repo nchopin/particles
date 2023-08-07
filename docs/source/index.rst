@@ -29,6 +29,5 @@ or use the ``help`` command in python::
 
    overview
    installation    
-   modules
-
+   structure
 
