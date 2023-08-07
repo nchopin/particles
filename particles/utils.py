@@ -54,13 +54,13 @@ therefore be used as keyword arguments for function f):
   seed; see below.
 
 .. warning ::
-    Library `multiprocessing` generates identical workers, up to the state of
-    the Numpy random generator. If your function involves random numbers: (a)
-    set option ``seeding`` to True (otherwise, you will get
-    identical results from all your workers); (b) make sure the function f does
-    not rely on scipy frozen distributions, as these distributions also
-    freeze the states. For instance, do not use any frozen distribution when
-    defining your own Feynman-Kac object.
+    Parallel processing relies on library joblib, which generates identical
+    workers, up to the state of the Numpy random generator. If your function
+    involves random numbers: (a) set option ``seeding`` to True (otherwise, you
+    will get identical results from all your workers); (b) make sure the
+    function f does not rely on scipy frozen distributions, as these
+    distributions also freeze the states. For instance, do not use any frozen
+    distribution when defining your own Feynman-Kac object.
 
 .. seealso :: `multiSMC`
 

@@ -180,9 +180,10 @@ of its sub-classes).
 References
 ==========
 
-Dau, H.D. and Chopin, N (2020). Waste-free Sequential Monte Carlo,
-`arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_
-
+Dau, H.D. and Chopin, N. Waste-free Sequential Monte Carlo,
+J. R. Stat. Soc. Ser. B. Stat. Methodol. 84, 1 (2022), 114–148, 
+`arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_, 
+`doi:10.1111/rssb.12475 http://dx.doi.org/10.1111/rssb.12475`_
 
 """
 

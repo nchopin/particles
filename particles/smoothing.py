@@ -1,4 +1,9 @@
 """
+Off-line particle smoothing algorithms.
+
+Overview
+========
+
 This module implements:
 
 1. particle history classes,  which store the full or partial history
