@@ -46,6 +46,11 @@ extra = [
     "matplotlib",
 ]
 
+docs = [
+    "sphinx",
+    "nbsphinx"
+]
+
 [tool.setuptools]
 packages = ["particles"]
 

@@ -56,11 +56,17 @@ The package is available on Github_ and may be installed using git::
     cd some_folder_of_your_choosing
     git clone https://github.com/nchopin/particles.git
     cd particles
-    pip install --user .[extra]
+    pip install -e .[extra]
 
-Replace option `--user` by `-e` if you want to install in editable mode; in that
-way you may edit yourself the package (in the folder you chose), and then
-import the modified version. 
+The option `-e` installs the package in editable mode (any modification you
+make to the package will be taken into account when you import it). Replace
+`-e` by `--user` if you want to avoid that. Also, you may need to replace the
+last line by::
+
+    pip install -e '.[extra]'
+
+on certain shells (e.g. zsh).
+
 
 .. _Github: https://github.com/nchopin/particles.git
 
