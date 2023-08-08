@@ -203,7 +203,7 @@ omit ``ppf`` if you do not plan to use SQMC (Sequentialp quasi Monte Carlo).
 
 from collections import OrderedDict  # see prior
 import numpy as np
-import numpy.random as random
+from numpy import random
 from scipy import special
 from scipy import stats
 import scipy.linalg as sla
