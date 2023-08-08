@@ -97,7 +97,7 @@ Nested Sampling via Sequential Monte Carlo, arxiv 1805.03924.
 
 import numpy as np
 from numpy import random
-from scipy import linalg, stats, special
+from scipy import linalg, special, stats
 
 from particles import resampling as rs
 from particles import smc_samplers as ssps

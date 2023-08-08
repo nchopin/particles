@@ -202,12 +202,12 @@ omit ``ppf`` if you do not plan to use SQMC (Sequentialp quasi Monte Carlo).
 
 
 from collections import OrderedDict  # see prior
+
 import numpy as np
-from numpy import random
-from scipy import special
-from scipy import stats
-import scipy.linalg as sla
 import numpy.linalg as nla
+import scipy.linalg as sla
+from numpy import random
+from scipy import special, stats
 
 HALFLOG2PI = 0.5 * np.log(2.0 * np.pi)
 

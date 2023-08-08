@@ -16,12 +16,11 @@ zero to use all cores).
 """
 
 
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 import particles
-from particles import kalman
-from particles import state_space_models
+from particles import kalman, state_space_models
 
 # parameter values
 sigmaX = 1.

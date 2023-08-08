@@ -126,9 +126,10 @@ contains a few basic functions to deal with log-weights:
 
 
 import functools
+
 import numpy as np
-from numpy import random
 from numba import jit
+from numpy import random
 
 
 def exp_and_normalise(lw):

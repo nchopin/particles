@@ -15,9 +15,9 @@ Y_t = G*X_t + V_t       V_t ~ N(0, covY)
 """
 
 import numpy as np
+import pykalman  # pip install pykalman
 from numpy import random
 
-import pykalman  # pip install pykalman
 from particles import kalman
 
 # Multivariate model

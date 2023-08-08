@@ -206,8 +206,8 @@ time by the ``fetch`` method.
 """
 
 
-from numpy import random
 import numpy as np
+from numpy import random
 
 from particles import resampling as rs
 

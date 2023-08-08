@@ -29,12 +29,13 @@ shows more clearly that the CPU time of variant 2 has a large variability.
 """
 
 
+from functools import partial
+
 import numpy as np
 import seaborn as sb  # box-plots
 from matplotlib import pyplot as plt
 from matplotlib import rc  # tex
 from scipy import stats
-from functools import partial
 
 from particles import state_space_models as ssms
 from particles import utils

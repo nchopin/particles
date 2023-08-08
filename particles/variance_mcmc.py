@@ -15,8 +15,10 @@ by waste-free SMC.
 
 
 import gc
+
 import numpy as np
-from scipy.signal import correlate, choose_conv_method
+from scipy.signal import choose_conv_method, correlate
+
 
 def MCMC_variance(X: np.ndarray, method: str):
     """

@@ -8,13 +8,14 @@ Bottom line: nsteps=1 works already well for this example.
 
 """
 
+import time
+from functools import partial
+
 import numpy as np
 import seaborn as sb  # box-plots
 from matplotlib import pyplot as plt
 from matplotlib import rc  # tex
 from scipy import stats
-import time
-from functools import partial
 
 import particles
 from particles import state_space_models as ssms

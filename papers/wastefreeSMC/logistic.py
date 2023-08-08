@@ -22,10 +22,10 @@ preprint arXiv:2011.02328 (2020).
 
 """
 
-from matplotlib import pyplot as plt
 import numpy as np
-from numpy import random
 import seaborn as sb
+from matplotlib import pyplot as plt
+from numpy import random
 
 import particles
 from particles import datasets as dts

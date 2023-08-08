@@ -10,10 +10,10 @@ Reference
 
 """
 
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 import particles
 from particles import datasets as dts

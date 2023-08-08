@@ -13,17 +13,19 @@ See Section 10.4.3 and Figures 10.4-10.5 in the book for a discussion.
 """
 
 from collections import OrderedDict
+
 import numpy as np
+import seaborn as sb
+from matplotlib import pyplot as plt
 from numpy import random
 from scipy import linalg
-from matplotlib import pyplot as plt
-import seaborn as sb
 
 import particles
 from particles import distributions as dists
 from particles import kalman
 from particles import state_space_models as ssms
 from particles.collectors import Moments
+
 
 class NeuralDecoding(ssms.StateSpaceModel):
     """

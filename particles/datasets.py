@@ -44,8 +44,9 @@ adds an intercept) predictors/features for a regression or classification task.
 """
 
 
-import numpy as np
 import os.path
+
+import numpy as np
 
 
 def get_path(file_name):

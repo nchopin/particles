@@ -94,11 +94,11 @@ algorithm, as follows:
 
 import numpy as np
 from scipy import stats
-from scipy.linalg import cholesky, LinAlgError
+from scipy.linalg import LinAlgError, cholesky
 
 import particles
-from particles import smc_samplers as ssp
 import particles.state_space_models as ssms
+from particles import smc_samplers as ssp
 from particles import utils
 
 

@@ -10,8 +10,8 @@ pima), then the estimates have lower empirical variance but high bias.
 """
 
 import numpy as np
-from matplotlib import pyplot as plt
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 from particles import datasets as dts
 from particles import distributions as dists

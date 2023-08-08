@@ -9,12 +9,13 @@ on certain OSes (see documentation). Set option nprocs to 1 to disable
 multiprocessing. 
 """
 
+import matplotlib.cm as cm
 import numpy as np
 from matplotlib import pyplot as plt
-import matplotlib.cm as cm
 
 import particles
 from particles import state_space_models as ssms
+
 
 # Model 
 def fkmod(**kwargs):

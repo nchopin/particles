@@ -198,14 +198,15 @@ J. R. Stat. Soc. Ser. B. Stat. Methodol. 84, 1 (2022), 114–148,
 
 import copy as cp
 import itertools
+
 import numpy as np
 from numpy import random
-from scipy import optimize, stats, linalg
+from scipy import linalg, optimize, stats
 
 import particles
 from particles import resampling as rs
-from particles.state_space_models import Bootstrap
 from particles.collectors import Collector
+from particles.state_space_models import Bootstrap
 from particles.variance_mcmc import MCMC_variance
 
 ###################################

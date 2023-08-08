@@ -14,9 +14,9 @@ Comparison of resampling schemes (Fig. 9.2 in resampling Chapter):
 """
 
 
-from matplotlib import pyplot as plt
 import numpy as np
 import seaborn as sb
+from matplotlib import pyplot as plt
 from scipy import stats
 
 from particles import resampling as rs

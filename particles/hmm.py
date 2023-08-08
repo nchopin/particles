@@ -99,8 +99,8 @@ then $Y_{0:1}$, and so on). This is expensive, of course (cost is O(T^2)).
 
 import numpy as np
 
-from particles import resampling as rs
 from particles import distributions as dists
+from particles import resampling as rs
 from particles import state_space_models as ssms
 
 

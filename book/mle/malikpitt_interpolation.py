@@ -5,10 +5,10 @@ We simply subclass SMC, so as to replace the resampling step by the
 interpolated version of Malik and Pitt. 
 """
 
+import numba as nb
 import numpy as np
 from numpy import random
 
-import numba as nb
 import particles
 
 

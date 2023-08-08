@@ -96,12 +96,9 @@ See the documentation of `SMC` for more details.
 
 import numpy as np
 
-from particles import collectors
-from particles import hilbert
+from particles import collectors, hilbert
 from particles import resampling as rs
-from particles import rqmc
-from particles import smoothing
-from particles import utils
+from particles import rqmc, smoothing, utils
 
 err_msg_missing_trans = """
     Feynman-Kac class %s is missing method logpt, which provides the log-pdf
