@@ -266,11 +266,10 @@ class GenericRWHM(MCMC):
             self.scale = scale * optim_scale
             self.cov_tracker = VanishCovTracker(dim=self.dim, Sigma0=rw_cov)
             self.L = self.scale * self.cov_tracker.L
+        elif rw_cov is None:
+            self.L = np.eye(self.dim)
         else:
-            if rw_cov is None:
-                self.L = np.eye(self.dim)
-            else:
-                self.L = cholesky(rw_cov, lower=True)
+            self.L = cholesky(rw_cov, lower=True)
 
     def step0(self):
         th0 = self.prior.rvs(size=1) if self.theta0 is None else self.theta0
