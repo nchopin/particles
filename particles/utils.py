@@ -240,7 +240,7 @@ def multiplexer(f=None, nruns=1, nprocs=1, seeding=None, protected_args=None, **
 
     """
     if not callable(f):
-        raise ValueError("multiplexer: function f missing, or not callable")
+        raise TypeError("multiplexer: function f missing, or not callable")
     # extra arguments (meant to be arguments for f)
     fixedargs = {} if protected_args is None else protected_args
     listargs, dictargs = {}, {}

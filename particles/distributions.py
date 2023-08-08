@@ -1148,8 +1148,8 @@ class StructDist(ProbDist):
         elif isinstance(laws, dict):
             self.laws = OrderedDict([(key, laws[key]) for key in sorted(laws.keys())])
         else:
-            raise ValueError(
-                "recdist class requires a dict or" " an ordered dict to be instantiated"
+            raise TypeError(
+                "recdist class requires a dict or an ordered dict to be instantiated"
             )
         self.dtype = []
         for key, law in self.laws.items():
