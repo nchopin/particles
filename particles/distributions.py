@@ -892,7 +892,7 @@ class MvNormal(ProbDist):
         err_msg = "MvNormal: argument cov must be a (d, d) pos. definite matrix"
         try:
             self.L = nla.cholesky(self.cov)  # lower triangle
-        except:
+        except nla.LinAlgError:
             raise ValueError(err_msg)
         assert self.cov.shape == (self.dim, self.dim), err_msg
 
@@ -992,7 +992,7 @@ class VaryingCovNormal(MvNormal):
         try:
             self.N, d1, d2 = self.cov.shape  # must be 3D
             self.L = nla.cholesky(self.cov)  # lower triangle
-        except:
+        except nla.LinAlgError:
             raise ValueError(err_msg)
         assert d1 == d2, err_msg
 

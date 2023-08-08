@@ -319,7 +319,7 @@ class NestedSamplingSMC(ssps.FKSMCsampler):
     def done(self, smc):
         try:
             lt = smc.X.shared["lts"][-1]
-        except:  # attribute does not exist yet, or list is empty
+        except (KeyError, IndexError):
             lt = 0.0
         return lt == np.inf
 
