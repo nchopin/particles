@@ -824,10 +824,10 @@ class MixMissing(ProbDist):
         lp = self.base_dist.logpdf(x)
         ina = np.atleast_1d(np.isnan(x))
         if ina.shape[0] == 1:
-            ina = np.full_like(l, ina, dtype=bool)
-        l[ina] = np.log(self.pmiss)
-        l[np.logical_not(ina)] += np.log(1. - self.pmiss)
-        return l
+            ina = np.full_like(lp, ina, dtype=bool)
+        lp[ina] = np.log(self.pmiss)
+        lp[np.logical_not(ina)] += np.log(1. - self.pmiss)
+        return lp
 
     def rvs(self, size=None):
         x = self.base_dist.rvs(size=size)
