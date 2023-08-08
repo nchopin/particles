@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare the performance of tempering SMC and nested sampling SMC (introduced by
