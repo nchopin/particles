@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Compare MCMC samplers to sample from the smoothing distribution of a basic
 stochastic volatility model; see the numerical example at the end of Chapter 15
@@ -15,7 +14,6 @@ is a smoothing distribution, i.e. the distribution of X_{0:T} given Y_{0:T}).
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict
 import time
@@ -81,12 +79,12 @@ def reject_sv(m, s, y):
         if np.log(u) < -0.5 * y**2 * (np.exp(-x) - np.exp(-m) * (1. + m - x)):
             break
         if ntries > 1000:
-            print('1000 failed attempt, m,s,y=%f, %f, %f' % (m, s, y))
+            print(f'1000 failed attempt, m,s,y={m:f}, {s:f}, {y:f}')
             break
     return x
 
 
-class SVmixin(object):
+class SVmixin:
     def update_theta(self, theta, x):
         return theta
 

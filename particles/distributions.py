@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Probability distributions as Python objects.
 
@@ -178,7 +176,7 @@ conjugate for the considered class, and some data. Here is a quick example::
 Here is a list of distributions implementing posteriors:
 
 ============    =================== ==================
-Distribution    Corresponding modelp comments
+Distribution    Corresponding model  comments
 ============    =================== ==================
 Normalp          N(theta, sigma^2),   sigma fixed (passed as extra argument)
 TruncNormalp     same
@@ -202,7 +200,6 @@ omit ``ppf`` if you do not plan to use SQMC (Sequentialp quasi Monte Carlo).
 
 """
 
-from __future__ import division, print_function
 
 from collections import OrderedDict  # see prior
 import numpy as np
@@ -215,7 +212,7 @@ import numpy.linalg as nla
 HALFLOG2PI = 0.5 * np.log(2.0 * np.pi)
 
 
-class ProbDist(object):
+class ProbDist:
     """Base class for probability distributions.
 
     To define a probability distribution class, subclass ProbDist, and define
@@ -233,7 +230,7 @@ class ProbDist(object):
     """
 
     dim = 1  # distributions are univariate by default
-    dtype = "float64"  # distributions are continuous by default
+    dtype = float  # distributions are continuous by default
 
     def shape(self, size):
         if size is None:
@@ -514,9 +511,9 @@ class TruncNormal(ProbDist):
 
 
 class DiscreteDist(ProbDist):
-    """Base class for discrete probability distributions."""
-
-    dtype = "int64"
+    """Base class for discrete probability distributions.
+    """
+    dtype = np.int64
 
 
 class Poisson(DiscreteDist):
@@ -665,7 +662,7 @@ class TransformedDist(ProbDist):
         self.base_dist = base_dist
 
     def error_msg(self, method):
-        return "method %s not defined in class %s" % (method, self.__class__)
+        return f'method {method} not defined in class {self.__class__}'
 
     def f(self, x):
         raise NotImplementedError(self.error_msg("f"))
@@ -827,10 +824,10 @@ class MixMissing(ProbDist):
         lp = self.base_dist.logpdf(x)
         ina = np.atleast_1d(np.isnan(x))
         if ina.shape[0] == 1:
-            ina = np.full_like(lp, ina, dtype=np.bool)
-        lp[ina] = np.log(self.pmiss)
-        lp[np.logical_not(ina)] += np.log(1.0 - self.pmiss)
-        return lp
+            ina = np.full_like(l, ina, dtype=bool)
+        l[ina] = np.log(self.pmiss)
+        l[np.logical_not(ina)] += np.log(1. - self.pmiss)
+        return l
 
     def rvs(self, size=None):
         x = self.base_dist.rvs(size=size)
@@ -965,7 +962,7 @@ class MvNormal(ProbDist):
         Sigpost = sla.inv(Qpost)
         m = np.full(self.dim, self.loc) if np.isscalar(self.loc) else self.loc
         mupost = Sigpost @ (m @ covinv + Siginv @ np.sum(x, axis=0))
-        # m @ covinv works wether the shape of m is (N, d) or (d)
+        # m @ covinv works whether the shape of m is (N, d) or (d)
         return MvNormal(loc=mupost, cov=Sigpost)
 
 
@@ -1053,10 +1050,10 @@ class IndepProd(ProbDist):
     def __init__(self, *dists):
         self.dists = dists
         self.dim = len(dists)
-        if all(d.dtype == "int64" for d in dists):
-            self.dtype = "int64"
+        if all(d.dtype == DiscreteDist.dtype for d in dists):
+            self.dtype = DiscreteDist.dtype
         else:
-            self.dtype = "float64"
+            self.dtype = ProbDist.dtype
 
     def logpdf(self, x):
         return sum([d.logpdf(x[..., i]) for i, d in enumerate(self.dists)])
@@ -1121,7 +1118,7 @@ class StructDist(ProbDist):
 
         prior = StructDist({'mu':Normal(), 'sigma':Gamma(a=1., b=1.)})
         # means mu~N(0,1), sigma~Gamma(1, 1) independently
-        x = prior.rvs(size=30)  # returns a stuctured array of length 30
+        x = prior.rvs(size=30)  # returns a structured array of length 30
         print(x['sigma'])  # prints the 30 values for sigma
 
     We may also define a distribution using a chain rule decomposition.

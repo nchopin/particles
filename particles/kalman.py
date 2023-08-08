@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 r"""
 Basic implementation of the Kalman filter (and smoother).
 
@@ -140,7 +138,6 @@ may be defined as follows::
 
 """
 
-from __future__ import division, print_function
 
 import collections
 import numpy as np
@@ -296,7 +293,7 @@ def smoother_step(F, filt, next_pred, next_smth):
 
 
 class MVLinearGauss(ssms.StateSpaceModel):
-    """Multivariate linear Gaussian model.
+    r"""Multivariate linear Gaussian model.
 
     .. math::
         X_0 & \sim N(\mu_0, cov_0) \\
@@ -306,10 +303,11 @@ class MVLinearGauss(ssms.StateSpaceModel):
     The only mandatory parameters are `covX` and `covY` (from which the
     dimensions dx and dy of, respectively, X_t, and Y_t, are deduced). The
     default values for the other parameters are:
-        * `mu0`:: an array of zeros (of size dx)
-        * `cov0`: cov_X
-        * `F`: Identity matrix of shape (dx, dx)
-        * `G`: (dy, dx) matrix such that G[i, j] = 1[i=j]
+
+    * `mu0` : an array of zeros (of size dx)
+    * `cov0`: cov_X
+    * `F` : Identity matrix of shape (dx, dx)
+    * `G` : (dy, dx) matrix such that G[i, j] = 1[i=j]
 
     Note
     ----
@@ -457,9 +455,8 @@ class LinearGauss(MVLinearGauss):
 # Kalman filter/smoother class
 #################################
 
-
-class Kalman(object):
-    """Kalman filter/smoother.
+class Kalman:
+    """ Kalman filter/smoother.
 
 
     See the documentation of the module for more details.

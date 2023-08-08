@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Resampling and related numerical algorithms.
 
@@ -126,7 +124,6 @@ contains a few basic functions to deal with log-weights:
 
 """
 
-from __future__ import division, print_function
 
 import functools
 import numpy as np
@@ -187,8 +184,8 @@ def essl(lw):
     return (w.sum()) ** 2 / np.sum(w ** 2)
 
 
-class Weights(object):
-    """A class to store N log-weights, and automatically compute normalised
+class Weights:
+    """ A class to store N log-weights, and automatically compute normalised
     weights and their ESS.
 
     Parameters
@@ -686,7 +683,7 @@ def idiotic(W, M):
     return np.full(M, a, dtype=np.int64)
 
 
-class MultinomialQueue(object):
+class MultinomialQueue:
     """On-the-fly generator for the multinomial distribution.
 
     To obtain k1,k2, ... draws from the multinomial distribution with

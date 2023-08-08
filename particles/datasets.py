@@ -43,7 +43,6 @@ adds an intercept) predictors/features for a regression or classification task.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 import os.path
@@ -53,7 +52,7 @@ def get_path(file_name):
     return os.path.join(os.path.dirname(__file__), "datasets", file_name)
 
 
-class Dataset(object):
+class Dataset:
     """Base class for datasets.
 
     The pre-processing step does nothing: attributes ``raw_data`` and ``data``
@@ -94,7 +93,7 @@ class Nutria(Dataset):
 
 
 class Neuro(Dataset):
-    """Neuroscience experiment data from Temereanca et al (2008).
+    r"""Neuroscience experiment data from Temereanca et al (2008).
 
     Time series of number of activated neurons over 50 experiments. A potential
     state-space model for this dataset is:
@@ -103,11 +102,13 @@ class Neuro(Dataset):
         Y_t | X_t = x     \sim Bin(50, logit^{-1}(x))
         X_t = \rho * X_{t-1} + \sigma * U_t,\quad U_t \sim N(0, 1)
 
+
     Reference
     ---------
 
     * Temereanca et al (2008).  Rapid changes in thalamic firing synchrony during
       repetitive whisker stimulation, J. of Neuroscience.
+
     """
 
     file_name = "thaldata.csv"
@@ -183,8 +184,9 @@ class RegressionDataset(Dataset):
 
     A regression dataset contains p predictors, and one scalar response.
     The pre-processing step consists of:
-        1. rescaling the predictors (mean=0, std dev=0.5)
-        2. adding an intercept (constant predictor)
+
+    1. rescaling the predictors (mean=0, std dev=0.5)
+    2. adding an intercept (constant predictor)
 
     The ``data`` attribute is tuple (preds, response), where first (resp. second)
     element is a 2D (resp. 1D) numpy array.
@@ -261,7 +263,7 @@ class BinaryRegDataset(Dataset):
 
         1. rescaling the predictors (mean=0, std dev=0.5)
         2. adding an intercept (constant predictor)
-        3. optionally, appling the "flip sign" trick.
+        3. optionally, applying the "flip sign" trick.
 
     Point 3 refers to the fact that the likelihood of a binary regression
     models depends only on the vectors:
@@ -289,7 +291,7 @@ class BinaryRegDataset(Dataset):
 
 
 class Pima(BinaryRegDataset):
-    """Pima Indians Diabetes.
+    r"""Pima Indians Diabetes.
 
     A dataset with 768 observations and 9 predictors.
 

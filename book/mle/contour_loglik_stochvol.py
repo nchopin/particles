@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Plot the contours of the log-likelihood of a stochastic volatility model;
@@ -10,7 +9,6 @@ on certain OSes (see documentation). Replace 0 by 1 in line 41 below to discard
 multiprocessing.
 """
 
-from __future__ import division, print_function
 
 import matplotlib.cm as cm
 import numpy as np

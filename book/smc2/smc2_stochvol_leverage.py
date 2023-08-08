@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Numerical example of Chapter 18 on SMC^2.
@@ -17,7 +16,6 @@ in parallel, the total CPU time depends on the number of cores.
 (With 50+ cores, it should take 2 hrs as well.)
 """
 
-from __future__ import division, print_function
 
 
 from matplotlib import pyplot as plt
@@ -106,8 +104,8 @@ typical_run = [r for r in runs if r['fk']=='smc2_qmc'][0]['output']
 plt.figure()
 for i, p in enumerate(prior.laws.keys()):
     plt.subplot(2, 2, i + 1)
-    q25, q50, q75 = [[typical_run.summaries.moments[t][p][j] for t in range(T)]
-                for j in [5, 10, 15]]
+    q25, q50, q75 = ([typical_run.summaries.moments[t][p][j] for t in range(T)]
+                for j in [5, 10, 15])
     plt.fill_between(range(T), q25, q75, color='gray')
     plt.plot(range(T), q50, 'k')
     plt.title(r'$\%s$' % p)

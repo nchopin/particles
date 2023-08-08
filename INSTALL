@@ -24,24 +24,28 @@ The long version: **particles** requires the following libraries:
 * `SciPy <http://www.scipy.org/>`_ 
 * `numba <https://numba.pydata.org/>`_
 * `joblib <https://joblib.readthedocs.io/>`_
+* `scikit-learn <https://scikit-learn.org>`_ (only for module `binary_smc`)
 
-In addition, it is **strongly recommended** to install the following plotting
-libraries:  
+In addition, it is **strongly recommended** to install the following 
+libraries (optional ``[extra]`` dependencies):
 
 * `Matplotlib <http://matplotlib.org/>`_
 * `seaborn <https://seaborn.pydata.org/>`_
+* `pandas <https://pandas.pydata.org/>`_
+* `statsmodels <https://www.statsmodels.org/>`_
 
-Most of the examples require these libraries to plot results. 
+Most of the scripts require the first two libraries to plot the results; a few
+of them also requires `pandas` or `statsmodels`.
 
 Again, the easiest way to install all these libraries in one go is to simply
 install the Anaconda_ distribution.  Manual installation is of course also
 possible; e.g. on Ubuntu/Debian:: 
 
-    sudo apt install python-numpy python-scipy python-numba python-matplotlib python-seaborn
+    sudo apt install python3-numpy python3-scipy python3-numba python3-joblib python3-sklearn
 
-However, in the maintainer's experience, conda is usually less hassle, and 
+However, in the maintainer's experience, conda is usually less hassle,  
 runs faster (because it install a more efficient version of low-level libraries
-such as BLAS). 
+such as BLAS) and provides more recent versions.
 
 Local installation, organisation of the package
 ===============================================
@@ -72,11 +76,18 @@ The package is available on Github_ and may be installed using git::
 
     cd some_folder_of_your_choosing
     git clone https://github.com/nchopin/particles.git
-    pip install --user .
+    cd particles
+    pip install -e .[extra]
 
-Replace option `--user` by `-e` if you want to install in editable mode; in that
-way you may edit yourself the package (in the folder you chose), and then
-import the modified version. 
+The option `-e` installs the package in editable mode (any modification you
+make in this folder will be taken into account when you import the package).
+Replace `-e` by `--user` if you want to avoid that. Also, you may need to
+replace the last line by::
+
+    pip install -e '.[extra]'
+
+on certain shells (e.g. zsh).
+
 
 .. _Github: https://github.com/nchopin/particles.git
 
@@ -86,14 +97,13 @@ Installation: alternative method
 The package is also available on PyPI_ (the Python package index), so you may
 install it by running pip. On a Linux machine:: 
 
-    pip install --user particles
+    pip install --user particles[extra]
 
 .. _PyPi: https://pypi.python.org/pypi 
 
 Option ``--user`` lets you install the package in your home directory, rather than
 globally for all users. 
 
-The only drawback of this method is that it installs only the modules of the
-package, and not the additional examples (e.g. the datasets and scripts that 
-were used to generate the plots found in the book). 
+The main drawback of this method is that it installs only the modules of the
+package, and not the scripts found in folders book and papers. 
 

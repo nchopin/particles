@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Checks that our implementation of the Kalman filter returns
 the same results as pykalman, an external package available on PyPI.

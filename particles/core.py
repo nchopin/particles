@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Core module.
 
@@ -95,7 +93,6 @@ See the documentation of `SMC` for more details.
 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 
@@ -111,8 +108,7 @@ err_msg_missing_trans = """
     of Markov transition X_t | X_{t-1}. This is required by most smoothing
     algorithms."""
 
-
-class FeynmanKac(object):
+class FeynmanKac:
     """Abstract base class for Feynman-Kac models.
 
     To actually define a Feynman-Kac model, one must sub-class FeymanKac,
@@ -129,10 +125,10 @@ class FeynmanKac(object):
     define methods:
 
         * `Gamma0(self, u)`: deterministic function such that, if u~U([0,1]^d),
-        then Gamma0(u) has the same distribution as X_0
+          then Gamma0(u) has the same distribution as X_0
         * `Gamma(self, xp, u)`: deterministic function that, if U~U([0,1]^d)
-        then Gamma(xp, U) has the same distribution as kernel M_t(x_{t-1}, dx_t)
-        for x_{t-1}=xp
+          then Gamma(xp, U) has the same distribution as kernel M_t(x_{t-1}, dx_t)
+          for x_{t-1}=xp
 
     Usually, a collection of N particles will be simply a numpy array of
     shape (N,) or (N,d). However, this is not a strict requirement, see
@@ -146,10 +142,8 @@ class FeynmanKac(object):
         self.T = T
 
     def _error_msg(self, meth):
-        return "method/property %s missing in class %s" % (
-            meth,
-            self.__class__.__name__,
-        )
+        cls_name = self.__class__.__name__
+        return f'method/property {meth} missing in class {cls_name}'
 
     def M0(self, N):
         """Sample N times from initial distribution M_0 of the FK model"""
@@ -206,65 +200,62 @@ class FeynmanKac(object):
         )
 
 
-class SMC(object):
+class SMC:
     """Metaclass for SMC algorithms.
 
-    Parameters
-    ----------
-    fk: FeynmanKac object
-        Feynman-Kac model which defines which distributions are
-        approximated
-    N: int, optional (default=100)
-        number of particles
-    qmc: bool, optional (default=False)
-        if True use the Sequential quasi-Monte Carlo version (the two
-        options resampling and ESSrmin are then ignored)
-    resampling: {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
-        the resampling scheme to be used (see `resampling` module for more
-        information; default is 'systematic')
-    ESSrmin: float in interval [0, 1], optional
-        resampling is triggered whenever ESS / N < ESSrmin (default=0.5)
-    store_history: bool, int or callable (default=False)
-        whether and when history should be saved; see module `smoothing`
-    verbose: bool, optional
-        whether to print basic info at every iteration (default=False)
-    collect: list of collectors, or 'off' (for turning off summary collections)
-        see module ``collectors``
+       Parameters
+       ----------
+       fk : FeynmanKac object
+           Feynman-Kac model which defines which distributions are
+           approximated
+       N : int, optional (default=100)
+           number of particles
+       qmc : bool, optional (default=False)
+           if True use the Sequential quasi-Monte Carlo version (the two
+           options resampling and ESSrmin are then ignored)
+       resampling : {'multinomial', 'residual', 'stratified', 'systematic', 'ssp'}
+           the resampling scheme to be used (see `resampling` module for more
+           information; default is 'systematic')
+       ESSrmin : float in interval [0, 1], optional
+           resampling is triggered whenever ESS / N < ESSrmin (default=0.5)
+       store_history : bool, int or callable (default=False)
+           whether and when history should be saved; see module `smoothing`
+       verbose : bool, optional
+           whether to print basic info at every iteration (default=False)
+       collect : list of collectors, or 'off' (for turning off summary collections)
+           see module ``collectors``
 
     Attributes
     ----------
 
-    t : int
-       current time step
-    X : typically a (N,) or (N, d) ndarray (but see documentation)
-        the N particles
-    A : (N,) ndarray (int)
-       ancestor indices: A[n] = m means ancestor of X[n] has index m
-    wgts: `Weights` object
-        An object with attributes lw (log-weights), W (normalised weights)
-        and ESS (the ESS of this set of weights) that represents
-        the main (inferential) weights
-    aux: `Weights` object
-        the auxiliary weights (for an auxiliary PF, see FeynmanKac)
-    cpu_time : float
-        CPU time of complete run (in seconds)
-    hist: `ParticleHistory` object (None if option history is set to False)
-        complete history of the particle system; see module `smoothing`
-    summaries: `Summaries` object (None if option summaries is set to False)
-        each summary is a list of estimates recorded at each iteration. The
-        following summaries are computed by default:
-            + ESSs (the ESS at each time t)
-            + rs_flags (whether resampling was performed or not at each t)
-            + logLts (estimates of the normalising constants)
-        Extra summaries may also be computed (such as moments and online
-        smoothing estimates), see module `collectors`.
+       t : int
+          current time step
+       X : typically a (N,) or (N, d) ndarray (but see documentation)
+           the N particles
+       A : (N,) ndarray (int)
+          ancestor indices: A[n] = m means ancestor of X[n] has index m
+       wgts : `Weights` object
+           An object with attributes lw (log-weights), W (normalised weights)
+           and ESS (the ESS of this set of weights) that represents
+           the main (inferential) weights
+       aux : `Weights` object
+           the auxiliary weights (for an auxiliary PF, see FeynmanKac)
+       cpu_time : float
+           CPU time of complete run (in seconds)
+       hist : `ParticleHistory` object (None if option history is set to False)
+           complete history of the particle system; see module `smoothing`
+       summaries : `Summaries` object (None if option summaries is set to False)
+           each summary is a list of estimates recorded at each iteration. The
+           summaries computed by default are ESSs, rs_flags, logLts. 
+           Extra summaries may also be computed (such as moments and online
+           smoothing estimates), see module `collectors`.
 
-    Methods
-    -------
-    run():
-        run the algorithm until completion
-    step()
-        run the algorithm for one step (object self is an iterator)
+       Methods
+       -------
+       run()
+           run the algorithm until completion
+       step()
+           run the algorithm for one step (object self is an iterator)
     """
 
     def __init__(
@@ -424,7 +415,8 @@ class SMC(object):
 ####################################################
 
 
-class _picklable_f(object):
+class _picklable_f:
+
     def __init__(self, fun):
         self.fun = fun
 
@@ -496,18 +488,18 @@ def multiSMC(nruns=10, nprocs=0, out_func=None, collect=None, **args):
 
     Parameters
     ----------
-    * nruns: int, optional
+    * nruns : int, optional
         number of runs (default is 10)
-    * nprocs: int, optional
+    * nprocs : int, optional
         number of processors to use; if negative, number of cores not to use.
         Default value is 1 (no multiprocessing)
-    * out_func: callable, optional
+    * out_func : callable, optional
         function to transform the output of each SMC run. (If not given, output
         will be the complete SMC object).
-    * collect: list of collectors, or 'off'
+    * collect : list of collectors, or 'off'
         this particular argument of class SMC may be a list, hence it is "protected"
         from Cartesianisation
-    * args: dict
+    * args : dict
         arguments passed to SMC class (except collect)
 
     Returns

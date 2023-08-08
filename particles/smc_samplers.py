@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Classical and waste-free SMC samplers.
 
@@ -136,7 +134,7 @@ In a SMC sampler, a particle sample is represented as a `ThetaParticles`
 object  ``X``, which contains several attributes such as, e.g.:
 
 * ``X.theta``: a structured array of length N, representing the N
-  particles (or alternatively a numpy arrray of shape (N,d))
+  particles (or alternatively a numpy array of shape (N,d))
 
 * ``X.lpost``: a numpy float array of length N, which stores the
   log-target density of the N particles.
@@ -190,14 +188,13 @@ of its sub-classes).
 References
 ==========
 
-Dau, H.D. and Chopin, N. (2022). Waste-free Sequential Monte Carlo,
-  Journal of the Royal Statistical Society: Series B (Statistical Methodology),
-  vol. 84, p. 114-148. <https://doi.org/10.1111/rssb.12475>, see also on arxiv: 
-  <https://arxiv.org/abs/2011.02328>. 
+Dau, H.D. and Chopin, N. Waste-free Sequential Monte Carlo,
+J. R. Stat. Soc. Ser. B. Stat. Methodol. 84, 1 (2022), 114–148, 
+`arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_, 
+`doi:10.1111/rssb.12475 <http://dx.doi.org/10.1111/rssb.12475>`_
 
 """
 
-from __future__ import absolute_import, division, print_function
 
 import copy as cp
 import itertools
@@ -215,7 +212,7 @@ from particles.variance_mcmc import MCMC_variance
 # Static models
 
 
-class StaticModel(object):
+class StaticModel:
     """Base class for static models.
 
     To define a static model, sub-class `StaticModel`, and define method
@@ -400,7 +397,7 @@ def gen_concatenate(*xs):
         return xs[0].concatenate(*xs)
 
 
-class ThetaParticles(object):
+class ThetaParticles:
     """Base class for particle systems for SMC samplers.
 
     This is a rather generic class for packing together information on N
@@ -505,8 +502,7 @@ class ThetaParticles(object):
 #############################
 # Basic importance sampler
 
-
-class ImportanceSampler(object):
+class ImportanceSampler:
     """Importance sampler.
 
     Basic implementation of importance sampling, with the same interface
@@ -553,8 +549,7 @@ class ImportanceSampler(object):
 ##################################
 # MCMC steps (within SMC samplers)
 
-
-class ArrayMCMC(object):
+class ArrayMCMC:
     """Base class for a (single) MCMC step applied to an array.
 
     To implement a particular MCMC scheme, subclass ArrayMCMC and define method
@@ -1037,26 +1032,26 @@ class SMC2(FKSMCsampler):
 
     Parameters
     ----------
-    ssm_cls: `StateSpaceModel` subclass
+    ssm_cls : `StateSpaceModel` subclass
         the considered parametric state-space model
-    prior: `StructDist` object
+    prior : `StructDist` object
         the prior
-    data: list-like
+    data : list-like
         the data
-    smc_options: dict
+    smc_options : dict
         options to be passed to each SMC algorithm
-    fk_cls: Feynman-Kac class (default: Bootstrap)
-    init_Nx: int
+    fk_cls : Feynman-Kac class (default: Bootstrap)
+    init_Nx : int
         initial value for N_x
-    ar_to_increase_Nx: float
+    ar_to_increase_Nx : float
         Nx is increased (using an exchange step) each time
         the acceptance rate is above this value (if negative, Nx stays
         constant)
-    wastefree:  bool
+    wastefree : bool
         whether to use the waste-free version (default: True)
-    len_chain:  int
+    len_chain : int
         length of MCMC chain (default: 10)
-    move:   MCMCSequence object
+    move : MCMCSequence object
         MCMC sequence
     """
 

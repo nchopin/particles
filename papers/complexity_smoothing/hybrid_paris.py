@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare different on-line smoothing algorithms based on the bootstrap 
@@ -26,7 +25,6 @@ version of Paris may have infinite expectation. The running time of the hybrid
 variant is random but bounded. 
 """
 
-from __future__ import division, print_function
 
 from functools import partial
 

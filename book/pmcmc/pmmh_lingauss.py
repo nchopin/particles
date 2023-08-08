@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
-"""
+r"""
 Explore basic properties of PMMH on the following toy-example:
     X_0 ~ N(0, \sigma_X^2)
     X_t = rho X_{t-1} + U_t,    U_t ~ N(0, sigma_X^2)

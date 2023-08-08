@@ -1,41 +1,22 @@
 #!/usr/bin/env python
 
 r"""
-Adapts the offline smoothing example in the book (see Figs 12.4 and 12.5) to
-compare various FFBS algorithms (including the new variants, introduced and
-discussed in Dau & Chopin, 2022):
+Same settings as ffbs_cox_model.py, extra experiment to evaluate the impact of the
+number of MCMC steps on the results. 
 
-    1. standard, O(N^2) variant
-    2. pure rejection
-    3. hybrid (use rejection up to N attempts)
-    4. MCMC
-
-
-The considered state-space model is:
-
-X_t|X_{t-1}=x_{t-1} ~ N(mu+phi(x_{t-1}-mu),sigma^2)
-Y_t|X_t=x_t ~ Poisson(exp(x_t))
-
-and the objective is to evaluate the expectation (w.r.t. the smoothing
-distribution) of the score of the model (at theta=theta_0), which is an
-additive function of the form:
-sum_{t=0}^{T-2} \psi_t(X_t, X_{t+1})
-see the book or below for a definition of psi_t.
-
-Compared to the book, the range of N values is slightly different (from 200 to
-51200, vs 50 to 12800). Also, this time we use a box-plot for CPU vs N; this
-shows more clearly that the CPU time of variant 2 has a large variability.
+Bottom line: nsteps=1 works already well for this example.
 
 """
-
 
 import numpy as np
 import seaborn as sb  # box-plots
 from matplotlib import pyplot as plt
 from matplotlib import rc  # tex
 from scipy import stats
+import time
 from functools import partial
 
+import particles
 from particles import state_space_models as ssms
 from particles import utils
 from particles.smoothing import smoothing_worker
@@ -83,66 +64,80 @@ _, data = my_ssm.simulate(T)
 
 # FK models
 fkmod = ssms.Bootstrap(ssm=my_ssm, data=data)
-# FK model for information filter: same model with data in reverse
-fk_info = ssms.Bootstrap(ssm=my_ssm, data=data[::-1])
 
-nruns = 100 # run each algo 100 times
-Ns = [200, 800, 3200, 12800, 51200]  # note: in book, from 50 to 12800
-methods = ['FFBS_ON2', 'FFBS_purereject', 'FFBS_MCMC', 'FFBS_hybrid']
-
+nruns = 1000 # number of times each algo is run
+N = 200
+nsteps = [1, 2, 3]  # number of MCMC steps
 add_func = partial(psit, mu=mu0, phi=phi0, sigma=sigma0)
-log_gamma_func = partial(log_gamma, mu=mu0, phi=phi0, sigma=sigma0)
-results = utils.multiplexer(f=smoothing_worker, method=methods, N=Ns,
-                            fk=fkmod, fk_info=fk_info, add_func=add_func,
-                            log_gamma=log_gamma_func, nprocs=0, nruns=nruns) 
+
+def mcmc_smoothing_worker(fk=None, N=10, add_func=None, nsteps=1):
+    T = fk.T
+    pf = particles.SMC(fk=fk, N=N, store_history=True)
+    tic = time.perf_counter()
+    pf.run()
+    z = pf.hist.backward_sampling_mcmc(N, nsteps=nsteps)
+    est = np.zeros(T - 1)
+    for t in range(T - 1):
+        est[t] = np.mean(add_func(t, z[t], z[t + 1]))
+    cpu = time.perf_counter() - tic
+    print(f'mcmc worker took {cpu} s to complete, with nsteps={nsteps}')
+    return {'est': est, 'cpu': cpu}
+
+results = utils.multiplexer(f=mcmc_smoothing_worker, N=N, fk=fkmod,
+                            nsteps=nsteps, add_func=add_func, 
+                            nprocs=0, nruns=nruns) 
+
+# for reference, "exact" method
+ref_method = 'hybrid'
+ref_results = utils.multiplexer(f=smoothing_worker, N=N,
+                                method=f'FFBS_{ref_method}',
+                                fk=fkmod, add_func=add_func,
+                                nprocs=0, nruns=nruns)
+
+for r in ref_results:
+    r['nsteps'] = ref_method
+
+results += ref_results
 
 # Plots
 # =====
 savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
+palette = sb.dark_palette("lightgray", n_colors=5, reverse=False)
+sb.set_palette(palette)
 rc('text', usetex=True)  # latex
 
-pretty_names = {}
-ON = r'$\mathcal{O}(N)$'
-ON2 = r'$\mathcal{O}(N^2)$'
-pretty_names['FFBS_ON2'] = ON2 + r' FFBS'
-pretty_names['FFBS_purereject'] = 'FFBS-reject'
-pretty_names['FFBS_hybrid'] = 'FFBS hybrid'
-pretty_names['FFBS_MCMC'] = 'FFBS MCMC'
-
-# box-plot of est. errors vs N and method (Figure 11.4)
+# box-plot of est. errors vs nr of steps
 plt.figure()
-plt.xlabel(r'$N$')
+plt.xlabel('nr MCMC steps')
 plt.ylabel('smoothing estimate')
 # remove FFBS_reject, since estimate has the same distribution as for FFBS ON2
-res_nofon = [r for r in results if r['method'] != 'FFBS_purereject']
-sb.violinplot(y=[np.mean(r['est']) for r in res_nofon],
-              x=[r['N'] for r in res_nofon],
-              hue=[pretty_names[r['method']] for r in res_nofon],
+sb.violinplot(y=[np.mean(r['est']) for r in results],
+              x=[r['nsteps'] for r in results],
+              palette=palette,
               flierprops={'marker': 'o',
                           'markersize': 4,
                           'markerfacecolor': 'k'})
 if savefigs:
-    plt.savefig('offline_boxplots_est_vs_N.pdf')
+    plt.savefig('offline_mcmc_boxplots_est_vs_nsteps.pdf')
 
-# CPU times as a function of N (Figure 11.5)
+# CPU times as a function of nr steps
 plt.figure()
 # in case we want to plot the mean vs N instead
 # lsts = {'FFBS_ON2': '-', 'FFBS_purereject': '--', 
 #         'FFBS_hybrid': '-.', 'FFBS_MCMC': ':'}
 sb.boxplot(y=[r['cpu'] for r in results],
-        x=[r['N'] for r in results],
-        hue=[pretty_names[r['method']] for r in results],
+        x=[r['nsteps'] for r in results],
+        palette=palette,
         flierprops={'marker': 'o',
             'markersize': 4,
             'markerfacecolor': 'k'})
 #plt.xscale('log')
-plt.yscale('log')
+# plt.yscale('log')
 plt.xlabel(r'$N$')
 plt.ylabel('cpu time (s)')
-plt.legend(loc=2)
 if savefigs:
-    plt.savefig('offline_cpu_vs_N.pdf')
+    plt.savefig('offline_mcmc_cpu_vs_nsteps.pdf')
 
 # and finally
 plt.show()

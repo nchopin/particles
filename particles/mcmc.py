@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 MCMC (Markov chain Monte Carlo) and related algorithms.
 
@@ -93,7 +91,6 @@ algorithm, as follows:
   its subclasses). 
 """
 
-from __future__ import division, print_function
 
 import numpy as np
 from scipy import stats
@@ -122,7 +119,7 @@ def msjd(theta):
     return s
 
 
-class MCMC(object):
+class MCMC:
     """MCMC base class.
 
     To subclass MCMC, define methods:
@@ -170,7 +167,7 @@ class MCMC(object):
         if hasattr(self, "nacc") and n > 0:
             msg += ", acc. rate=%.3f" % (self.nacc / n)
         for p in params:
-            msg += ", %s=%s" % (p, self.chain.theta[p][n])
+            msg += f', {p}={self.chain.theta[p][n]}'
         print(msg)
 
     @utils.timer
@@ -188,8 +185,8 @@ class MCMC(object):
 # Random walk Metropolis samplers
 
 
-class VanishCovTracker(object):
-    """Tracks the vanishing mean and covariance of a sequence of points.
+class VanishCovTracker:
+    r"""Tracks the vanishing mean and covariance of a sequence of points.
 
     Computes running mean and covariance of points
     t^(-alpha) * X_t
@@ -321,6 +318,20 @@ class BasicRWHM(GenericRWHM):
         """
         Parameters
         ----------
+        niter: int
+            number of MCMC iterations
+        verbose: int (default=0)
+            progress report printed every (niter/verbose) iterations (never if 0)
+        theta0: structured array of length=1 (default=None)
+            starting point (if None, starting point is simulated from the
+            prior)
+        adaptive: bool
+            whether the adaptive version should be used
+        scale: positive scalar (default = 1.)
+            in the adaptive case, covariance of the proposal is scale^2 times
+            (2.38 / d) times the current estimate of the target covariance
+        rw_cov: (d, d) array
+            covariance matrix of the random walk proposal (set to I_d if None)
         model: StaticModel object
             model that defines the target distribution
 

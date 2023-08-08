@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Nested sampling (vanilla and SMC).
 
 .. warning:: This module is less tested than the rest of the package.
@@ -96,7 +94,6 @@ Nested Sampling via Sequential Monte Carlo, arxiv 1805.03924.
 
 """
 
-from __future__ import print_function, division
 
 import numpy as np
 from numpy import random
@@ -117,8 +114,8 @@ def xxT(x):
     return np.dot(v, v.T)
 
 
-class MeanCovTracker(object):
-    """Tracks mean and cov of a set of points.
+class MeanCovTracker:
+    """Tracks mean and cov of a set of points. 
 
     Note: points must be given as a (N,d) np.array
     """
@@ -147,34 +144,42 @@ class MeanCovTracker(object):
         self.update_mean_cov()
 
 
-class NestedSampling(object):
+class NestedParticles(smc.ThetaParticles):
+    containers = ['theta', 'lprior', 'llik']
+    shared = []
+
+    def __init__(self, theta=None, lprior=None, llik=None):
+        smc.ThetaParticles.__init__(self, theta=theta,
+                                    lprior=lprior, llik=llik)
+
+
+class NestedSampling:
     """Base class for nested sampling algorithms.
 
     Parameters
     ----------
-    * model: SMCsamplers.StaticModel object
+    * model : SMCsamplers.StaticModel object 
         a static model
-    * N: int
+    * N : int
         number of simultaneous points
-    * eps: positive number
-        the algorithm stops when relative error is smaller than eps
+    * eps : positive number
+        the algorithm stops when relative error is smaller than eps 
 
-    Returns
-    -------
     Upon completion (method run), the NestedSampling object has the
     following attributes:
-        * log_weights: list
-            log of the weight at each iteration:
-            equal to exp(-i/N) - exp(-(i+1)/N) at iteration i
-        * points: list
-             list of points selected at each iteration
-        * lZhats: list
-            log of estimate of normalising constant at each iteration i
-            (typically we use the last one as the practical estimate)
+
+    * log_weights : list
+      log of the weight at each iteration, equal to 
+      exp(-i/N) - exp(-(i+1)/N) at iteration i
+    * points : list
+      list of points selected at each iteration
+    * lZhats : list
+      log of estimate of normalising constant at each iteration i
+      (typically we use the last one as the practical estimate)
 
 
     .. note:: this is the base class; an actual algorithm requires to implement
-    the mutate method, which mutates the selected point through MCMC steps.
+       the mutate method, which mutates the selected point through MCMC steps.
     """
 
     def __init__(self, model=None, N=100, eps=1e-8):
@@ -189,8 +194,8 @@ class NestedSampling(object):
         self.x = ssps.ThetaParticles(theta=th, lprior=lp, llik=ll)
 
     def mutate(self, n, m):
-        """n: index of deleted point
-        m: index of starting point for MCMC
+        """ n : index of deleted point
+            m : index of starting point for MCMC
         """
         raise NotImplementedError
 

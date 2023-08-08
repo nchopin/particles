@@ -26,7 +26,18 @@ More precisely, this module implements:
 * Various sub-classes of `smc_samplers.StaticModel` that implements Bayesian
   variable selection. 
 
-See also the script in papers/binarySMC for numerical experiments. 
+See also the scripts in papers/binarySMC for numerical experiments. 
+
+
+References
+----------
+
+* Dau, H. D., & Chopin, N. (2022). Waste-free sequential Monte Carlo. 
+  Journal of the Royal Statistical Society Series B: Statistical Methodology, 
+  84(1), 114-148.
+
+* Schäfer, C., & Chopin, N. (2013). Sequential Monte Carlo on large binary sampling 
+  spaces. Statistics and Computing, 23, 163-184.
 
 """
 
@@ -42,8 +53,8 @@ from particles import smc_samplers as ssps
 
 
 def all_binary_words(p):
-    out = np.zeros((2 ** p, p), dtype=bool)
-    ns = np.arange(2 ** p)
+    out = np.zeros((2**p, p), dtype=bool)
+    ns = np.arange(2**p)
     for i in range(p):
         out[:, i] = (ns % 2 ** (i + 1)) // 2 ** i
     return out
@@ -123,16 +134,16 @@ class NestedLogistic(dists.DiscreteDist):
                     corr = corr_bin(ph[i], ph[j], pij)
                     if np.abs(corr) > corr_thresh:
                         preds.append(j)
-                if preds:
-                    reg = LogisticRegression(penalty="none")
+                if preds: 
+                    reg = LogisticRegression(penalty='None')
                     reg.fit(x[:, preds], x[:, i], sample_weight=W)
                     coeffs[i, i] = reg.intercept_
                     coeffs[i, preds] = reg.coef_
                 else:
                     coeffs[i, i] = logit(ph[i])
         print(ph)
-        sparsity = (np.sum(coeffs != 0.0) - dim) / (0.5 * dim * (dim - 1))
-        print("edgy: %f, sparsity: %f" % (np.average(edgy), sparsity))
+        sparsity = (np.sum(coeffs!=0.) - dim) / (0.5 * dim * (dim - 1))
+        print(f'edgy: {np.average(edgy):f}, sparsity: {sparsity:f}')
         return cls(coeffs, edgy)
 
 
@@ -194,10 +205,12 @@ class VariableSelection(ssps.StaticModel):
     """Meta-class for variable selection.
 
     Represents a Bayesian (or pseudo-Bayesian) posterior where:
-        * the prior is wrt a vector of gamma of indicator variables (whether to
-        include a variable or not)
-        * the likelihood is typically the marginal likelihood of gamma, where
-        the coefficient parameters have been integrated out.
+
+    * the prior is wrt a vector of gamma of indicator variables (whether to
+      include a variable or not)
+    * the likelihood is typically the marginal likelihood of gamma, where
+      the coefficient parameters have been integrated out.
+
     """
 
     def __init__(self, data=None):
@@ -220,7 +233,7 @@ class VariableSelection(ssps.StaticModel):
 
     def sig2_full(self):
         gamma_full = np.ones((1, self.p), dtype=bool)
-        _, _, btb = chol_and_friends(gamma_full, self.xtx, self.xty, 0.0)
+        _, _, btb = chol_and_friends(gamma_full, self.xtx, self.xty, 0.)
         return (self.yty - btb) / self.n
 
 
