@@ -326,7 +326,7 @@ class NestedSamplingSMC(ssps.FKSMCsampler):
 
     def summary_format(self, smc):
         msg = super().summary_format(smc)
-        return "%s, loglik=%f" % (msg, smc.X.shared["lts"][-1])
+        return "{}, loglik={:f}".format(msg, smc.X.shared["lts"][-1])
 
     def logG(self, t, xp, x):
         curr_evid = x.shared["log_evid"][-1]

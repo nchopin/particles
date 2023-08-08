@@ -260,7 +260,7 @@ class Collector:
                 setattr(self, k, v)
             else:
                 raise ValueError(
-                    "Collector %s: unknown parameter %s" % (self.__class__.__name__, k)
+                    f"Collector {self.__class__.__name__}: unknown parameter {k}"
                 )
 
     def __call__(self):
