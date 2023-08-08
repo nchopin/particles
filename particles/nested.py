@@ -144,13 +144,12 @@ class MeanCovTracker:
         self.update_mean_cov()
 
 
-class NestedParticles(smc.ThetaParticles):
+class NestedParticles(ssps.ThetaParticles):
     containers = ['theta', 'lprior', 'llik']
     shared = []
 
     def __init__(self, theta=None, lprior=None, llik=None):
-        smc.ThetaParticles.__init__(self, theta=theta,
-                                    lprior=lprior, llik=llik)
+        ssps.ThetaParticles.__init__(self, theta=theta, lprior=lprior, llik=llik)
 
 
 class NestedSampling:
