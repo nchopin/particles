@@ -22,10 +22,10 @@ documentation of `smc_samplers` for more details.
 
 """
 
-from matplotlib import pyplot as plt
 import numpy as np
-from numpy import random
 import seaborn as sb
+from matplotlib import pyplot as plt
+from numpy import random
 
 import particles
 from particles import datasets as dts

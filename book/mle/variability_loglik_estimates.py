@@ -12,13 +12,12 @@ Warning: takes 2 days and a half to complete without multi-processing!
 """
 
 
-from matplotlib import pyplot as plt
 import numpy as np
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 import particles
-from particles import kalman
-from particles import state_space_models
+from particles import kalman, state_space_models
 
 # set up models, simulate data
 maxT = 10**4

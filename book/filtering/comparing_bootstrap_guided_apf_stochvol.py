@@ -14,10 +14,11 @@ See Section 10.4.2 and Figure 10.3 in the book for a discussion.
 
 
 from collections import OrderedDict
-from matplotlib import pyplot as plt
+
 import matplotlib.lines as mlines
 import numpy as np
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 import particles
 from particles import datasets as dts

@@ -135,11 +135,12 @@ as follows::
 """
 
 
+import time
 from collections import deque
+
 import numpy as np
 from numpy import random
 from scipy import stats  # worker
-import time
 
 import particles  # worker
 from particles import hilbert

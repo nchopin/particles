@@ -9,12 +9,12 @@ This script was used to generate the plot in the Python corner of Chapter 16
 """
 
 from collections import OrderedDict
-from matplotlib import pyplot as plt
+
 import numpy as np
+from matplotlib import pyplot as plt
 
 from particles import distributions as dists
-from particles import kalman
-from particles import mcmc
+from particles import kalman, mcmc
 
 # prior
 dict_prior = {'varX': dists.InvGamma(a=2., b=2.),

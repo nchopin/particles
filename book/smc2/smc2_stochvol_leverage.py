@@ -18,8 +18,10 @@ in parallel, the total CPU time depends on the number of cores.
 
 
 
-from matplotlib import pyplot as plt
+import warnings
+
 import numpy as np
+from matplotlib import pyplot as plt
 from numpy import random
 
 import particles
@@ -30,7 +32,6 @@ from particles import smc_samplers as ssp
 from particles import state_space_models
 from particles.collectors import Moments
 
-import warnings
 warnings.filterwarnings("ignore")  # disable silly matplotlib warnings
 
 # data

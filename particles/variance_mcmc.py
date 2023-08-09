@@ -15,9 +15,10 @@ by waste-free SMC.
 
 
 import gc
+
 import numpy as np
-from typing import List
-from scipy.signal import correlate, choose_conv_method
+from scipy.signal import choose_conv_method, correlate
+
 
 def MCMC_variance(X: np.ndarray, method: str):
     """
@@ -195,7 +196,7 @@ def MCMC_Tukey_Hanning(X, method=None, bias=True, adapt_constant=True):
             w_cov.append(0)
     return w[0] * covariances[0] + 2 * sum(w_cov)
 
-def default_collector(ls: List[np.ndarray]) -> np.ndarray:
+def default_collector(ls: list[np.ndarray]) -> np.ndarray:
     gc.collect()
     return np.r_[tuple(ls)]
 

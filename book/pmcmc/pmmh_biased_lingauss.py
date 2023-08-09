@@ -12,15 +12,14 @@ surrounding discussion).
 
 """
 from collections import OrderedDict
-from matplotlib import pyplot as plt
+
 import numpy as np
+from matplotlib import pyplot as plt
 from statsmodels.tsa.stattools import acf
 
 import particles
 from particles import distributions as dists
-from particles import kalman
-from particles import mcmc
-from particles import smc_samplers
+from particles import kalman, mcmc, smc_samplers
 
 # prior
 dict_prior = {'varX': dists.Gamma(a=.5, b=1.),

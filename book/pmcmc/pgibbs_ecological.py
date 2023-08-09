@@ -7,16 +7,17 @@ model (2nd numerical example in Chapter 16 on PMCMC, Figures 16.8 to 16.10).
 
 
 from collections import OrderedDict
-from matplotlib import pyplot as plt
+
 import numpy as np
-from scipy import linalg
-from scipy import stats
+from matplotlib import pyplot as plt
+from scipy import linalg, stats
 from statsmodels.tsa.stattools import acf
 
 from particles import datasets as dts
 from particles import distributions as dists
 from particles import mcmc
 from particles import state_space_models as ssms
+
 
 # state-space model
 class ThetaLogisticReparametrised(ssms.ThetaLogistic):

@@ -27,12 +27,13 @@ Note: MLE is (rho, sigma2) = (0.9981, 0.1089)
 
 
 import itertools
-import matplotlib
-from matplotlib import pyplot as plt
-import numpy as np
 import pickle
-from scipy.special import expit
+
+import matplotlib
+import numpy as np
+from matplotlib import pyplot as plt
 from scipy import optimize
+from scipy.special import expit
 
 import particles
 from particles import datasets as dts

@@ -16,14 +16,13 @@
 
 
 import numpy as np
-from numpy import random
+from malikpitt_interpolation import MalikPitt_SMC
 from matplotlib import pyplot as plt
+from numpy import random
 
 import particles
 from particles import datasets as dts
 from particles import state_space_models as ssms
-
-from malikpitt_interpolation import MalikPitt_SMC
 
 # data
 T = 200

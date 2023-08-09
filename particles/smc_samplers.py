@@ -198,14 +198,15 @@ J. R. Stat. Soc. Ser. B. Stat. Methodol. 84, 1 (2022), 114–148,
 
 import copy as cp
 import itertools
+
 import numpy as np
 from numpy import random
-from scipy import optimize, stats, linalg
+from scipy import linalg, optimize, stats
 
 import particles
 from particles import resampling as rs
-from particles.state_space_models import Bootstrap
 from particles.collectors import Collector
+from particles.state_space_models import Bootstrap
 from particles.variance_mcmc import MCMC_variance
 
 ###################################
@@ -1092,7 +1093,7 @@ class SMC2(FKSMCsampler):
         # exchange step (should occur only immediately after a move step)
         try:
             ar = np.mean(x.shared["acc_rates"][-1])
-        except:  # either list does not exist or is of length 0
+        except (KeyError, IndexError):
             ar = 1.0
         low_ar = ar < self.ar_to_increase_Nx
         we_increase_Nx = low_ar & x.shared.get("rs_flag", False)

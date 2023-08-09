@@ -202,12 +202,12 @@ omit ``ppf`` if you do not plan to use SQMC (Sequentialp quasi Monte Carlo).
 
 
 from collections import OrderedDict  # see prior
+
 import numpy as np
-import numpy.random as random
-from scipy import special
-from scipy import stats
-import scipy.linalg as sla
 import numpy.linalg as nla
+import scipy.linalg as sla
+from numpy import random
+from scipy import special, stats
 
 HALFLOG2PI = 0.5 * np.log(2.0 * np.pi)
 
@@ -824,10 +824,10 @@ class MixMissing(ProbDist):
         lp = self.base_dist.logpdf(x)
         ina = np.atleast_1d(np.isnan(x))
         if ina.shape[0] == 1:
-            ina = np.full_like(l, ina, dtype=bool)
-        l[ina] = np.log(self.pmiss)
-        l[np.logical_not(ina)] += np.log(1. - self.pmiss)
-        return l
+            ina = np.full_like(lp, ina, dtype=bool)
+        lp[ina] = np.log(self.pmiss)
+        lp[np.logical_not(ina)] += np.log(1. - self.pmiss)
+        return lp
 
     def rvs(self, size=None):
         x = self.base_dist.rvs(size=size)
@@ -892,7 +892,7 @@ class MvNormal(ProbDist):
         err_msg = "MvNormal: argument cov must be a (d, d) pos. definite matrix"
         try:
             self.L = nla.cholesky(self.cov)  # lower triangle
-        except:
+        except nla.LinAlgError:
             raise ValueError(err_msg)
         assert self.cov.shape == (self.dim, self.dim), err_msg
 
@@ -992,7 +992,7 @@ class VaryingCovNormal(MvNormal):
         try:
             self.N, d1, d2 = self.cov.shape  # must be 3D
             self.L = nla.cholesky(self.cov)  # lower triangle
-        except:
+        except nla.LinAlgError:
             raise ValueError(err_msg)
         assert d1 == d2, err_msg
 
@@ -1148,8 +1148,8 @@ class StructDist(ProbDist):
         elif isinstance(laws, dict):
             self.laws = OrderedDict([(key, laws[key]) for key in sorted(laws.keys())])
         else:
-            raise ValueError(
-                "recdist class requires a dict or" " an ordered dict to be instantiated"
+            raise TypeError(
+                "recdist class requires a dict or an ordered dict to be instantiated"
             )
         self.dtype = []
         for key, law in self.laws.items():

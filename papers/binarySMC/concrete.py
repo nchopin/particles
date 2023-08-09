@@ -2,11 +2,10 @@ import numpy as np
 import sklearn.linear_model as lin
 
 import particles
+from particles import binary_smc as bin
 from particles import datasets
 from particles import distributions as dists
 from particles import smc_samplers as ssps
-from particles import binary_smc as bin
-
 
 dataset = datasets.Concrete()
 names = dataset.predictor_names

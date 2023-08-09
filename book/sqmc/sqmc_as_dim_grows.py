@@ -23,10 +23,11 @@ or the numerical section of Chapter 13 (SQMC) of the book, especially Figure 13.
 
 
 from collections import OrderedDict
-from matplotlib import pyplot as plt
+
 import numpy as np
 import pandas as pd
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 import particles
 from particles import kalman

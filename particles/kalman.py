@@ -140,6 +140,7 @@ may be defined as follows::
 
 
 import collections
+
 import numpy as np
 from scipy.linalg import solve
 

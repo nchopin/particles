@@ -97,7 +97,7 @@ Nested Sampling via Sequential Monte Carlo, arxiv 1805.03924.
 
 import numpy as np
 from numpy import random
-from scipy import linalg, stats, special
+from scipy import linalg, special, stats
 
 from particles import resampling as rs
 from particles import smc_samplers as ssps
@@ -144,13 +144,12 @@ class MeanCovTracker:
         self.update_mean_cov()
 
 
-class NestedParticles(smc.ThetaParticles):
+class NestedParticles(ssps.ThetaParticles):
     containers = ['theta', 'lprior', 'llik']
     shared = []
 
     def __init__(self, theta=None, lprior=None, llik=None):
-        smc.ThetaParticles.__init__(self, theta=theta,
-                                    lprior=lprior, llik=llik)
+        ssps.ThetaParticles.__init__(self, theta=theta, lprior=lprior, llik=llik)
 
 
 class NestedSampling:
@@ -320,13 +319,13 @@ class NestedSamplingSMC(ssps.FKSMCsampler):
     def done(self, smc):
         try:
             lt = smc.X.shared["lts"][-1]
-        except:  # attribute does not exist yet, or list is empty
+        except (KeyError, IndexError):
             lt = 0.0
         return lt == np.inf
 
     def summary_format(self, smc):
         msg = super().summary_format(smc)
-        return "%s, loglik=%f" % (msg, smc.X.shared["lts"][-1])
+        return "{}, loglik={:f}".format(msg, smc.X.shared["lts"][-1])
 
     def logG(self, t, xp, x):
         curr_evid = x.shared["log_evid"][-1]

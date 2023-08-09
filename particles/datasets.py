@@ -44,12 +44,13 @@ adds an intercept) predictors/features for a regression or classification task.
 """
 
 
+from pathlib import Path
+
 import numpy as np
-import os.path
 
 
-def get_path(file_name):
-    return os.path.join(os.path.dirname(__file__), "datasets", file_name)
+def get_path(file_name: str) -> Path:
+    return Path(__file__).parent / "datasets" / file_name
 
 
 class Dataset:

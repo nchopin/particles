@@ -10,8 +10,8 @@ in particular Figure 13.4.
 """
 
 
-from matplotlib import pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 import particles
 from particles import state_space_models as ssms

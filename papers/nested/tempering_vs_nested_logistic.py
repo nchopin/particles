@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 Compare the performance of tempering SMC and nested sampling SMC (introduced by
@@ -11,10 +10,10 @@ Reference
 
 """
 
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 import particles
 from particles import datasets as dts
@@ -50,7 +49,7 @@ alphas = [.1, .3, .5, .7, .9]
 def out_func(pf):
     try:
         est = pf.X.shared['log_evid'][-1]
-    except: # not an NS SMC algorithm
+    except (KeyError, IndexError): # not an NS SMC algorithm
         est = pf.logLt
     return {'nevals': N * ((lc - 1) * pf.t + 1) , 'est': est}
 

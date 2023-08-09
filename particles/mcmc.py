@@ -94,11 +94,11 @@ algorithm, as follows:
 
 import numpy as np
 from scipy import stats
-from scipy.linalg import cholesky, LinAlgError
+from scipy.linalg import LinAlgError, cholesky
 
 import particles
-from particles import smc_samplers as ssp
 import particles.state_space_models as ssms
+from particles import smc_samplers as ssp
 from particles import utils
 
 
@@ -266,11 +266,10 @@ class GenericRWHM(MCMC):
             self.scale = scale * optim_scale
             self.cov_tracker = VanishCovTracker(dim=self.dim, Sigma0=rw_cov)
             self.L = self.scale * self.cov_tracker.L
+        elif rw_cov is None:
+            self.L = np.eye(self.dim)
         else:
-            if rw_cov is None:
-                self.L = np.eye(self.dim)
-            else:
-                self.L = cholesky(rw_cov, lower=True)
+            self.L = cholesky(rw_cov, lower=True)
 
     def step0(self):
         th0 = self.prior.rvs(size=1) if self.theta0 is None else self.theta0

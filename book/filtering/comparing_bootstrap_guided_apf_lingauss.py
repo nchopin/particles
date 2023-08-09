@@ -11,9 +11,10 @@ This generates three of the plots of Chapter 10 on particle filtering (Figure
 
 
 from collections import OrderedDict
-from matplotlib import pyplot as plt
+
 import numpy as np
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 import particles
 from particles import kalman

@@ -15,23 +15,20 @@ is a smoothing distribution, i.e. the distribution of X_{0:T} given Y_{0:T}).
 """
 
 
-from collections import OrderedDict
 import time
+from collections import OrderedDict
 
-from matplotlib import pyplot as plt
 import numpy as np
 import numpy.random as random
-from scipy import linalg
-from scipy import stats
-from statsmodels.tsa.stattools import acf
+from matplotlib import pyplot as plt
+from scipy import linalg, stats
 from statsmodels.graphics.gofplots import qqplot_2samples
+from statsmodels.tsa.stattools import acf
 
 import particles
 from particles import datasets as dts
 from particles import distributions as dists
-from particles import mcmc
-from particles import smc_samplers
-from particles import state_space_models
+from particles import mcmc, smc_samplers, state_space_models
 
 # data
 T = 200

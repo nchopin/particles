@@ -13,10 +13,12 @@ while we took rho=0.9)
 
 
 from matplotlib import pyplot as plt
-# import seaborn as sb
 
 import particles
 from particles import state_space_models
+
+# import seaborn as sb
+
 
 # set up models, simulate and save data
 T = 100

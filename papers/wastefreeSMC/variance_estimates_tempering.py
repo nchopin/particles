@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
 
@@ -29,9 +28,9 @@ Dau, H.D. and Chopin, N. (2022). Waste-free Sequential Monte Carlo,
 
 """
 
-from matplotlib import pyplot as plt
 import numpy as np
 import seaborn as sb
+from matplotlib import pyplot as plt
 
 import particles
 from particles import datasets as dts
