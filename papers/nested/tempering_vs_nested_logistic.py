@@ -61,7 +61,7 @@ for a in alphas:
            'tempering': ssps.AdaptiveTempering(model=model, len_chain=lc,
                                                ESSrmin=a)}
     res = particles.multiSMC(fk=fks, N=N, verbose=False, nruns=nruns,
-                             out_func=out_func)
+                             out_func=out_func, nprocs=0)
     for r in res:
         r['alpha'] = a
     results += res

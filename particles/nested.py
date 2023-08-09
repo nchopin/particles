@@ -319,7 +319,7 @@ class NestedSamplingSMC(ssps.FKSMCsampler):
     def done(self, smc):
         try:
             lt = smc.X.shared["lts"][-1]
-        except (KeyError, IndexError):
+        except (AttributeError, KeyError, IndexError):
             lt = 0.0
         return lt == np.inf
 

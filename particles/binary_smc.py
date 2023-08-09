@@ -135,7 +135,7 @@ class NestedLogistic(dists.DiscreteDist):
                     if np.abs(corr) > corr_thresh:
                         preds.append(j)
                 if preds: 
-                    reg = LogisticRegression(penalty='None')
+                    reg = LogisticRegression(penalty=None)
                     reg.fit(x[:, preds], x[:, i], sample_weight=W)
                     coeffs[i, i] = reg.intercept_
                     coeffs[i, preds] = reg.coef_
