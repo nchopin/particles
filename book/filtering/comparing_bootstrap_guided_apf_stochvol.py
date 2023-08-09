@@ -40,7 +40,7 @@ models['apf'] = ssms.AuxiliaryPF(ssm=my_ssm, data=data)
 results = particles.multiSMC(fk=models, N=10**3, nruns=250, collect=[Moments])
 
 # Golden standard
-bigN = 10**5
+bigN = 2**16  # power of 2 (requirement from scipy.stats.qmc.sobol)
 bigpf = particles.SMC(fk=models['bootstrap'], N=bigN, qmc=True,
                       collect=[Moments])
 print('One SQMC run with N=%i' % bigN)

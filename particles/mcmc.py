@@ -611,7 +611,7 @@ class ParticleGibbs(GenericGibbs):
             cpf = CSMC(fk=fk, N=self.Nx, xstar=x)
         cpf.run()
         if self.backward_step:
-            new_x = cpf.hist.backward_sampling(1)
+            new_x = cpf.hist.backward_sampling_ON2(1)
         else:
             new_x = cpf.hist.extract_one_trajectory()
         if self.regenerate_data:

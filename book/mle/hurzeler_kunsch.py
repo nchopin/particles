@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Plots Figure 13.5 which illustrates Hürzeler and Künsch's method for using CRN
+Plots Figure 14.5 which illustrates Hürzeler and Künsch's method for using CRN
 (common random numbers) when evaluating the log-likelihood function.  See
 Chapter 13 (MLE) for more details.
 
@@ -60,7 +60,7 @@ for T in Ts:
     print('FFBS for T=%i' % T)
     alg = particles.SMC(fk=fkmod(theta0, T), N=100, store_history=True)
     alg.run()
-    trajs = alg.hist.backward_sampling(M=100)
+    trajs = alg.hist.backward_sampling_ON2(M=100)
     ll0 = log_joint_density(theta0, trajs)
     ess_ls = []
     for theta in thetas:

@@ -52,7 +52,7 @@ ssm_cls = state_space_models.StochVol
 ssm = ssm_cls(mu=mu0, sigma=sigma0, rho=rho0)
 
 # (QMC-)FFBS as a reference
-N = 3000
+N = 2048  # was 3000, but now scipy.stats.qmc complains when N != 2^k
 tic = time.time()
 fk = state_space_models.Bootstrap(ssm=ssm, data=data)
 pf = particles.SMC(fk=fk, N=N, qmc=True, store_history=True)
