@@ -77,9 +77,9 @@ def smoothing_trajectories(rho, sig2, N=100):
     fk = ssms.Bootstrap(ssm=NeuroXp(rho=rho, sig2=sig2), data=data)
     pf = particles.SMC(fk=fk, N=N, qmc=False, store_history=True)
     pf.run()
-    (paths, ar) = pf.hist.backward_sampling(N, return_ar=True,
-                                            linear_cost=True)
-    print('Acceptance rate (FFBS-reject): %.3f' % ar)
+    paths = pf.hist.backward_sampling_reject(N, max_trials==N*10**6)
+    ar = np.mean(pf.hist.acc_rate)
+    print(f'Acceptance rate (FFBS-reject): {ar: .3f}')
     return (paths, pf.logLt)
 
 # saving intermediate results
@@ -103,7 +103,7 @@ fks = {ij: ssms.Bootstrap(ssm=NeuroXp(rho=rhos[ij[0]], sig2=sig2s[ij[1]]),
                           data=data)
        for ij in ijs}
 def outf(pf):
-    return pf.logLt
+   return pf.logLt
 nruns = 5
 print('computing log-likelihood on a grid')
 results = particles.multiSMC(fk=fks, N=100, qmc=True, nruns=nruns, nprocs=0,
