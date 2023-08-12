@@ -592,7 +592,7 @@ class NegativeBinomial(DiscreteDist):
 
 
 class Categorical(DiscreteDist):
-    """Categoricalp distribution.
+    """Categorical distribution.
 
     Parameter
     ---------
@@ -604,7 +604,10 @@ class Categorical(DiscreteDist):
         self.p = p
 
     def logpdf(self, x):
-        return np.log(self.p[x])
+        lp = np.log(self.p)
+        d = lp.shape[-1]
+        choices = [lp[..., k] for k in range(d)]
+        return np.choose(x, choices)
 
     def rvs(self, size=None):
         if self.p.ndim == 1:
