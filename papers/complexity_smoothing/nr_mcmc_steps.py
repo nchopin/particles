@@ -5,6 +5,11 @@ Same settings as ffbs_cox_model.py, extra experiment to evaluate the impact of t
 number of MCMC steps on the results. 
 
 Bottom line: nsteps=1 works already well for this example.
+Note that this time we are careful to set the resampling scheme to multinomial,
+and to resample at each iteration (``ESSrmin=1.``), because this approach has
+been shown to be valid only under these settings, but honestly it seems to work
+equally well with other resampling schemes, and with adaptive resampling (e.g.
+``ESSrmin=0.5``, i.e. resample when ESS is below N / 2).
 
 """
 
@@ -66,14 +71,15 @@ _, data = my_ssm.simulate(T)
 # FK models
 fkmod = ssms.Bootstrap(ssm=my_ssm, data=data)
 
-nruns = 1000 # number of times each algo is run
+nruns = 10_000
 N = 200
-nsteps = [1, 2, 3]  # number of MCMC steps
+nsteps = [1, 2, 10]  # number of MCMC steps
 add_func = partial(psit, mu=mu0, phi=phi0, sigma=sigma0)
 
 def mcmc_smoothing_worker(fk=None, N=10, add_func=None, nsteps=1):
     T = fk.T
-    pf = particles.SMC(fk=fk, N=N, store_history=True)
+    pf = particles.SMC(fk=fk, N=N, resampling='multinomial', ESSrmin=1.,
+                       store_history=True)
     tic = time.perf_counter()
     pf.run()
     z = pf.hist.backward_sampling_mcmc(N, nsteps=nsteps)

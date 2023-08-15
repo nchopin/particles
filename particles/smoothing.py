@@ -341,7 +341,8 @@ class ParticleHistory(RollingParticleHistory):
             xn = self.X[t + 1][idx[t + 1, :]]
             idx[t, :] = self.A[t + 1][idx[t + 1, :]]
             for i in range(nsteps):
-                prop = rs.multinomial(self.wgts[t].W, M=M)
+                # IID version, otherwise introduces a bias!
+                prop = rs.multinomial_iid(self.wgts[t].W, M=M)
                 lpr_acc = (self.fk.logpt(t + 1, self.X[t][prop], xn)
                            - self.fk.logpt(t + 1, self.X[t][idx[t, :]], xn))
                 lu = np.log(np.random.rand(M))

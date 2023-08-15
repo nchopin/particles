@@ -46,17 +46,20 @@ If you don't know much about resampling, it's best to use the default scheme
 Alternative ways to sample from a multinomial distribution
 ==========================================================
 
-Function `multinomial` effectively samples M times from the multinomial
+Function `multinomial` samples efficiently M times from the multinomial
 distribution that produces output n with probability ``W[n]``.  It does so
 using an algorithm with complexity O(M+N), as explained in Section 9.4 of the
 book. However, this function is not really suited:
+
+    1. if you don't want to get ordered samples, but truly IID ones; 
 
     1. if you want to draw only **once** from that distribution;
 
     2. If you do not know in advance how many draws you need.
 
-The two functions below cover these scenarios:
+The three functions below cover these scenarios:
 
+* `multinomial_iid`
 * `multinomial_once`
 * `MultinomialQueue`
 
@@ -137,12 +140,12 @@ def exp_and_normalise(lw):
 
     Arguments
     ---------
-    lw: ndarray
+    lw : ndarray
         log weights.
 
     Returns
     -------
-    W: ndarray of the same shape as lw
+    W : ndarray of the same shape as lw
         W = exp(lw) / sum(exp(lw))
 
     Note
@@ -165,7 +168,7 @@ def essl(lw):
 
     Parameters
     ----------
-    lw: (N,) ndarray
+    lw : (N,) ndarray
         log-weights
 
     Returns
@@ -191,16 +194,16 @@ class Weights:
 
     Parameters
     ----------
-    lw: (N,) array or None
+    lw : (N,) array or None
         log-weights (if None, object represents a set of equal weights)
 
     Attributes
     ----------
-    lw: (N), array
+    lw : (N), array
         log-weights (un-normalised)
-    W: (N,) array
+    W : (N,) array
         normalised weights
-    ESS: scalar
+    ESS : scalar
         the ESS (effective sample size) of the weights
 
     Warning
@@ -231,7 +234,7 @@ class Weights:
 
         Parameters
         ----------
-        delta: (N,) array
+        delta : (N,) array
             incremental log-weights
 
         """
@@ -246,11 +249,11 @@ def log_sum_exp(v):
 
     Parameters
     ----------
-    v: ndarray
+    v : ndarray
 
     Returns
     -------
-    l: float
+    l : float
         l = log(sum(exp(v)))
 
     Note
@@ -272,11 +275,11 @@ def log_sum_exp_ab(a, b):
 
     Parameters
     ----------
-    a, b: float
+    a, b : float
 
     Returns
     -------
-    c: float
+    c : float
         c = log(e^a + e^b)
     """
     if a > b:
@@ -290,11 +293,11 @@ def log_mean_exp(v, W=None):
 
     Parameters
     ----------
-    v: ndarray
+    v : ndarray
         data, should be such that v.shape[0] = N
 
-    W: (N,) ndarray, optional
-         normalised weights (>=0, sum to one)
+    W : (N,) ndarray, optional
+        normalised weights (>=0, sum to one)
 
     Returns
     -------
@@ -319,9 +322,9 @@ def wmean_and_var(W, x):
 
     Parameters
     ----------
-    W: (N,) ndarray
+    W : (N,) ndarray
         normalised weights (must be >=0 and sum to one).
-    x: ndarray (such that shape[0]==N)
+    x : ndarray (such that shape[0]==N)
         data
 
     Returns
@@ -340,9 +343,9 @@ def wmean_and_cov(W, x):
 
     Parameters
     ----------
-    W: (N,) ndarray
+    W : (N,) ndarray
         normalised weights (must be >=0 and sum to one).
-    x: ndarray (such that shape[0]==N)
+    x : ndarray (such that shape[0]==N)
         data
 
     Returns
@@ -360,9 +363,9 @@ def wmean_and_var_str_array(W, x):
 
     Parameters
     ----------
-    W: (N,) ndarray
+    W : (N,) ndarray
         normalised weights (must be >=0 and sum to one).
-    x: (N,) structured array
+    x : (N,) structured array
         data
 
     Returns
@@ -395,11 +398,11 @@ def wquantiles(W, x, alphas=(0.25, 0.50, 0.75)):
 
     Parameters
     ----------
-    W: (N,) ndarray
+    W : (N,) ndarray
         normalised weights (weights are >=0 and sum to one)
-    x: (N,) or (N,d) ndarray
+    x : (N,) or (N,d) ndarray
         data
-    alphas: list-like of size k (default: (0.25, 0.50, 0.75))
+    alphas : list-like of size k (default: (0.25, 0.50, 0.75))
         probabilities (between 0. and 1.)
 
     Returns
@@ -419,11 +422,11 @@ def wquantiles_str_array(W, x, alphas=(0.25, 0.50, 0, 75)):
 
     Parameters
     ----------
-    W: (N,) ndarray
+    W : (N,) ndarray
         normalised weights (weights are >=0 and sum to one)
-    x: (N,) structured array
+    x : (N,) structured array
         data
-    alphas: list-like of size k (default: (0.25, 0.50, 0.75))
+    alphas : list-like of size k (default: (0.25, 0.50, 0.75))
         probabilities (between 0. and 1.)
 
     Returns
@@ -446,10 +449,10 @@ rs_doc = """\
 
     Parameters
     ----------
-    W: (N,) ndarray
-     normalized weights (>=0, sum to one)
-    M: int, optional (set to N if missing)
-     number of resampled points.
+    W : (N,) ndarray
+        normalized weights (>=0, sum to one)
+    M : int, optional (set to N if missing)
+        number of resampled points.
 
     Returns
     -------
@@ -475,7 +478,7 @@ def resampling(scheme, W, M=None):
     try:
         return rs_funcs[scheme](W, M=M)
     except KeyError:
-        raise ValueError("%s: not a valid resampling scheme" % scheme)
+        raise ValueError(f"{scheme} is not a valid resampling scheme")
 
 
 @jit(nopython=True)
@@ -484,14 +487,14 @@ def inverse_cdf(su, W):
 
     Parameters
     ----------
-    su: (M,) ndarray
+    su  : (M,) ndarray
         M sorted uniform variates (i.e. M ordered points in [0,1]).
-    W: (N,) ndarray
+    W : (N,) ndarray
         a vector of N normalized weights (>=0 and sum to one)
 
     Returns
     -------
-    A: (M,) ndarray
+    A : (M,) ndarray
         a vector of M indices in range 0, ..., N-1
     """
     j = 0
@@ -511,7 +514,7 @@ def uniform_spacings(N):
 
     Parameters
     ----------
-    N: int (>0)
+    N : int (>0)
         the expected number of uniform variates
 
     Returns
@@ -534,12 +537,46 @@ def uniform_spacings(N):
     return z[:-1] / z[-1]
 
 
+@resampling_scheme
+def multinomial(W, M):
+    """Multinomial resampling.
+
+    Popular resampling scheme, which amounts to sample N independently from
+    the multinomial distribution that generates n with probability W^n.
+
+    This resampling scheme is *not* recommended for various reasons; basically
+    schemes like stratified / systematic / SSP tends to introduce less noise,
+    and may be faster too (in particular systematic).
+
+    Note
+    ----
+    As explained in the book, the output of this function is ordered. This is
+    fine in most practical cases, but, in case you need truly IID samples, use 
+    `multinomial_iid` instead (which calls `multinomial`, and randomly
+    permutate the result). 
+    """
+    return inverse_cdf(uniform_spacings(M), W)
+
+
+def multinomial_iid(W, M=None):
+    """Multinomial resampling (IID draws).
+
+    Same as multinomial resampling, except the output is randomly permuted, to
+    ensure that the resampled indices are IID (independent and identically
+    distributed).
+    
+    """
+    A = multinomial(W, M=M)
+    random.shuffle(A)
+    return A
+
+
 def multinomial_once(W):
     """Sample once from a Multinomial distribution.
 
     Parameters
     ----------
-    W: (N,) ndarray
+    W : (N,) ndarray
         normalized weights (>=0, sum to one)
 
     Returns
@@ -557,20 +594,6 @@ def multinomial_once(W):
     but it is faster.
     """
     return np.searchsorted(np.cumsum(W), random.rand())
-
-
-@resampling_scheme
-def multinomial(W, M):
-    """Multinomial resampling.
-
-    Popular resampling scheme, which amounts to sample N independently from
-    the multinomial distribution that generates n with probability W^n.
-
-    This resampling scheme is *not* recommended for various reasons; basically
-    schemes like stratified / systematic / SSP tends to introduce less noise,
-    and may be faster too (in particular systematic).
-    """
-    return inverse_cdf(uniform_spacings(M), W)
 
 
 @resampling_scheme
@@ -682,7 +705,6 @@ def idiotic(W, M):
     """
     a = multinomial_once(W)
     return np.full(M, a, dtype=np.int64)
-
 
 class MultinomialQueue:
     """On-the-fly generator for the multinomial distribution.
