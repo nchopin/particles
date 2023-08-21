@@ -17,8 +17,9 @@ Considered dataset: sonar (but see below for other options).
 Reference
 =========
 
-Dau, Hai-Dang, and Nicolas Chopin. "Waste-free Sequential Monte Carlo." arXiv
-preprint arXiv:2011.02328 (2020).  
+Dau, H.D. and Chopin, N. (2022). Waste-free sequential Monte Carlo,
+Journal of the Royal Statistical Society Series B: Statistical Methodology 84.1
+(2022): 114-148.
 
 """
 
@@ -58,6 +59,8 @@ elif dataset_name == 'eeg':
     N0 = 10 ** 4
     Ks = [1, 4, 16]
     Ms = [25, 100, 400]
+else:
+    raise ValueError('Wrong dataset')
 
 # prior & model
 scales = 5. * np.ones(p)
@@ -109,10 +112,11 @@ for M, K in zip(Ms, Ks):
 #######
 savefigs = True  # do you want to save figures as pdfs
 plt.style.use('ggplot')
-pal = sb.dark_palette('white', n_colors=2)
 
 
-titles = ['standard SMC', 'waste-free SMC']
+algs = ['std', 'wf']
+colors = {'std': 'black', 'wf': 'white'}
+titles = {'std': 'standard SMC', 'wf': 'waste-free SMC'}
 plots = {'log marginal likelihood': lambda rout: rout.logLts[-1],
          'post expectation average pred': 
          lambda rout: np.mean(rout.moments[-1]['mean']['beta'])
@@ -120,8 +124,8 @@ plots = {'log marginal likelihood': lambda rout: rout.logLts[-1],
 
 for plot, func in plots.items():
     fig, axs = plt.subplots(1, 2, sharey=True)
-    for title, ax in zip(titles, axs):
-        if title == 'waste-free SMC':
+    for alg, ax in zip(algs, axs):
+        if titles[alg] == 'waste-free SMC':
             rez = [r for r in results if r['waste']]
             xlab = 'M'
             ylab = ''
@@ -131,10 +135,8 @@ for plot, func in plots.items():
             ylab = plot
         sb.boxplot(x=[r[xlab] for r in rez],
                    y=[func(r['out']) for r in rez],
-                   hue=[r['waste'] for r in rez],
-                   palette=pal, ax=ax)
-        ax.set(xlabel=xlab, title=title, ylabel=ylab)
+                   color=colors[alg], ax=ax)
+        ax.set(xlabel=xlab, title=titles[alg], ylabel=ylab)
         fig.tight_layout()
     if savefigs:
         fig.savefig(f'{dataset_name}_boxplots_{plot}.pdf')
-

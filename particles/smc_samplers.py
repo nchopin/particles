@@ -716,8 +716,8 @@ class AdaptiveMCMCSequence(MCMCSequence):
 #############################
 # FK classes for SMC samplers
 class FKSMCsampler(particles.FeynmanKac):
-    """Base FeynmanKac class for SMC samplers.
 
+    """Base FeynmanKac class for SMC samplers.
     Parameters
     ----------
     model: `StaticModel` object
