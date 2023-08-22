@@ -2,6 +2,8 @@
 
 Sequential Monte Carlo in python. 
 
+![logo](logo.png)
+
 ## Motivation ##
 
 This package was developed to complement the following book:

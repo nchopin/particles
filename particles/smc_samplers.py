@@ -608,10 +608,6 @@ class ArrayMetropolis(ArrayMCMC):
         mean_acc = np.mean(pb_acc)
         accept = random.rand(x.N) < pb_acc
         x.copyto(xprop, where=accept)
-        if np.isnan(mean_acc):
-            import pdb
-
-            pdb.set_trace()
         return mean_acc
 
 
