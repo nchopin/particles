@@ -2,7 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 
-## [Unreleased]
+## [0.4] - 2023-09-01
+# Blog post: TBA
 ### Added
 - nested: NS-SMC sampler of Salomone et al (2018)
 - datasets: Liver

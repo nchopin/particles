@@ -1,8 +1,8 @@
+![logo](logo.png)
+
 # particles #
 
 Sequential Monte Carlo in python. 
-
-![logo](logo.png)
 
 ## Motivation ##
 
