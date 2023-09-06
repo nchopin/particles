@@ -581,6 +581,10 @@ class NegativeBinomial(DiscreteDist):
 
     """
 
+    def __init__(self, n=1, p=0.5):
+        self.n = n
+        self.p = p
+
     def rvs(self, size=None):
         return random.negative_binomial(self.n, self.p, size=size)
 
@@ -601,7 +605,10 @@ class Categorical(DiscreteDist):
     """
 
     def __init__(self, p=None):
-        self.p = p
+        if p is None:
+            raise ValueError('Categorical: missing argument p')
+        else:
+            self.p = p
 
     def logpdf(self, x):
         lp = np.log(self.p)
@@ -790,7 +797,7 @@ class Mixture(ProbDist):
 
     def __init__(self, pk, *components):
         self.pk = np.atleast_1d(pk)
-        self.k = self.p.shape[-1]
+        self.k = self.pk.shape[-1]
         if len(components) != self.k:
             raise ValueError("Size of pk and nr of components should match")
         self.components = components
