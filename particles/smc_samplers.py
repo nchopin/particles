@@ -783,7 +783,7 @@ class IBIS(FKSMCsampler):
 
     def _M0(self, N):
         x0 = ThetaParticles(theta=self.model.prior.rvs(size=N))
-        self.current_target(0)(x0)
+        self.current_target(-1)(x0)
         return x0
 
     def M(self, t, xp):
@@ -1121,8 +1121,8 @@ class SMC2(FKSMCsampler):
                 [self.alg_instance(rec_to_dict(theta), Nx) for theta in x.theta]
             )
             x.lpost = self.prior.logpdf(x.theta)
-            is_finite = np.isfinite(x.lpost)
             if t >= 0:
+                is_finite = np.isfinite(x.lpost)
                 for m, pf in enumerate(x.pfs):
                     if is_finite[m]:
                         for _ in range(t + 1):
@@ -1135,7 +1135,7 @@ class SMC2(FKSMCsampler):
         x0 = ThetaParticles(
             theta=self.prior.rvs(size=N), shared={"Nxs": [self.init_Nx]}
         )
-        self.current_target(0, self.init_Nx)(x0)
+        self.current_target(-1, self.init_Nx)(x0)
         return x0
 
     def M(self, t, xp):
