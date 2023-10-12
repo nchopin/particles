@@ -44,6 +44,7 @@ true_evid = stats.multivariate_normal.logpdf(response, cov=cov_margy)
 true_prec = ((1./sig**2) * preds.T @ preds 
              + (1. / scale_prior**2) * np.eye(d))
 true_covp = np.linalg.inv(true_prec)
+true_meanp = true_covp @ ((preds.T @ response) / sig**2)
 prior = dists.StructDist({'beta':dists.MvNormal(scale=scale_prior,
                                                 cov=np.eye(d))})
 
@@ -55,9 +56,9 @@ class LinearRegression(ssps.StaticModel):
 
 
 # algorithms
-N = 5_000
-lc = 100
-nruns = 100
+N = 10_000
+lc = 50
+nruns = 1000
 
 model = LinearRegression(data=data, prior=prior)
 fk = ssps.IBIS(model=model, len_chain=lc)
@@ -71,22 +72,23 @@ plt.hist([r['output'].logLt for r in results], 30, density=True)
 plt.axvline(x=true_evid, ymin=0., ymax=1., ls=':', c='black')
 plt.xlabel('log evidence')
 
-plt.figure()
-for i in range(d):
-    plt.subplot(1, d, i + 1)
-    plt.hist([np.average(r['output'].X.theta['beta'][:, i], 
-                         weights=r['output'].W, axis=0)
-            for r in results], 30)
-
-def only_var(W, x):
-    return rs.wmean_and_var(W, x)['var']
+for r in results:
+    alg = r['output']
+    dmv = rs.wmean_and_var(alg.W, alg.X.theta['beta'])
+    r.update({'mean_theta': dmv['mean'], 'cov_theta': dmv['var']})
 
 plt.figure()
 for i in range(d):
     plt.subplot(1, d, i + 1)
-    plt.hist([only_var(r['output'].W, r['output'].X.theta['beta'][:, i]) 
-        for r in results], 30)
+    plt.hist([r['mean_theta'][i] for r in results], 30)
+    plt.axvline(x=true_meanp[i], ls=':', c='black')                     
+plt.suptitle('posterior mean')
+
+plt.figure()
+for i in range(d):
+    plt.subplot(1, d, i + 1)
+    plt.hist([r['cov_theta'][i] for r in results], 30)
     plt.axvline(x=true_covp[i, i], ls=':', c='black')                     
-plt.title('posterior variance')
+plt.suptitle('posterior variance')
 
 
