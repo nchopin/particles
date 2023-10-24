@@ -25,7 +25,7 @@ To define a specific linear Gaussian model, we instantiate class
     import numpy as np
     from particles import kalman
 
-    ssm = kalman.MVLinearGauss(F=np.ones((1, 2)), G=np.eye(2), covX=np.eye(2),
+    ssm = kalman.MVLinearGauss(F=np.eye(2), G=np.ones((1, 2)), covX=np.eye(2),
                                covY=.3)
 
 where the parameters have the same meaning as above. It is also possible to
