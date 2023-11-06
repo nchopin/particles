@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "particles"
 description = "Sequential Monte Carlo in Python"
 readme = "README.md"
-version = "0.3"
+version = "0.4"
 requires-python = ">= 3.9"
 authors = [
     { name = "Nicolas Chopin", email = "nicolas.chopin@ensae.fr" },
