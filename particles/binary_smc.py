@@ -304,11 +304,11 @@ class BayesianVS_gprior(BayesianVS):
             data=data, prior=prior, nu=nu, lamb=lamb, iv2=0.0, jitted=jitted
         )
 
-        def set_constants(self):
-            self.coef_len = 0.5 * np.log(1 + self.g)
-            self.coef_log = 0.5 * (self.n + self.nu)
-            self.coef_in_log = nu * self.lamb + self.yty
-            self.gogp1 = self.g / (self.g + 1.0)
+    def set_constants(self):
+        self.coef_len = 0.5 * np.log(1 + self.g)
+        self.coef_log = 0.5 * (self.n + self.nu)
+        self.coef_in_log = self.nu * self.lamb + self.yty
+        self.gogp1 = self.g / (self.g + 1.0)
 
     def loglik(self, gamma, t=None):
         len_gam, _, wtw = self.chol_intermediate(gamma)
