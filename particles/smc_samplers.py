@@ -873,6 +873,26 @@ class Tempering(FKSMCsampler):
         msg = FKSMCsampler.summary_format(self, smc)
         return msg + ", tempering exponent=%.3g" % smc.X.shared["exponents"][-1]
 
+def next_annealing_epn(epn, alpha, lw):
+    """Find next annealing exponent by solving ESS(exp(lw)) = alpha * N.
+
+    Parameters
+    ----------
+    epn: float
+        current exponent
+    alpha: float in (0, 1)
+        defines the ESS target
+    lw:  numpy array of shape (N,)
+        log-weights
+    """
+    N = lw.shape[0]
+    def f(e):
+        ess = rs.essl(e * lw) if e > 0.0 else N  # avoid 0 x inf issue when e==0
+        return ess - alpha * N
+    if f(1. - epn) < 0.:
+        return epn + optimize.brentq(f, 0.0, 1.0 - epn)
+    else:
+        return 1.0
 
 class AdaptiveTempering(Tempering):
     """Feynman-Kac class for adaptive tempering SMC.
@@ -907,19 +927,10 @@ class AdaptiveTempering(Tempering):
             return smc.X.shared["exponents"][-1] >= 1.0
 
     def logG(self, t, xp, x):
-        ESSmin = self.ESSrmin * x.N
-        f = lambda e: rs.essl(e * x.llik) - ESSmin
-        epn = x.shared["exponents"][-1]
-        if f(1.0 - epn) > 0:  # we're done (last iteration)
-            delta = 1.0 - epn
-            new_epn = 1.0
-            # set 1. manually so that we can safely test == 1.
-        else:
-            delta = optimize.brentq(f, 1.0e-12, 1.0 - epn)  # secant search
-            # left endpoint is >0, since f(0.) = nan if any likelihood = -inf
-            new_epn = epn + delta
-        x.shared["exponents"].append(new_epn)
-        return self.logG_tempering(x, delta)
+        epn = x.shared['exponents'][-1]
+        new_epn = next_annealing_epn(epn, self.ESSrmin, x.llik)
+        x.shared['exponents'].append(new_epn)
+        return self.logG_tempering(x, new_epn - epn)
 
     def M(self, t, xp):
         return self._M(t, xp, xp.shared["exponents"][-1])
