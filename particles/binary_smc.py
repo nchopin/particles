@@ -299,12 +299,14 @@ class BayesianVS_gprior(BayesianVS):
     """
 
     def __init__(self, data=None, prior=None, nu=4.0, lamb=None, g=None, jitted=False):
-        self.g = self.n if g is None else g
+        self.g = g  # replaced by n in set_constants if not specified
         super().__init__(
             data=data, prior=prior, nu=nu, lamb=lamb, iv2=0.0, jitted=jitted
         )
 
     def set_constants(self):
+        if self.g is None:
+            self.g = self.n
         self.coef_len = 0.5 * np.log(1 + self.g)
         self.coef_log = 0.5 * (self.n + self.nu)
         self.coef_in_log = self.nu * self.lamb + self.yty
