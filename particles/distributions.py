@@ -439,15 +439,16 @@ class FlatNormal(ProbDist):
     Sampling from FlatNormal generates an array of NaNs.
     """
 
-    def __init__(self, dim=1):
-        self.dim = dim  # overrides class attribute
+    def __init__(self, loc=0.0):
+        self.loc = loc
 
     def logpdf(self, x):
-        return np.ones(x.shape[0])
+        shape = np.broadcast(x, self.loc).shape
+        return np.zeros(shape)
 
     def rvs(self, size=None):
-        shape = 1 if size is None else (size, self.dim)
-        return np.full(shape, np.nan)
+        sz = 1 if size is None else size
+        return self.loc + np.full(sz, np.nan)
 
 
 class Dirac(ProbDist):
