@@ -433,22 +433,21 @@ class Student(ProbDist):
 
 
 class FlatNormal(ProbDist):
-    """Normalp with infinite variance.
+    """Normal with infinite variance.
 
     May be used to specify the distribution of a missing value.
-    Sampling from FlatNormalp generate an array of NaNs.
+    Sampling from FlatNormal generates an array of NaNs.
     """
 
-    def __init__(self, loc=0.0):
-        self.loc = loc
+    def __init__(self, dim=1):
+        self.dim = dim  # overrides class attribute
 
     def logpdf(self, x):
-        # ensures proper shape/type
-        return 0.0 * (x + self.loc)
+        return np.ones(x.shape[0])
 
     def rvs(self, size=None):
-        sz = 1 if size is None else size
-        return self.loc + np.full(sz, np.nan)
+        shape = 1 if size is None else (size, self.dim)
+        return np.full(shape, np.nan)
 
 
 class Dirac(ProbDist):
