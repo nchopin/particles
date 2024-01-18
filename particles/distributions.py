@@ -22,7 +22,7 @@ The module defines the following classes of univariate continuous distributions:
 =======================================  =====================
 Beta(a=1., b=1.)
 Dirac(loc=0.)                            Dirac mass at point *loc*
-FlatNormal(loc=0.)                       Normalp with inf variance (missing data)
+FlatNormal(loc=0.)                       Normal with inf variance (missing data)
 Gamma(a=1., b=1.)                        scale = 1/b
 InvGamma(a=1., b=1.)                     Distribution of 1/X for X~Gamma(a,b)
 Laplace(loc=0., scale=1.)
@@ -178,7 +178,7 @@ Here is a list of distributions implementing posteriors:
 ============    =================== ==================
 Distribution    Corresponding model  comments
 ============    =================== ==================
-Normalp          N(theta, sigma^2),   sigma fixed (passed as extra argument)
+Normal          N(theta, sigma^2),   sigma fixed (passed as extra argument)
 TruncNormalp     same
 Gamma           N(0, 1/theta)
 InvGamma        N(0, theta)
@@ -851,9 +851,42 @@ class MixMissing(ProbDist):
 # Multivariate distributions
 ############################
 
+class Dirichlet(ProbDist):
+    """Dirichlet distribution.
+
+    Parameters
+    ----------
+    alphas:  ndarray (1D)
+        shape parameters
+
+    Note
+    ----
+    At the moment, Dirichlet does not accept a 2D ndarray; this could be used
+    for instance to specify a state-space model where X_t given X_{t-1} is Dirichlet 
+    with alpha parameters depending on X_{t-1}; i.e. alphas would be a (N, d)
+    array which represents the N particles X_{t-1}^{n}. 
+    I am not sure anyone needs such a model, but feel free to request this 
+    feature on github, if this may be useful to you.
+    """
+    def __init__(self, alphas=None):
+        if alphas is None:
+            raise ValueError('Dirichlet: missing parameter alphas')
+        self.alphas = alphas
+
+    @property
+    def dim(self):
+        return self.alphas.shape[0]
+
+    def logpdf(self, x):
+        # x.T because of the weird way stats.dirichlet is implemented
+        return stats.dirichlet.logpdf(x.T, self.alphas).T
+
+    def rvs(self, size=1):
+        return stats.dirichlet.rvs(self.alphas, size=size)
+
 
 class MvNormal(ProbDist):
-    """Multivariate Normalp distribution.
+    """Multivariate Normal distribution.
 
     Parameters
     ----------
@@ -891,7 +924,7 @@ class MvNormal(ProbDist):
     In addition, note that m and s may be (N, d) vectors;
     i.e for each n=1...N we have a different mean, and a different scale.
 
-    To specify a Multivariate Normalp distribution with a different covariance
+    To specify a Multivariate Normal distribution with a different covariance
     matrix for each particle, see `VaryingCovNormal`.
     """
 
@@ -977,7 +1010,7 @@ class MvNormal(ProbDist):
 
 
 class VaryingCovNormal(MvNormal):
-    """Multivariate Normalp (varying covariance matrix).
+    """Multivariate Normal (varying covariance matrix).
 
     Parameters
     ----------
@@ -1074,7 +1107,6 @@ class IndepProd(ProbDist):
 
     def ppf(self, u):
         return np.stack([d.ppf(u[..., i]) for i, d in enumerate(self.dists)], axis=1)
-
 
 def IID(law, k):
     """Joint distribution of k iid (independent and identically distributed) variables.
