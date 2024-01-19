@@ -878,8 +878,8 @@ class Dirichlet(ProbDist):
         return self.alphas.shape[0]
 
     def logpdf(self, x):
-        # x.T because of the weird way stats.dirichlet is implemented
-        return stats.dirichlet.logpdf(x.T, self.alphas).T
+        xarr = np.array(x).T  # .T because of weird implementation in scipy
+        return stats.dirichlet.logpdf(xarr, self.alphas).T
 
     def rvs(self, size=1):
         return stats.dirichlet.rvs(self.alphas, size=size)
