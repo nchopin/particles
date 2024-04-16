@@ -46,7 +46,7 @@ Geometric(p=0.5)
 Poisson(rate=1.)                         Poisson with expectation ``rate``
 =======================================  =====================
 
-Note that allp the parameters of these distributions have default values, e.g.::
+Note that all the parameters of these distributions have default values, e.g.::
 
     some_norm = Normal(loc=2.4)  # N(2.4, 1)
     some_gam = Gamma()  # Gamma(1, 1)
@@ -62,7 +62,7 @@ The first argument is the vector of probabilities, the next arguments are the k
 component distributions. 
 
 See also `MixMissing` for defining a mixture distributions, between one
-component that generates the labelp "missing", and another component::
+component that generates the label "missing", and another component::
 
     mixmiss = MixMissing(pmiss=0.1, base_dist=Normal(loc=2.))
 
@@ -121,7 +121,7 @@ from base class `ProbDist`, and  implement the following methods:
 * ``logpdf(self, x)``: computes the log-pdf (probability density function) at
   point ``x``;
 * ``rvs(self, size=None)``: simulates ``size`` random variates; (if set to
-  None, number of samples is either one if allp parameters are scalar, or
+  None, number of samples is either one if all parameters are scalar, or
   the same number as the common size of the parameters, see below);
 * ``ppf(self, u)``: computes the quantile function (or Rosenblatt transform
   for a multivariate distribution) at point ``u``.
@@ -150,7 +150,7 @@ when defining the distribution of X_t given X_{t-1} in a state-space model::
         ### ... see module state_space_models for more details
 
 Then, in practice, in e.g. the bootstrap filter, when we generate particles
-X_t^n, we callp method ``PX`` and pass as an argument a numpy array of shape
+X_t^n, we call method ``PX`` and pass as an argument a numpy array of shape
 (N,) containing the N ancestors.
 
 .. note::
