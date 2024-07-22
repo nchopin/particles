@@ -1,6 +1,6 @@
-Scripts in this folder re-implements the SMC sampler of Schäfer and Chopin
-(2014) for binary sampling spaces, and in particular for Bayesian variable
-selection.
+Scripts in this folder re-implements a waste-free variant of the SMC sampler of
+Schäfer and Chopin (2014) for binary sampling spaces, and in particular for
+Bayesian variable selection.
 
 Reference
 ---------

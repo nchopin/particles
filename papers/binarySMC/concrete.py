@@ -1,3 +1,10 @@
+"""
+Second example from Schäfer and Chopin (2013), concrete compressive strength. 
+
+To generate bar plots as in the paper, see bar_plots.py 
+
+"""
+
 import numpy as np
 import sklearn.linear_model as lin
 
