@@ -29,6 +29,7 @@ sub-class for more details on the preprocessing step.
 Dataset           parent class          typical use/model
 ================= ===================== =======================
 `Boston`          `RegressionDataset`   regression
+`Concrete`        `RegressionDataset`   regression
 `Eeg`             `BinaryRegDataset`    binary regression
 `GBP_vs_USD_9798` `LogReturnsDataset`   stochastic volatility
 `Liver`           `BinaryRegDataset`    binary regression
