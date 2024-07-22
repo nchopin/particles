@@ -68,10 +68,11 @@ model = bin.BayesianVS(data=data, prior=prior)
 # print(marg_probs)
 
 N = 10**5
-P = 1000
+P = 1_000
 M = N // P
+nruns = 3
 move = ssps.MCMCSequenceWF(mcmc=bin.BinaryMetropolis(), len_chain=P)
 fk = ssps.AdaptiveTempering(model, len_chain=P, move=move)
-results = particles.multiSMC(fk=fk, N=M, verbose=True, nruns=3, nprocs=0)
+results = particles.multiSMC(fk=fk, N=M, verbose=True, nruns=nruns, nprocs=0)
 # pf = particles.SMC(fk=fk, N=1000, verbose=True)
 # pf.run()
