@@ -141,9 +141,6 @@ class NestedLogistic(dists.DiscreteDist):
                     coeffs[i, preds] = reg.coef_
                 else:
                     coeffs[i, i] = logit(ph[i])
-        print(ph)
-        sparsity = (np.sum(coeffs!=0.) - dim) / (0.5 * dim * (dim - 1))
-        print(f'edgy: {np.average(edgy):f}, sparsity: {sparsity:f}')
         return cls(coeffs, edgy)
 
 

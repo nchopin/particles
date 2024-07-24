@@ -14,6 +14,7 @@ from particles import datasets
 from particles import distributions as dists
 from particles import smc_samplers as ssps
 
+data_name = 'boston'
 dataset = datasets.Boston()
 names = dataset.predictor_names
 raw = dataset.raw_data  # do NOT rescale predictors
@@ -51,7 +52,15 @@ model = bin.BayesianVS(data=data, prior=prior)
 N = 10**5
 P = 1_000
 M = N // P
-nruns = 50
+nruns = 3
 move = ssps.MCMCSequenceWF(mcmc=bin.BinaryMetropolis(), len_chain=P)
 fk = ssps.AdaptiveTempering(model, len_chain=P, move=move)
 results = particles.multiSMC(fk=fk, N=M, verbose=True, nruns=nruns, nprocs=0)
+
+# save results
+mp = [np.average(r['output'].X.theta, axis=0, weights=r['output'].W)
+      for r in results]
+to_save = {'marg_probs': np.array(mp),
+           'pred_names': list(cols.keys())}
+with open(f'{data_name}.pkl', 'wb') as f:
+    pickle.dump(to_save, f)

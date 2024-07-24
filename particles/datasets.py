@@ -35,6 +35,7 @@ Dataset           parent class          typical use/model
 `Liver`           `BinaryRegDataset`    binary regression
 `Nutria`          `Dataset`             population ecology
 `Pima`            `BinaryRegDataset`    binary regression
+`Protein`         `RegressionDataset`   regression
 `Sonar`           `BinaryRegDataset`    binary regression
 `Neuro`           `Dataset`             neuroscience ssm
 ================= ===================== =======================
@@ -255,6 +256,32 @@ class Concrete(RegressionDataset):
     response_name = ["strength"]
     file_name = "concrete.csv"
     load_opts = {"delimiter": ",", "skiprows": 1}
+
+
+class Protein(RegressionDataset):
+    """Protein activity data from Clyde and Parmigiani (1998).
+
+    A dataset with 96 observations and 8 predictors.
+
+    Reference
+    ---------
+    `BAS R package <https://merliseclyde.github.io/BAS/>`__
+
+    """
+
+    predictor_names = [
+        "buf",
+        "pH",
+        "NaCl",
+        "con",
+        "ra",
+        "det",
+        "MgCl2",
+        "temp",
+    ]
+    response_name = ["prot.act4"]
+    file_name = "protein.txt"
+    load_opts = {"delimiter": " ", "skiprows": 2}
 
 
 class BinaryRegDataset(Dataset):
