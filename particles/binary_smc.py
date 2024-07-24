@@ -41,7 +41,6 @@ References
 
 """
 
-import numba
 import numpy as np
 import scipy as sp
 from numpy import random
@@ -181,23 +180,6 @@ def chol_and_friends(gamma, xtx, xty, vm2):
     return len_gam, ldet, wtw
 
 
-@numba.njit(parallel=True)
-def jitted_chol_and_fr(gamma, xtx, xty, vm2):
-    N, d = gamma.shape
-    len_gam = np.sum(gamma, axis=1)
-    ldet = np.zeros(N)
-    wtw = np.zeros(N)
-    for n in range(N):
-        gam = gamma[n, :]
-        if len_gam[n] > 0:
-            xtxg = xtx[:, gam][gam, :] + vm2 * np.eye(len_gam[n])
-            C = np.linalg.cholesky(xtxg)
-            b = np.linalg.solve(C, xty[gam])  # not solve_triangular
-            ldet[n] = np.sum(np.log(np.diag(C)))
-            wtw[n] = b.T @ b
-    return len_gam, ldet, wtw
-
-
 class VariableSelection(ssps.StaticModel):
     """Meta-class for variable selection.
 
@@ -223,10 +205,7 @@ class VariableSelection(ssps.StaticModel):
         return gammas, lp
 
     def chol_intermediate(self, gamma):
-        if self.jitted:
-            return jitted_chol_and_fr(gamma, self.xtx, self.xty, self.iv2)
-        else:
-            return chol_and_friends(gamma, self.xtx, self.xty, self.iv2)
+        return chol_and_friends(gamma, self.xtx, self.xty, self.iv2)
 
     def sig2_full(self):
         gamma_full = np.ones((1, self.p), dtype=bool)
@@ -262,11 +241,9 @@ class BayesianVS(VariableSelection):
     """
 
     def __init__(
-        self, data=None, prior=None, nu=4.0, lamb=None, iv2=None, jitted=False
-    ):
+        self, data=None, prior=None, nu=4.0, lamb=None, iv2=None):
         super().__init__(data=data)
         self.prior = prior
-        self.jitted = jitted
         self.nu = nu
         self.lamb = self.sig2_full() if lamb is None else lamb
         self.iv2 = float(self.lamb / 10.0) if iv2 is None else iv2
@@ -295,11 +272,9 @@ class BayesianVS_gprior(BayesianVS):
 
     """
 
-    def __init__(self, data=None, prior=None, nu=4.0, lamb=None, g=None, jitted=False):
+    def __init__(self, data=None, prior=None, nu=4.0, lamb=None, g=None):
         self.g = g  # replaced by n in set_constants if not specified
-        super().__init__(
-            data=data, prior=prior, nu=nu, lamb=lamb, iv2=0.0, jitted=jitted
-        )
+        super().__init__(data=data, prior=prior, nu=nu, lamb=lamb, iv2=0.0)
 
     def set_constants(self):
         if self.g is None:
