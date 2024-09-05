@@ -49,7 +49,7 @@ class DiscreteCox_with_add_f(ssms.DiscreteCox):
     """
 
     def upper_bound_log_pt(self, t):
-        return -0.5 * np.log(2 * np.pi * self.sigma ** 2)
+        return -0.5 * np.log(2 * np.pi * self.sigmaX ** 2)
 
 
 # Aim is to compute the smoothing expectation of
