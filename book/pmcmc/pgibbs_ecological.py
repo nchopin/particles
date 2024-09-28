@@ -5,7 +5,6 @@ Particle Gibbs (with or without the backward step) for the Theta-logistic
 model (2nd numerical example in Chapter 16 on PMCMC, Figures 16.8 to 16.10).
 """
 
-
 from collections import OrderedDict
 
 import numpy as np
@@ -22,11 +21,16 @@ from particles import state_space_models as ssms
 # state-space model
 class ThetaLogisticReparametrised(ssms.ThetaLogistic):
     default_params = {'precX': 4., 'precY': 6.25, 'tau0': 0.15,
-                          'tau1': 0.12, 'tau2': 0.1}
+                      'tau1': 0.12, 'tau2': 0.1}
+
     def __init__(self, **kwargs):
         ssms.ThetaLogistic.__init__(self, **kwargs)
         self.sigmaX = 1. / np.sqrt(self.precX)
         self.sigmaY = 1. / np.sqrt(self.precY)
+
+    def upper_bound_log_pt(self, t):
+        return -0.5 * np.log(2 * np.pi * self.sigmaX ** 2)
+
 
 ssm_cls = ThetaLogisticReparametrised
 
@@ -45,6 +49,7 @@ prior = dists.StructDist(dict_prior)
 pretty_par_names = {'tau0': r'$\tau_0$', 'tau1': r'$\tau_1$', 'tau2': r'$\tau_2$',
                     'precX': r'$1/\sigma_X^2$', 'precY': r'$1/\sigma_Y^2$',
                     'x_0': r'$x_0$'}
+
 
 # Particle Gibbs
 class PGibbs(mcmc.ParticleGibbs):
@@ -70,8 +75,8 @@ class PGibbs(mcmc.ParticleGibbs):
             log_prob = -np.inf
         else:
             new_deltaX = dax - tau0 + tau1 * np.exp(tau2_prop * ax[:-1])
-            log_prob = 0.5 * new_theta['precX']* (np.sum(deltaX**2)
-                                                  -np.sum(new_deltaX**2))
+            log_prob = 0.5 * new_theta['precX'] * (np.sum(deltaX ** 2)
+                                                   - np.sum(new_deltaX ** 2))
             log_prob += (prior.laws['tau2'].logpdf(tau2_prop)
                          - prior.laws['tau2'].logpdf(theta['tau2']))
         if np.log(stats.uniform.rvs()) < log_prob:
@@ -95,12 +100,12 @@ class PGibbs(mcmc.ParticleGibbs):
         xtx = np.dot(features.T, features)
         beta_ols = linalg.solve(xtx, np.matmul(features.T, dax))
         muprior = np.array([prior.laws[p].mu for p in ['tau0', 'tau1']])
-        Qprior = np.diag([prior.laws[p].sigma**(-2) for p in ['tau0', 'tau1']])
+        Qprior = np.diag([prior.laws[p].sigma ** (-2) for p in ['tau0', 'tau1']])
         Qpost = Qprior + new_theta['precX'] * xtx
         Sigpost = linalg.inv(Qpost)
         mpost = (np.matmul(Qprior, muprior)
                  + np.matmul(Sigpost, new_theta['precX']
-                                 * np.matmul(xtx, beta_ols)))
+                             * np.matmul(xtx, beta_ols)))
         while True:
             # reject until tau0 and tau1 are > 0
             v = stats.multivariate_normal.rvs(mean=mpost, cov=Sigpost)
@@ -111,10 +116,13 @@ class PGibbs(mcmc.ParticleGibbs):
 
         return new_theta
 
+
 algos = OrderedDict()
 niter = 10 ** 5
 burnin = int(niter / 10)
-for name, opt in zip(['pg-back', 'pg'], [True, False]):
+for name, opt in zip(
+        ['pg-back', 'pg', 'pg-reject', 'pg-mcmc'],
+        [True, False, "reject", "mcmc"]):
     algos[name] = PGibbs(ssm_cls=ssm_cls, data=data, prior=prior, Nx=50,
                          niter=niter, backward_step=opt, store_x=True,
                          verbose=10)
@@ -123,6 +131,7 @@ for alg_name, alg in algos.items():
     print('\nRunning ' + alg_name)
     alg.run()
     print('CPU time: %.2f min' % (alg.cpu_time / 60))
+
 
 # Update rates
 def update_rate(x):
@@ -139,12 +148,13 @@ def update_rate(x):
     """
     return np.mean(x[1:] != x[:-1], axis=0)
 
+
 # PLOTS
 # =====
 savefigs = True  # False if you don't want to save plots as pdfs
 plt.style.use('ggplot')
-colors = {'pg-back': 'black', 'pg': 'gray'}
-linestyles = {'pg-back': '-', 'pg': '--'}
+colors = {'pg-back': 'black', 'pg': 'gray', 'pg-reject': 'blue', 'pg-mcmc': 'red'}
+linestyles = {'pg-back': '-', 'pg': '--', 'pg-reject': '-.', 'pg-mcmc': ':'}
 
 # Update rates of PG samplers
 plt.figure()
@@ -156,7 +166,7 @@ plt.xlabel('t')
 plt.ylabel('update rate')
 plt.legend(loc=6)  # center left
 if savefigs:
-    plt.savefig('ecological_update_rates.pdf')  # Figure 16.8
+    plt.savefig('ecological_update_rates.pdf')  #  Figure 16.8
 
 # pair plots from PG-back
 plt.figure()
@@ -173,7 +183,7 @@ for p1, p2 in [('tau1', 'tau0'), ('tau2', 'tau0')]:
         plt.ylabel(pretty_par_names[p2])
     i += 1
 if savefigs:
-    plt.savefig('ecological_pairplot_taus.pdf')  # Figure 16.10
+    plt.savefig('ecological_pairplot_taus.pdf')  #  Figure 16.10
 
 # MCMC traces
 plt.figure()
@@ -204,10 +214,10 @@ nlags = 100
 for i, p in enumerate(list(dict_prior.keys()) + ['x_0']):
     plt.subplot(2, 3, i + 1)
     for alg_name, alg in algos.items():
-        th = alg.chain.x[:, 0] if p=='x_0' else alg.chain.theta[p]
+        th = alg.chain.x[:, 0] if p == 'x_0' else alg.chain.theta[p]
         acf_th = acf(th[burnin:], nlags=nlags, fft=True)
         plt.plot(acf_th, label=alg_name, color=colors[alg_name],
-                linestyle=linestyles[alg_name])
+                 linestyle=linestyles[alg_name])
     plt.axis([0, nlags, -0.03, 1.])
     plt.xlabel('lag')
     plt.ylabel(pretty_par_names[p])
