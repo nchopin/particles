@@ -583,6 +583,7 @@ class ParticleGibbs(GenericGibbs):
         regenerate_data=False,
         backward_step=False,
         store_x=False,
+        backward_step_kwargs=None,
     ):
         GenericGibbs.__init__(
             self,
@@ -594,10 +595,13 @@ class ParticleGibbs(GenericGibbs):
             theta0=theta0,
             store_x=store_x,
         )
+        if backward_step_kwargs is None:
+            backward_step_kwargs = {}
         self.Nx = Nx
         self.fk_cls = ssms.Bootstrap if fk_cls is None else fk_cls
         self.regenerate_data = regenerate_data
         self.backward_step = backward_step
+        self._backward_step_kwargs = backward_step_kwargs if backward_step_kwargs is not None else {}
 
     def fk_mod(self, theta):
         ssm = self.ssm_cls(**ssp.rec_to_dict(theta))
@@ -610,10 +614,17 @@ class ParticleGibbs(GenericGibbs):
         else:
             cpf = CSMC(fk=fk, N=self.Nx, xstar=x)
         cpf.run()
-        if self.backward_step:
+        if isinstance(self.backward_step, str):
+            if hasattr(cpf.hist, self.backward_step):
+                method = getattr(cpf.hist, self.backward_step)
+            else:
+                method = getattr(cpf.hist, "backward_sampling_" + self.backward_step)
+            new_x = method(1, **self._backward_step_kwargs)
+        elif self.backward_step:  # need to check if it is exactly the True object
             new_x = cpf.hist.backward_sampling_ON2(1)
         else:
             new_x = cpf.hist.extract_one_trajectory()
+
         if self.regenerate_data:
             self.data = fk.ssm.simulate_given_x(new_x)
         return new_x
