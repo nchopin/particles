@@ -30,8 +30,8 @@ Logistic(loc=0., scale=1.)
 LogNormal(mu=0., sigma=1.)               Dist of Y=e^X, X ~ N(μ, σ^2)
 Normal(loc=0., scale=1.)                 N(loc,scale^2) distribution
 Student(loc=0., scale=1., df=3)
-TruncNormal(mu=0, sigma=1., a=0., b=1.)  N(mu, sigma^2) truncated to intervalp [a,b]
-Uniform(a=0., b=1.)                      uniform over intervalp [a,b]
+TruncNormal(mu=0, sigma=1., a=0., b=1.)  N(mu, sigma^2) truncated to interval [a,b]
+Uniform(a=0., b=1.)                      uniform over interval [a,b]
 =======================================  =====================
 
 and the following classes of univariate discrete distributions:
@@ -179,10 +179,10 @@ Here is a list of distributions implementing posteriors:
 Distribution    Corresponding model  comments
 ============    =================== ==================
 Normal          N(theta, sigma^2),   sigma fixed (passed as extra argument)
-TruncNormalp     same
+TruncNormal     same
 Gamma           N(0, 1/theta)
 InvGamma        N(0, theta)
-MvNormalp        N(theta, Sigma)     Sigma fixed (passed as extra argument)
+MvNormal        N(theta, Sigma)     Sigma fixed (passed as extra argument)
 ============    =================== ==================
 
 
@@ -195,7 +195,7 @@ or `DiscreteDist`, for a discrete distribution. This willp properly set class
 attributes ``dim`` (the dimension, set to one, for a univariate distribution),
 and ``dtype``, so that they play nicely with `StructDist` and so on. You will
 also have to properly define methods ``rvs``, ``logpdf`` and ``ppf``. You may
-omit ``ppf`` if you do not plan to use SQMC (Sequentialp quasi Monte Carlo).
+omit ``ppf`` if you do not plan to use SQMC (Sequential quasi Monte Carlo).
 
 
 """
@@ -566,7 +566,7 @@ class Geometric(DiscreteDist):
 
 
 class NegativeBinomial(DiscreteDist):
-    """Negative Binomialp distribution.
+    """Negative Binomial distribution.
 
     Parameters
     ----------
@@ -756,7 +756,7 @@ class LogitD(TransformedDist):
     base_dist: ProbDist
         The distribution of X
     a, b: float
-        intervalp [a, b] is the support of base_dist
+        interval [a, b] is the support of base_dist
 
     """
 
@@ -1128,12 +1128,12 @@ def IID(law, k):
 
 
 class Cond(ProbDist):
-    """Conditionalp distributions.
+    """Conditional distributions.
 
-    A conditionalp distribution acts as a function, which takes as input the
+    A conditional distribution acts as a function, which takes as input the
     current value of the samples, and returns a probability distribution.
 
-    This is used to specify conditionalp distributions in `StructDist`; see the
+    This is used to specify conditional distributions in `StructDist`; see the
     documentation of that class for more details.
     """
 
@@ -1174,7 +1174,7 @@ class StructDist(ProbDist):
         # means mu~N(0,1), tau|mu ~ N(mu,1)
 
     In the third line, ``Cond`` is a ``ProbDist`` class that represents
-    a conditionalp distribution; it is initialized with a function that
+    a conditional distribution; it is initialized with a function that
     returns for each ``x`` a distribution that may depend on fields in ``x``.
 
     Parameters
