@@ -1208,9 +1208,16 @@ class StructDist(ProbDist):
             lp += cond_law.logpdf(theta[par])
         return lp
 
-    def rvs(self, size=1):  # Default for size is 1, not None
+    def rvs(self, size=1, force_sequentially=False):  # Default for size is 1, not None
+        # set force_sequentially = True if you suspect that the conditional distribution cannot be sampled in a vectorised form all at once. This is often the case for multivariate distributions
         out = np.empty(size, dtype=self.dtype)
-        for par, law in self.laws.items():
-            cond_law = law(out) if callable(law) else law
-            out[par] = cond_law.rvs(size=size)
+        if force_sequentially:
+            for i_sample in range(size):
+                for par, law in self.laws.items():
+                    cond_law = law(out[i_sample]) if callable(law) else law
+                    out[i_sample][par] = cond_law.rvs(size=1)
+        else:
+            for par, law in self.laws.items():
+                cond_law = law(out) if callable(law) else law
+                out[par] = cond_law.rvs(size=size)
         return out
