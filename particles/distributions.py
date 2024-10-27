@@ -1128,12 +1128,12 @@ def IID(law, k):
 
 
 class Cond(ProbDist):
-    """Conditionalp distributions.
+    """conditional distributions.
 
-    A conditionalp distribution acts as a function, which takes as input the
+    A conditional distribution acts as a function, which takes as input the
     current value of the samples, and returns a probability distribution.
 
-    This is used to specify conditionalp distributions in `StructDist`; see the
+    This is used to specify conditional distributions in `StructDist`; see the
     documentation of that class for more details.
     """
 
@@ -1174,7 +1174,7 @@ class StructDist(ProbDist):
         # means mu~N(0,1), tau|mu ~ N(mu,1)
 
     In the third line, ``Cond`` is a ``ProbDist`` class that represents
-    a conditionalp distribution; it is initialized with a function that
+    a conditional distribution; it is initialized with a function that
     returns for each ``x`` a distribution that may depend on fields in ``x``.
 
     Parameters
