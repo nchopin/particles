@@ -840,7 +840,7 @@ class MixMissing(ProbDist):
         return lp
 
     def rvs(self, size=None):
-        x = self.base_dist.rvs(size=size).astype(float)
+        x = self.base_dist.rvs(size=size)
         N = x.shape[0]
         is_missing = random.rand(N) < self.pmiss
         x[is_missing, ...] = np.nan
