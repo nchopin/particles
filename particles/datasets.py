@@ -44,7 +44,6 @@ adds an intercept) predictors/features for a regression or classification task.
 
 """
 
-
 from pathlib import Path
 
 import numpy as np
@@ -295,7 +294,7 @@ class BinaryRegDataset(Dataset):
 class Pima(BinaryRegDataset):
     r"""Pima Indians Diabetes.
 
-    A dataset with 768 observations and 9 predictors.
+    A dataset with 768 observations and 8 predictors.
 
     Response: diabetes test.
 
