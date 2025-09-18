@@ -46,18 +46,21 @@ class EnsembleKalman(particles.FeynmanKac):
   
   def M(self, t, xp):
       x_prop = self.ssm.PX(t, xp).rvs(size=xp.shape[0])
-      mapped_X_prop = self.ssm.PY(t, xp, x_prop).rvs(size=xp.shape[0])
-      if x_prop.ndim == 1:
-        ndX = 1
-        Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:].squeeze()
+      if np.isnan(self.data[t]):
+        new_filt = x_prop
       else:
-        ndX = x_prop.shape[1]
-        Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:]
-      CppGamma = np.cov(mapped_X_prop, rowvar=False)
-      if mapped_X_prop.ndim == 1:
-        new_filt = x_prop - (((mapped_X_prop - self.data[t])/CppGamma)*Cup).T
-      else:
-        new_filt = x_prop - (Cup@(np.linalg.solve(CppGamma, mapped_X_prop.T - self.data[t].T))).T
+        mapped_X_prop = self.ssm.PY(t, xp, x_prop).rvs(size=xp.shape[0])
+        if x_prop.ndim == 1:
+          ndX = 1
+          Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:].squeeze()
+        else:
+          ndX = x_prop.shape[1]
+          Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:]
+        CppGamma = np.cov(mapped_X_prop, rowvar=False)
+        if mapped_X_prop.ndim == 1:
+          new_filt = x_prop - (((mapped_X_prop - self.data[t])/CppGamma)*Cup).T
+        else:
+          new_filt = x_prop - (Cup@(np.linalg.solve(CppGamma, mapped_X_prop.T - self.data[t].T))).T
       return new_filt
     
   def logG(self, t, xp, x):
