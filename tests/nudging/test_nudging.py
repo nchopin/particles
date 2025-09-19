@@ -18,7 +18,9 @@ from particles.collectors import Moments
 # setup of filtering problem
 def get_obs(t):
     """ Returns true if an observation is aquired at this time. """
+
     return t % 20 == 0 and t > 20
+
   
 class Lorenz_63(ssm.StateSpaceModel):
     def PX0(self):  # Distribution of X_0
@@ -35,10 +37,12 @@ class Lorenz_63(ssm.StateSpaceModel):
         else:
             return dists.FlatNormal(loc=x[:,0])
 
+
 dt = 0.01
-ts = range(0,1500)
+ts = range(0,100)
 t_obs = [t for t in ts if get_obs(t)]
-my_model = Lorenz_63(mu=np.zeros(3), sigma0=10., rho=28., sigma=10., beta=8./3, noise = 0*0.1, obsnoise=10.0, dt=dt)  # actual model
+my_model = Lorenz_63(mu=np.zeros(3), sigma0=1., rho=28., sigma=10., beta=8./3, noise = 0*0.1, obsnoise=10.0, dt=dt)  # actual model
+
 true_states, data = my_model.simulate(len(ts))  # we simulate from the model 100 data points
 data_clean = [val for val in data if not np.isnan(val)] # For plotting
 J = 500 # size of ensembles
