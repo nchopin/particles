@@ -17,6 +17,7 @@ from particles.collectors import Moments
 
 # setup of filtering problem
 
+colors = ["tab:blue", "tab:green", "tab:orange"]
 class Lorenz_63(ssm.StateSpaceModel):
     def PX0(self):  # Distribution of X_0
         return dists.MvNormal(loc=self.mu, scale=self.sigma0)
@@ -33,7 +34,7 @@ class Lorenz_63(ssm.StateSpaceModel):
 
 
 
-my_model = Lorenz_63(mu=np.zeros(3), sigma0=1., rho=28., sigma=10., beta=8./3, noise = 0*0.1, obsnoise=10.0, dt=0.01)  # actual model
+my_model = Lorenz_63(mu=np.zeros(3), sigma0=1., rho=28., sigma=10., beta=8./3, noise = 0.1, obsnoise=10.0, dt=0.01)  # actual model
 true_states, data = my_model.simulate(200)  # we simulate from the model 100 data points
 
 J = 500 # size of ensembles
@@ -44,6 +45,28 @@ plt.plot(np.vstack(true_states))
 plt.subplot(212)
 plt.plot(np.vstack(data))
 
+
+#%% test nudged PF
+fk_nudged = enk.NudgedPF(my_model, data)
+npf = particles.SMC(fk=fk_nudged, N=J, collect=[Moments()], store_history=True) 
+npf.run()
+
+npf_path = np.stack(npf.hist.X)
+
+colors = ["tab:blue", "tab:green", "tab:orange"]
+
+
+means_npf = np.stack([m['mean'] for m in npf.summaries.moments])
+var_npf = np.stack([m['var'] for m in npf.summaries.moments])
+
+plt.figure()
+plt.subplot(211)
+for m in range(3):
+  plt.plot(means_npf[:,m], color=colors[m])
+  plt.fill_between(range(len(data)), y1=means_npf[:,m]-2*np.sqrt(var_npf[:,m]), y2=means_npf[:,m]+2*np.sqrt(var_npf[:,m]), color=colors[m], alpha=0.3)
+plt.plot(np.vstack(true_states), "k--")
+plt.title("Ensemble Kalman filter")
+
 #%% ensemble Kalman
 
 fk_EK = enk.EnsembleKalman(my_model, data)
@@ -52,7 +75,6 @@ ek.run()
 
 ek_path = np.stack(ek.hist.X)
 
-colors = ["tab:blue", "tab:green", "tab:orange"]
 
 
 means = np.stack([m['mean'] for m in ek.summaries.moments])
@@ -84,3 +106,4 @@ for m in range(3):
 plt.plot(np.vstack(true_states), "k--")
 plt.title("Bootstrap Particle filter (for comparison)")
 plt.tight_layout()
+

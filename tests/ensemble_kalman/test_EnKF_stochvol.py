@@ -30,6 +30,30 @@ plt.plot(np.vstack(true_states))
 plt.subplot(212)
 plt.plot(np.vstack(data))
 
+
+
+
+#%% test nudged PF
+fk_nudged = enk.NudgedPF(my_model, data)
+npf = particles.SMC(fk=fk_nudged, N=J, collect=[Moments()], store_history=True) 
+npf.run()
+
+npf_path = np.stack(npf.hist.X)
+
+colors = ["tab:blue", "tab:green", "tab:orange"]
+
+
+means_npf = np.stack([m['mean'] for m in npf.summaries.moments])
+var_npf = np.stack([m['var'] for m in npf.summaries.moments])
+
+
+plt.figure()
+plt.subplot(211)
+plt.plot(means_npf, color=colors[0])
+plt.fill_between(range(len(data)), y1=means_npf-2*np.sqrt(var_npf), y2=means_npf+2*np.sqrt(var_npf), color=colors[0], alpha=0.3)
+plt.plot(np.vstack(true_states), "k--")
+plt.title("nudged particle filter")
+
 #%% ensemble Kalman
 
 fk_EK = enk.EnsembleKalman(my_model, data)
@@ -63,7 +87,7 @@ means_BP = np.stack([m['mean'] for m in pf.summaries.moments])
 var_BP = np.stack([m['var'] for m in pf.summaries.moments])
 
 plt.subplot(212)
-plt.plot(means, color=colors[0])
+plt.plot(means_BP, color=colors[0])
 plt.fill_between(range(len(data)), y1=means_BP-2*np.sqrt(var_BP), y2=means_BP+2*np.sqrt(var_BP), color=colors[0], alpha=0.3)
 plt.plot(np.vstack(true_states), "k--")
 plt.title("Bootstrap Particle filter (for comparison)")
