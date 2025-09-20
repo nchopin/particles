@@ -45,23 +45,26 @@ means = np.stack([m['mean'] for m in ek.summaries.moments])
 var = np.stack([m['var'] for m in ek.summaries.moments])
 
 plt.figure()
-plt.plot(means, color=colors[m])
-plt.fill_between(range(len(data)), y1=means-2*np.sqrt(var), y2=means+2*np.sqrt(var), alpha=0.3)
+plt.subplot(211)
+plt.plot(means, color=colors[0])
+plt.fill_between(range(len(data)), y1=means-2*np.sqrt(var), y2=means+2*np.sqrt(var), color=colors[0], alpha=0.3)
 plt.plot(np.vstack(true_states), "k--")
+plt.title("Ensemble Kalman filter (this does not work, as is expected!)")
 
 
-
-#%% Bootstrap particle filter
+# Bootstrap particle filter
 fk_model = ssm.Bootstrap(ssm=my_model, data=data)
 pf = particles.SMC(fk=fk_model, N=J, collect=[Moments()], resampling='stratified', store_history=True) 
 pf.run()
 particle_path = np.stack(pf.hist.X)
 
 
-means = np.stack([m['mean'] for m in pf.summaries.moments])
-var = np.stack([m['var'] for m in pf.summaries.moments])
+means_BP = np.stack([m['mean'] for m in pf.summaries.moments])
+var_BP = np.stack([m['var'] for m in pf.summaries.moments])
 
-plt.figure()
-plt.plot(means, color=colors[m])
-plt.fill_between(range(len(data)), y1=means-2*np.sqrt(var), y2=means+2*np.sqrt(var), alpha=0.3)
+plt.subplot(212)
+plt.plot(means, color=colors[0])
+plt.fill_between(range(len(data)), y1=means_BP-2*np.sqrt(var_BP), y2=means_BP+2*np.sqrt(var_BP), color=colors[0], alpha=0.3)
 plt.plot(np.vstack(true_states), "k--")
+plt.title("Bootstrap Particle filter (for comparison)")
+plt.tight_layout()
