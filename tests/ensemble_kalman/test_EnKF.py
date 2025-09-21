@@ -34,10 +34,10 @@ class Lorenz_63(ssm.StateSpaceModel):
 
 
 
-my_model = Lorenz_63(mu=np.zeros(3), sigma0=1., rho=28., sigma=10., beta=8./3, noise = 0.1, obsnoise=10.0, dt=0.01)  # actual model
+my_model = Lorenz_63(mu=np.zeros(3), sigma0=1., rho=28., sigma=10., beta=8./3, noise = 1.0, obsnoise=2.0, dt=0.01)  # actual model
 true_states, data = my_model.simulate(200)  # we simulate from the model 100 data points
 
-J = 500 # size of ensembles
+J = 50 # size of ensembles
 
 plt.figure()
 plt.subplot(211)
@@ -59,15 +59,15 @@ colors = ["tab:blue", "tab:green", "tab:orange"]
 means_npf = np.stack([m['mean'] for m in npf.summaries.moments])
 var_npf = np.stack([m['var'] for m in npf.summaries.moments])
 
-plt.figure()
-plt.subplot(211)
+plt.figure(figsize=(6,6))
+plt.subplot(311)
 for m in range(3):
   plt.plot(means_npf[:,m], color=colors[m])
   plt.fill_between(range(len(data)), y1=means_npf[:,m]-2*np.sqrt(var_npf[:,m]), y2=means_npf[:,m]+2*np.sqrt(var_npf[:,m]), color=colors[m], alpha=0.3)
 plt.plot(np.vstack(true_states), "k--")
-plt.title("Ensemble Kalman filter")
+plt.title("nudged particle filter")
 
-#%% ensemble Kalman
+# ensemble Kalman
 
 fk_EK = enk.EnsembleKalman(my_model, data)
 ek = particles.SMC(fk=fk_EK, N=J, collect=[Moments()], store_history=True) 
@@ -80,8 +80,7 @@ ek_path = np.stack(ek.hist.X)
 means = np.stack([m['mean'] for m in ek.summaries.moments])
 var = np.stack([m['var'] for m in ek.summaries.moments])
 
-plt.figure()
-plt.subplot(211)
+plt.subplot(312)
 for m in range(3):
   plt.plot(means[:,m], color=colors[m])
   plt.fill_between(range(len(data)), y1=means[:,m]-2*np.sqrt(var[:,m]), y2=means[:,m]+2*np.sqrt(var[:,m]), color=colors[m], alpha=0.3)
@@ -99,9 +98,9 @@ particle_path = np.stack(pf.hist.X)
 means_BP = np.stack([m['mean'] for m in pf.summaries.moments])
 var_BP = np.stack([m['var'] for m in pf.summaries.moments])
 
-plt.subplot(212)
+plt.subplot(313)
 for m in range(3):
-  plt.plot(means[:,m], color=colors[m])
+  plt.plot(means_BP[:,m], color=colors[m])
   plt.fill_between(range(len(data)), y1=means_BP[:,m]-2*np.sqrt(var_BP[:,m]), y2=means_BP[:,m]+2*np.sqrt(var_BP[:,m]), color=colors[m], alpha=0.3)
 plt.plot(np.vstack(true_states), "k--")
 plt.title("Bootstrap Particle filter (for comparison)")
