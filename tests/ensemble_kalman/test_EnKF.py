@@ -67,10 +67,12 @@ for m in range(3):
 plt.plot(np.vstack(true_states), "k--")
 plt.title("nudged particle filter")
 
-# ensemble Kalman
-
+#%% ensemble Kalman
+# import cProfile
+# import re
 fk_EK = enk.EnsembleKalman(my_model, data)
 ek = particles.SMC(fk=fk_EK, N=J, collect=[Moments()], store_history=True) 
+# cProfile.run('ek.run()')
 ek.run()
 
 ek_path = np.stack(ek.hist.X)
