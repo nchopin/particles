@@ -100,7 +100,6 @@ for m in range(3):
 plt.plot(np.vstack(true_states), "k--")
 plt.title("nudged particle filter")
 
-
 fk_EK = enk.EnsembleKalman(my_model, data)
 ek = particles.SMC(fk=fk_EK, N=J, collect=[Moments()], store_history=True) 
 # cProfile.run('ek.run()')

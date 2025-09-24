@@ -269,6 +269,7 @@ class WEnKF(ssms.Bootstrap):
           self.K = 0
         else:
 
+
           new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, 0, None, x_prop, self.data[0], return_weights=True)
           self.correction_logweights = correction_logweights
  
@@ -281,6 +282,21 @@ class WEnKF(ssms.Bootstrap):
           self.K = 0
           self.correction_logweights = 0
         else:
+
+          # mapped_X_prop = self.ssm.PY(t, xp, x_prop).rvs(size=xp.shape[0])
+          # if x_prop.ndim == 1:
+          #   ndX = 1
+          #   Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:].squeeze()
+          # else:
+          #   ndX = x_prop.shape[1]
+          #   Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:]
+          # CppGamma = np.cov(mapped_X_prop, rowvar=False)
+          # if mapped_X_prop.ndim == 1:
+          #   new_filt = x_prop - (((mapped_X_prop - self.data[t])/CppGamma)*Cup).T
+          # else:
+          #   new_filt = x_prop - (Cup@(np.linalg.solve(CppGamma, mapped_X_prop.T - self.data[t].T))).T
+
+
           new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, t, xp, x_prop, self.data[t], return_weights=True)
           
           self.correction_logweights = correction_logweights
@@ -295,6 +311,7 @@ class WEnKF(ssms.Bootstrap):
           return (
               self.ssm.PY(0, xp, x).logpdf(self.data[t])
               + self.correction_logweights
+
 
           )
     def Gamma0(self, u): 
