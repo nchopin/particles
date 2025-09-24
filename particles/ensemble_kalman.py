@@ -305,6 +305,7 @@ class EnsembleKalman(particles.FeynmanKac):
     
   def logG(self, t, xp, x):
       return np.zeros(x.shape[0])
+
     
 class WEnKF(ssms.Bootstrap):
     # NOT YET FUNCTIONAL!
@@ -336,6 +337,7 @@ class WEnKF(ssms.Bootstrap):
           new_filt = x_prop
           self.K = 0
         else:
+
           new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, 0, None, x_prop, self.data[0], return_weights=True)
           # self.K = K
           # self.Gamma = Gamma
@@ -343,10 +345,7 @@ class WEnKF(ssms.Bootstrap):
           # new_filt
           # corrterm1 = np.dot()
           self.correction_logweights = correction_logweights
-        
-        # self.nudged_particles = new_filt 
-        # self.nudging = new_filt - x_prop # need for computation of logG! make sure order is always M, then logG
-        # self.K = K
+ 
         return new_filt
     # def M(self, t, xp):
     #     return self.ssm.proposal(t, xp, self.data).rvs(size=xp.shape[0]) # change this so we don't need the proposal0 to be a method of ssm
@@ -370,6 +369,7 @@ class WEnKF(ssms.Bootstrap):
           #   new_filt = x_prop - (((mapped_X_prop - self.data[t])/CppGamma)*Cup).T
           # else:
           #   new_filt = x_prop - (Cup@(np.linalg.solve(CppGamma, mapped_X_prop.T - self.data[t].T))).T
+
           new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, t, xp, x_prop, self.data[t], return_weights=True)
           
           # self.K = K
@@ -399,6 +399,7 @@ class WEnKF(ssms.Bootstrap):
               # self.ssm.PX(t, xp).logpdf(x)
               # + self.ssm.PY(t, xp, x).logpdf(self.data[t])              
               # + 0.5*np.dot(x-self.nudging, mat@( x-self.nudging))#- self.ssm.PX(t, xp).logpdf(x-self.nudging)
+
           )
     # def logG(self, t, xp, x):
     #     if t == 0:
