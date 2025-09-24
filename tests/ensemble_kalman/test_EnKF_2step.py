@@ -14,7 +14,7 @@ from particles import state_space_models as ssm
 from particles import distributions as dists
 from particles import ensemble_kalman as enk
 from particles.collectors import Moments
-np.random.seed(6)
+np.random.seed(2)
 # setup of filtering problem
 
 colors = ["tab:blue", "tab:green", "tab:orange"]
@@ -49,23 +49,22 @@ colors = ["tab:blue", "tab:green", "tab:orange"]
 # dens /= np.trapz(dens, x=xplot)
 
 
-#%%
 
-toymodel = enk.MVNonlinearGauss(F=lambda x: x, G=lambda x: np.exp(x), covX=1., covY=1., mu0=None, cov0=None)
+toymodel = enk.MVNonlinearGauss(F=lambda x: x, G=lambda x: np.exp(x), covX=1., covY=.1, mu0=None, cov0=None)
   
 # my_model = toymodel(obsnoise=1.0)  # actual model
 true_states, data = toymodel.simulate(1)  # we simulate from the model 100 data points
 
 J = 100000 # size of ensembles
 
-plt.figure()
-plt.subplot(211)
-plt.plot(0, np.vstack(true_states), 'x')
+# plt.figure()
+# plt.subplot(211)
+# plt.plot(0, np.vstack(true_states), 'x')
 
-plt.subplot(212)
-plt.plot(0, np.vstack(data), 'x')
+# plt.subplot(212)
+# plt.plot(0, np.vstack(data), 'x')
 
-xplot = np.linspace(-2,2,200).reshape((-1,1))
+xplot = np.linspace(-3,3,200).reshape((-1,1))
 true_post_dens = lambda x: np.exp(toymodel.PX0().logpdf(x) + toymodel.PY(0, None, x).logpdf(data[0]))
 prior_grid = toymodel.PX0().logpdf(xplot)
 dens = true_post_dens(xplot)
@@ -90,7 +89,7 @@ means_npf = np.stack([m['mean'] for m in npf.summaries.moments])
 var_npf = np.stack([m['var'] for m in npf.summaries.moments])
 
 plt.figure()
-plt.subplot(321)
+plt.subplot(331)
 # for m in range(1):
 #   plt.plot(means_npf, color=colors[m])
 #   plt.fill_between(range(len(data)), y1=means_npf-2*np.sqrt(var_npf), y2=means_npf+2*np.sqrt(var_npf), color=colors[m], alpha=0.3)
@@ -99,15 +98,19 @@ plt.subplot(321)
 
 plt.hist(npf_path.squeeze(), 100, density=True)
 plt.plot(xplot, dens, '--')
-plt.xlim(-2,2)
-plt.ylim([0,2])
-plt.subplot(322)
+# plt.xlim(-3,3)
+# plt.ylim([0,2])
+plt.subplot(332)
 plt.hist(npf_path.squeeze(), 100, weights=npf.wgts.W, density=True)
 plt.plot(xplot, dens, '--')
-plt.xlim(-2,2)
-plt.ylim([0,2])
+# plt.xlim(-3,3)
+# plt.ylim([0,2])
 # ensemble Kalman
 
+plt.subplot(333)
+plt.semilogy(np.sort(npf.wgts.W))
+
+print(f"ESS Weighted Ensemble Kalman filter = {1/np.sum(npf.wgts.W**2)}")
 fk_EK = enk.EnsembleKalman(toymodel, data)
 ek = particles.SMC(fk=fk_EK, N=J, collect=[Moments()], store_history=True) 
 ek.run()
@@ -119,7 +122,7 @@ ek_path = np.stack(ek.hist.X)
 means = np.stack([m['mean'] for m in ek.summaries.moments])
 var = np.stack([m['var'] for m in ek.summaries.moments])
 
-plt.subplot(323)
+plt.subplot(334)
 # for m in range(1):
 #   plt.plot(means, color=colors[m])
 #   plt.fill_between(range(len(data)), y1=means-2*np.sqrt(var), y2=means+2*np.sqrt(var), color=colors[m], alpha=0.3)
@@ -128,8 +131,8 @@ plt.subplot(323)
 
 plt.hist(ek_path.squeeze(), 100, density=True)
 plt.plot(xplot, dens, '--')
-plt.xlim(-2,2)
-plt.ylim([0,2])
+# plt.xlim(-3,3)
+# plt.ylim([0,2])
 
 # Bootstrap particle filter
 fk_model = ssm.Bootstrap(ssm=toymodel, data=data)
@@ -141,7 +144,7 @@ particle_path = np.stack(pf.hist.X)
 means_BP = np.stack([m['mean'] for m in pf.summaries.moments])
 var_BP = np.stack([m['var'] for m in pf.summaries.moments])
 
-plt.subplot(325)
+plt.subplot(337)
 # for m in range(1):
 #   plt.plot(means_BP, color=colors[m])
 #   plt.fill_between(range(len(data)), y1=means_BP-2*np.sqrt(var_BP), y2=means_BP+2*np.sqrt(var_BP), color=colors[m], alpha=0.3)
@@ -150,12 +153,19 @@ plt.subplot(325)
 # plt.tight_layout()
 plt.hist(particle_path.squeeze(), 100, density=True)
 plt.plot(xplot, dens, '--')
-plt.xlim(-2,2)
-plt.ylim([0,2])
-plt.subplot(326)
+# plt.xlim(-3,3)
+# plt.ylim([0,2])
+plt.subplot(338)
 plt.hist(particle_path.squeeze(), 100, weights=pf.wgts.W, density=True)
 plt.plot(xplot, dens, '--')
 
-plt.xlim(-2,2)
-plt.ylim([0,2])
+# plt.xlim(-3,3)
+# plt.ylim([0,2])
+
+
+
+plt.subplot(339)
+plt.semilogy(np.sort(pf.wgts.W))
 plt.tight_layout()
+
+print(f"ESS particle filter = {1/np.sum(pf.wgts.W**2)}")
