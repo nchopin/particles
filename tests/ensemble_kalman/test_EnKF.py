@@ -138,3 +138,65 @@ plt.plot(np.vstack(true_states), "k--")
 plt.title("Bootstrap Particle filter (for comparison)")
 plt.tight_layout()
 
+
+#%% more systematically
+algorithms = [enk.WEnKF, enk.NudgedPF, enk.EnsembleKalman, ssm.Bootstrap]
+alg_titles = ["WEnKF", "NudgedPF", "EnKF", "Bootstrap"]
+plt.figure(figsize=(6,6))
+N_MC = 25
+MSEs_mean = [[None  for m in range(N_MC)] for n in range(len(algorithms))]
+coverage = [[None  for m in range(N_MC)] for n in range(len(algorithms))]
+for n_alg, alg in enumerate(algorithms):
+  for nMC in range(N_MC):
+    fk = alg(my_model, data)
+    filt = particles.SMC(fk=fk, N=J, collect=[Moments()], store_history=True) 
+    filt.run()
+  
+    filt_path = np.stack(filt.hist.X)
+  
+    colors = ["tab:blue", "tab:green", "tab:orange"]
+  
+  
+    means = np.stack([m['mean'] for m in filt.summaries.moments])
+    var = np.stack([m['var'] for m in filt.summaries.moments])
+    if nMC == 0:
+      plt.subplot(len(algorithms),1,n_alg+1)
+      for m in range(3):
+        plt.plot(means[:,m], color=colors[m])
+        plt.fill_between(range(len(data)), y1=means[:,m]-2*np.sqrt(var[:,m]), y2=means[:,m]+2*np.sqrt(var[:,m]), color=colors[m], alpha=0.3)
+      plt.plot(np.vstack(true_states), "k--")
+      plt.title(alg_titles[n_alg])
+    
+    MSEs_mean[n_alg][nMC] = np.sqrt(np.sum((np.vstack(true_states) - means)**2))
+    
+    
+    coverage[n_alg][nMC] = [np.mean((np.vstack(true_states) >= means-nn*np.sqrt(var)) & (np.vstack(true_states) <= means+nn*np.sqrt(var))) for nn in [1,2,3]]
+  
+MSEs_mean = np.array(MSEs_mean)
+coverage = np.array(coverage)
+plt.tight_layout()
+#%%
+plt.figure()
+color_quantile = ["tab:green", "tab:orange", "tab:red"]
+
+for n_quantile in range(3):
+  parts = plt.violinplot(coverage[:,:,n_quantile].T, positions=range(len(algorithms)))
+  for pc in parts['bodies']:
+    pc.set_facecolor(color_quantile[n_quantile])
+    pc.set_edgecolor(color_quantile[n_quantile])
+    
+  parts['cmaxes'].set_colors("black")
+  parts['cmaxes'].set_alpha(0.2)
+  parts['cmins'].set_colors("black")
+  parts['cmins'].set_alpha(0.2)
+  parts['cbars'].set_colors("black")
+  parts['cbars'].set_alpha(0.2)
+  plt.plot(coverage[:,:,n_quantile], '.k')
+plt.axhline(y = 0.68, label="$\\pm 1 \\sigma$", color = "tab:green")
+plt.axhline(y = 0.95, label="$\\pm 2 \\sigma$", color = "tab:orange")
+plt.axhline(y = 0.997, label="$\\pm 3 \\sigma$", color = "tab:red")
+plt.xticks(range(len(algorithms)), alg_titles)
+plt.legend()
+
+
+plt.figure()

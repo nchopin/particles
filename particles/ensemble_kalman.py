@@ -13,14 +13,17 @@ import particles
 
 
 def EnK_step(ssm, t, xp, x_prop, y, return_weights = False):
+  
+  flag_reshape = False
   if x_prop.ndim == 1:
+    flag_reshape = True
     dx = 1
     J = len(x_prop)
-    mapped_X_prop = ssm.PY(t, xp, x_prop).rvs(size=x_prop.shape[0])
+    mapped_X_prop = ssm.PY(t, xp, x_prop).rvs()
     x_prop = np.reshape(x_prop, (J,1))
   else:
     J, dx = x_prop.shape    
-    mapped_X_prop = ssm.PY(t, xp, x_prop).rvs(size=x_prop.shape[0])
+    mapped_X_prop = ssm.PY(t, xp, x_prop).rvs()
   # weights = ssm.PY(t, xp, x_prop).logpdf(mapped_X_prop)
   mapped_X_prop = np.reshape(mapped_X_prop, (J,1))
   full_cov = np.cov(x_prop,mapped_X_prop, rowvar=False)
@@ -31,6 +34,10 @@ def EnK_step(ssm, t, xp, x_prop, y, return_weights = False):
   cov_shrinkage = (np.eye(dx) - K@Cup.T)
   Qhat = cov_shrinkage@Cuu@cov_shrinkage.T
   new_filt = x_prop - (K@(mapped_X_prop.T - y.T)).T
+  
+  if flag_reshape: # cast back to original form
+    new_filt = np.reshape(new_filt, (J,))
+  
   if return_weights: # possibly remove all this
     if t == 0:        
       Pxweights = ssm.PX0().logpdf(x_prop)
@@ -229,7 +236,7 @@ class EnsembleKalman(particles.FeynmanKac):
     
   
   def M(self, t, xp):
-      x_prop = self.ssm.PX(t, xp).rvs(size=xp.shape[0])
+      x_prop = self.ssm.PX(t, xp).rvs()
       if np.isnan(self.data[t]):
         new_filt = x_prop
       else:
@@ -306,14 +313,14 @@ class WEnKF(ssms.Bootstrap):
         if t == 0:
           return (
               self.ssm.PY(0, xp, x).logpdf(self.data[0])
-              + self.correction_logweights 
+              + self.correction_logweights )
         else:
           return (
               self.ssm.PY(0, xp, x).logpdf(self.data[t])
-              + self.correction_logweights
+              + self.correction_logweights)
 
 
-          )
+          
     def Gamma0(self, u): 
         return self.ssm.proposal0(self.data).ppf(u)
 
