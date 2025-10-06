@@ -306,14 +306,14 @@ class WEnKF(ssms.Bootstrap):
         if t == 0:
           return (
               self.ssm.PY(0, xp, x).logpdf(self.data[0])
-              + self.correction_logweights 
+              + self.correction_logweights )
         else:
           return (
               self.ssm.PY(0, xp, x).logpdf(self.data[t])
-              + self.correction_logweights
+              + self.correction_logweights)
 
 
-          )
+          
     def Gamma0(self, u): 
         return self.ssm.proposal0(self.data).ppf(u)
 
