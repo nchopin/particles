@@ -16,7 +16,12 @@ from particles import ensemble_kalman as enk
 from particles.collectors import Moments
 
 # setup of filtering problem
-
+def atleast_2d_last(x):
+    """Ensure x has at least 2 dims, adding a new axis at the end if needed."""
+    x = np.array(x, copy=False)
+    if x.ndim < 2:
+        return x[..., np.newaxis]
+    return x
 colors = ["tab:blue", "tab:green", "tab:orange"]
 # class Lorenz_63_old(ssm.StateSpaceModel):
 #     def PX0(self):  # Distribution of X_0
@@ -46,7 +51,8 @@ class Lorenz_63(enk.MVNonlinearGauss):
   
   
 
-my_model = Lorenz_63(rho=28., sigma=10., beta=8./3, dt=0.01, covX = 1.0*np.eye(3), covY = 1.0*np.eye(1))  # actual model
+# my_model = Lorenz_63(rho=28., sigma=10., beta=8./3, dt=0.01, covX = 1.0*np.eye(3), covY = 1.0*np.eye(1))  # actual model
+my_model = ssm.StochVol()
 # toymodel = enk.MVNonlinearGauss(F=lambda x: x, G=lambda x: np.exp(x), covX=1., covY=.1, mu0=None, cov0=None)
 true_states, data = my_model.simulate(200)  # we simulate from the model 100 data points
 
@@ -59,89 +65,91 @@ plt.subplot(212)
 plt.plot(np.vstack(data))
 
 
-#%% test nudged PF
-fk_WEK = enk.WEnKF(my_model, data)
-wek = particles.SMC(fk=fk_WEK, N=J, collect=[Moments()], store_history=True) 
-wek.run()
+# #%% test nudged PF
+# fk_WEK = enk.WEnKF(my_model, data)
+# wek = particles.SMC(fk=fk_WEK, N=J, collect=[Moments()], store_history=True) 
+# wek.run()
 
-wek_path = np.stack(wek.hist.X)
+# wek_path = np.stack(wek.hist.X)
 
-colors = ["tab:blue", "tab:green", "tab:orange"]
-
-
-means_wek = np.stack([m['mean'] for m in wek.summaries.moments])
-var_wek = np.stack([m['var'] for m in wek.summaries.moments])
-
-plt.figure(figsize=(6,6))
-plt.subplot(411)
-for m in range(3):
-  plt.plot(means_wek[:,m], color=colors[m])
-  plt.fill_between(range(len(data)), y1=means_wek[:,m]-2*np.sqrt(var_wek[:,m]), y2=means_wek[:,m]+2*np.sqrt(var_wek[:,m]), color=colors[m], alpha=0.3)
-plt.plot(np.vstack(true_states), "k--")
-plt.title("WEnKF")
-
-fk_nudged = enk.NudgedPF(my_model, data)
-npf = particles.SMC(fk=fk_nudged, N=J, collect=[Moments()], store_history=True) 
-npf.run()
-
-npf_path = np.stack(npf.hist.X)
-
-colors = ["tab:blue", "tab:green", "tab:orange"]
+# colors = ["tab:blue", "tab:green", "tab:orange"]
 
 
-means_npf = np.stack([m['mean'] for m in npf.summaries.moments])
-var_npf = np.stack([m['var'] for m in npf.summaries.moments])
+# means_wek = np.stack([m['mean'] for m in wek.summaries.moments])
+# var_wek = np.stack([m['var'] for m in wek.summaries.moments])
 
 # plt.figure(figsize=(6,6))
-plt.subplot(412)
-for m in range(3):
-  plt.plot(means_npf[:,m], color=colors[m])
-  plt.fill_between(range(len(data)), y1=means_npf[:,m]-2*np.sqrt(var_npf[:,m]), y2=means_npf[:,m]+2*np.sqrt(var_npf[:,m]), color=colors[m], alpha=0.3)
-plt.plot(np.vstack(true_states), "k--")
-plt.title("nudged particle filter")
+# plt.subplot(411)
+# for m in range(3):
+#   plt.plot(means_wek[:,m], color=colors[m])
+#   plt.fill_between(range(len(data)), y1=means_wek[:,m]-2*np.sqrt(var_wek[:,m]), y2=means_wek[:,m]+2*np.sqrt(var_wek[:,m]), color=colors[m], alpha=0.3)
+# plt.plot(np.vstack(true_states), "k--")
+# plt.title("WEnKF")
 
-fk_EK = enk.EnsembleKalman(my_model, data)
-ek = particles.SMC(fk=fk_EK, N=J, collect=[Moments()], store_history=True) 
-# cProfile.run('ek.run()')
-ek.run()
+# fk_nudged = enk.NudgedPF(my_model, data)
+# npf = particles.SMC(fk=fk_nudged, N=J, collect=[Moments()], store_history=True) 
+# npf.run()
 
-ek_path = np.stack(ek.hist.X)
+# npf_path = np.stack(npf.hist.X)
 
-
-
-means = np.stack([m['mean'] for m in ek.summaries.moments])
-var = np.stack([m['var'] for m in ek.summaries.moments])
-
-plt.subplot(413)
-for m in range(3):
-  plt.plot(means[:,m], color=colors[m])
-  plt.fill_between(range(len(data)), y1=means[:,m]-2*np.sqrt(var[:,m]), y2=means[:,m]+2*np.sqrt(var[:,m]), color=colors[m], alpha=0.3)
-plt.plot(np.vstack(true_states), "k--")
-plt.title("Ensemble Kalman filter")
+# colors = ["tab:blue", "tab:green", "tab:orange"]
 
 
-# Bootstrap particle filter
-fk_model = ssm.Bootstrap(ssm=my_model, data=data)
-pf = particles.SMC(fk=fk_model, N=J, collect=[Moments()], resampling='stratified', store_history=True) 
-pf.run()
-particle_path = np.stack(pf.hist.X)
+# means_npf = np.stack([m['mean'] for m in npf.summaries.moments])
+# var_npf = np.stack([m['var'] for m in npf.summaries.moments])
+
+# # plt.figure(figsize=(6,6))
+# plt.subplot(412)
+# for m in range(3):
+#   plt.plot(means_npf[:,m], color=colors[m])
+#   plt.fill_between(range(len(data)), y1=means_npf[:,m]-2*np.sqrt(var_npf[:,m]), y2=means_npf[:,m]+2*np.sqrt(var_npf[:,m]), color=colors[m], alpha=0.3)
+# plt.plot(np.vstack(true_states), "k--")
+# plt.title("nudged particle filter")
+
+# fk_EK = enk.EnsembleKalman(my_model, data)
+# ek = particles.SMC(fk=fk_EK, N=J, collect=[Moments()], store_history=True) 
+# # cProfile.run('ek.run()')
+# ek.run()
+
+# ek_path = np.stack(ek.hist.X)
 
 
-means_BP = np.stack([m['mean'] for m in pf.summaries.moments])
-var_BP = np.stack([m['var'] for m in pf.summaries.moments])
 
-plt.subplot(414)
-for m in range(3):
-  plt.plot(means_BP[:,m], color=colors[m])
-  plt.fill_between(range(len(data)), y1=means_BP[:,m]-2*np.sqrt(var_BP[:,m]), y2=means_BP[:,m]+2*np.sqrt(var_BP[:,m]), color=colors[m], alpha=0.3)
-plt.plot(np.vstack(true_states), "k--")
-plt.title("Bootstrap Particle filter (for comparison)")
-plt.tight_layout()
+# means = np.stack([m['mean'] for m in ek.summaries.moments])
+# var = np.stack([m['var'] for m in ek.summaries.moments])
+
+# plt.subplot(413)
+# for m in range(3):
+#   plt.plot(means[:,m], color=colors[m])
+#   plt.fill_between(range(len(data)), y1=means[:,m]-2*np.sqrt(var[:,m]), y2=means[:,m]+2*np.sqrt(var[:,m]), color=colors[m], alpha=0.3)
+# plt.plot(np.vstack(true_states), "k--")
+# plt.title("Ensemble Kalman filter")
+
+
+# # Bootstrap particle filter
+# fk_model = ssm.Bootstrap(ssm=my_model, data=data)
+# pf = particles.SMC(fk=fk_model, N=J, collect=[Moments()], resampling='stratified', store_history=True) 
+# pf.run()
+# particle_path = np.stack(pf.hist.X)
+
+
+# means_BP = np.stack([m['mean'] for m in pf.summaries.moments])
+# var_BP = np.stack([m['var'] for m in pf.summaries.moments])
+
+# plt.subplot(414)
+# for m in range(3):
+#   plt.plot(means_BP[:,m], color=colors[m])
+#   plt.fill_between(range(len(data)), y1=means_BP[:,m]-2*np.sqrt(var_BP[:,m]), y2=means_BP[:,m]+2*np.sqrt(var_BP[:,m]), color=colors[m], alpha=0.3)
+# plt.plot(np.vstack(true_states), "k--")
+# plt.title("Bootstrap Particle filter (for comparison)")
+# plt.tight_layout()
 
 
 #%% more systematically
-algorithms = [enk.WEnKF, enk.NudgedPF, enk.EnsembleKalman, ssm.Bootstrap]
-alg_titles = ["WEnKF", "NudgedPF", "EnKF", "Bootstrap"]
+# algorithms = [enk.WEnKF, enk.NudgedPF, enk.EnsembleKalman, ssm.Bootstrap]
+# alg_titles = ["WEnKF", "NudgedPF", "EnKF", "Bootstrap"]
+algorithms = [enk.EnsembleKalman, ssm.Bootstrap]
+alg_titles = ["EnKF", "Bootstrap"]
 plt.figure(figsize=(6,6))
 N_MC = 25
 MSEs_mean = [[None  for m in range(N_MC)] for n in range(len(algorithms))]
@@ -157,11 +165,11 @@ for n_alg, alg in enumerate(algorithms):
     colors = ["tab:blue", "tab:green", "tab:orange"]
   
   
-    means = np.stack([m['mean'] for m in filt.summaries.moments])
-    var = np.stack([m['var'] for m in filt.summaries.moments])
+    means =  atleast_2d_last(np.stack([m['mean'] for m in filt.summaries.moments]))
+    var = atleast_2d_last(np.stack([m['var'] for m in filt.summaries.moments]))
     if nMC == 0:
       plt.subplot(len(algorithms),1,n_alg+1)
-      for m in range(3):
+      for m in range(means.shape[1]):
         plt.plot(means[:,m], color=colors[m])
         plt.fill_between(range(len(data)), y1=means[:,m]-2*np.sqrt(var[:,m]), y2=means[:,m]+2*np.sqrt(var[:,m]), color=colors[m], alpha=0.3)
       plt.plot(np.vstack(true_states), "k--")
