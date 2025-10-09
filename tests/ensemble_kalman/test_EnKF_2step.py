@@ -50,7 +50,7 @@ colors = ["tab:blue", "tab:green", "tab:orange"]
 
 
 
-toymodel = enk.MVNonlinearGauss(F=lambda x: x, G=lambda x: np.exp(x), covX=1., covY=.1, mu0=None, cov0=None)
+toymodel = enk.MVNonlinearGauss(F=lambda t, x: x, G=lambda t, x: np.exp(x), covX=1., covY=.1, mu0=None, cov0=None)
   
 # my_model = toymodel(obsnoise=1.0)  # actual model
 true_states, data = toymodel.simulate(1)  # we simulate from the model 100 data points

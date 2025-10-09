@@ -52,7 +52,7 @@ def EnK_step(ssm, t, xp, x_prop, y, return_weights = False):
 
 
 
-def EnK_step_for_WEnKF(ssm, t, xp, x_prop, y, return_weights = False):
+def EnK_step_for_WEnKF(ssm, t, xp, x_prop, y):
   assert isinstance(ssm, MVNonlinearGauss)
   if x_prop.ndim == 1:
     dx = 1
@@ -71,15 +71,21 @@ def EnK_step_for_WEnKF(ssm, t, xp, x_prop, y, return_weights = False):
   CppGamma =  Cpp + ssm.covY
   CppGammainv = np.linalg.inv(CppGamma)
   K = Cup@CppGammainv
-  Qhat = Cuu - Cup@CppGammainv@Cup.T + 1.*np.eye(dx)#+ K@Cpp@K + K@#cov_shrinkage@Cuu@cov_shrinkage.T
+  Qhat = Cuu - Cup@CppGammainv@Cup.T + 1e-8*np.eye(dx)#+ K@Cpp@K + K@#cov_shrinkage@Cuu@cov_shrinkage.T
   Qhatinv = np.linalg.inv(Qhat)
-  Qinv = np.linalg.inv(ssm.covX)
+  if t == 0:
+    Qinv = np.linalg.inv(ssm.cov0)
+  else:
+    Qinv = np.linalg.inv(ssm.covX)
   betas = np.random.multivariate_normal(np.zeros(dx), Qhat, size=J)
   new_filt = x_prop - (K@(mapped_X_prop.T - y.T)).T + betas
+  # corr_weight0 = 0.5*np.einsum('ij,ji->i', new_filt-x_prop, np.dot(Qinv, new_filt-x_prop.T))
   corr_weight1 = 0.5*np.einsum('ij,ji->i', betas, np.dot(Qhatinv, betas.T))
   diff = new_filt - x_prop
   corr_weight2 = 0.5*np.einsum('ij,ji->i', diff, np.dot(Qinv, diff.T))
-  return new_filt, (corr_weight1 - corr_weight2)
+  # resid = y - ssm.G(t, new_filt)
+  # corr_weight3 = 0.5*np.einsum('ij,ji->i', resid, np.dot(np.linalg.inv(ssm.covY), resid.T)) # if dimension is large, save inverse of covY in ssm!
+  return new_filt, (corr_weight1 - corr_weight2 )#+ corr_weight3)
 
 error_msg = "arguments of MVNonlinearGauss.__init__ have inconsistent shapes"
 
@@ -111,8 +117,9 @@ class MVNonlinearGauss(ssms.StateSpaceModel):
         self.dx, self.dy = self.covX.shape[0], self.covY.shape[0]
         self.mu0 = np.zeros(self.dx) if mu0 is None else mu0
         self.cov0 = self.covX if cov0 is None else np.atleast_2d(cov0)
-        # self.F = (lambda x: x) if F is None else F
-        # self.G = (lambda x: x[0:self.dy]) if G is None else G
+        # self.F = (lambda t, x: x) if F is None else F
+        
+        self.G = (lambda t, x: x[0:self.dy]) if G is None else G
         self.check_shapes()
         if hasattr(self, "default_params"):
             self.__dict__.update(self.default_params)
@@ -232,8 +239,12 @@ class EnsembleKalman(particles.FeynmanKac):
       return 0 if self.data is None else len(self.data)
   
   def M0(self, N):
-      return self.ssm.PX0().rvs(size=N)
-    
+      x_prop = self.ssm.PX0().rvs(size=N)
+      if np.isnan(self.data[0]):
+        new_filt = x_prop
+      else:
+        new_filt, _, _ = EnK_step(self.ssm, 0, None, x_prop, self.data[0])
+      return new_filt
   
   def M(self, t, xp):
       x_prop = self.ssm.PX(t, xp).rvs()
@@ -270,14 +281,14 @@ class WEnKF(ssms.Bootstrap):
       super().__init__(ssm, data)
 
     def M0(self, N):
-        x_prop = self.ssm.PX0().rvs(size=N)
+        x_prop = self.ssm.PX0().rvs(size=N) # x_prop = np.repeat(self.ssm.PX0().loc, N).reshape((N,-1))
         if np.isnan(self.data[0]):
           new_filt = x_prop
           self.K = 0
         else:
 
 
-          new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, 0, None, x_prop, self.data[0], return_weights=True)
+          new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, 0, None, x_prop, self.data[0])
           self.correction_logweights = correction_logweights
  
         return new_filt
