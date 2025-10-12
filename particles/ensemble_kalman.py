@@ -71,7 +71,10 @@ def EnK_step_for_WEnKF(ssm, t, xp, x_prop, y):
   CppGamma =  Cpp + ssm.covY
   CppGammainv = np.linalg.inv(CppGamma)
   K = Cup@CppGammainv
-  Qhat = Cuu - Cup@CppGammainv@Cup.T + 1e-8*np.eye(dx)#+ K@Cpp@K + K@#cov_shrinkage@Cuu@cov_shrinkage.T
+  if t == 0:
+    Qhat = K@ssm.covY@K.T
+  else:
+    Qhat = Cuu - Cup@CppGammainv@Cup.T + 1e-8*np.eye(dx)#+ K@Cpp@K + K@#cov_shrinkage@Cuu@cov_shrinkage.T
   Qhatinv = np.linalg.inv(Qhat)
   if t == 0:
     Qinv = np.linalg.inv(ssm.cov0)
@@ -81,7 +84,10 @@ def EnK_step_for_WEnKF(ssm, t, xp, x_prop, y):
   new_filt = x_prop - (K@(mapped_X_prop.T - y.T)).T + betas
   # corr_weight0 = 0.5*np.einsum('ij,ji->i', new_filt-x_prop, np.dot(Qinv, new_filt-x_prop.T))
   corr_weight1 = 0.5*np.einsum('ij,ji->i', betas, np.dot(Qhatinv, betas.T))
-  diff = new_filt - x_prop
+  if t == 0:
+    diff = new_filt - ssm.mu0
+  else:
+    diff = new_filt - x_prop
   corr_weight2 = 0.5*np.einsum('ij,ji->i', diff, np.dot(Qinv, diff.T))
   # resid = y - ssm.G(t, new_filt)
   # corr_weight3 = 0.5*np.einsum('ij,ji->i', resid, np.dot(np.linalg.inv(ssm.covY), resid.T)) # if dimension is large, save inverse of covY in ssm!
@@ -117,7 +123,7 @@ class MVNonlinearGauss(ssms.StateSpaceModel):
         self.dx, self.dy = self.covX.shape[0], self.covY.shape[0]
         self.mu0 = np.zeros(self.dx) if mu0 is None else mu0
         self.cov0 = self.covX if cov0 is None else np.atleast_2d(cov0)
-        # self.F = (lambda t, x: x) if F is None else F
+        self.F = (lambda t, x: x) if F is None else F # TODO: Fix this
         
         self.G = (lambda t, x: x[0:self.dy]) if G is None else G
         self.check_shapes()
@@ -315,7 +321,7 @@ class WEnKF(ssms.Bootstrap):
           #   new_filt = x_prop - (Cup@(np.linalg.solve(CppGamma, mapped_X_prop.T - self.data[t].T))).T
 
 
-          new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, t, xp, x_prop, self.data[t], return_weights=True)
+          new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, t, xp, x_prop, self.data[t])
           
           self.correction_logweights = correction_logweights
         
@@ -327,7 +333,7 @@ class WEnKF(ssms.Bootstrap):
               + self.correction_logweights )
         else:
           return (
-              self.ssm.PY(0, xp, x).logpdf(self.data[t])
+              self.ssm.PY(t, xp, x).logpdf(self.data[t])
               + self.correction_logweights)
 
 

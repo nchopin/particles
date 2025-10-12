@@ -35,12 +35,12 @@ class Lorenz_63(enk.MVNonlinearGauss):
   
   
 
-# my_model = Lorenz_63(rho=28., sigma=10., beta=8./3, dt=0.01, covX = 1.0*np.eye(3), covY = 1.0*np.eye(1))  # actual model
+# my_model = Lorenz_63(rho=28., sigma=10., beta=8./3, dt=0.01, covX = np.eye(3), covY = 1.*np.eye(1))  # actual model
 
 my_model = enk.MVNonlinearGauss(F=lambda t, x: 0.9*x, G=lambda t, x: x+1*np.exp(x), covX=1., covY=1.5, mu0=None, cov0=None)
 # my_model = ssm.StochVol()
 # toymodel = enk.MVNonlinearGauss(F=lambda x: x, G=lambda x: np.exp(x), covX=1., covY=.1, mu0=None, cov0=None)
-true_states, data = my_model.simulate(1) #200  # we simulate from the model 100 data points
+true_states, data = my_model.simulate(2) #200  # we simulate from the model 100 data points
 
 J = 500000 # size of ensembles
 
@@ -49,6 +49,7 @@ plt.subplot(211)
 plt.plot(np.vstack(true_states))
 plt.subplot(212)
 plt.plot(np.vstack(data))
+
 
 #%% 
 
@@ -63,9 +64,37 @@ if len(data) == 1:
   post /= np.trapz(post, x=x0s.flatten())
   plt.plot(x0s, post)
 
+if len(data) == 2:
+  x0s = np.linspace(-4,4,1000).reshape((-1,1))
+  px0s = np.exp(my_model.PX0().logpdf(x0s)).squeeze()
+  likes0 = np.exp(my_model.PY(0,None,x0s).logpdf(data[0])).squeeze()
+  post0 = px0s*likes0
+  post0 /= np.trapz(post0, x=x0s.flatten())
+  kernel = np.exp(np.array([my_model.PX(1, x0).logpdf(x0s) for x0 in x0s])).squeeze()
+  # plt.matshow(kernel)
+  prior1 = kernel@post0
+  prior1 /= np.trapz(prior1, x=x0s.flatten())
+  likes1 = np.exp(my_model.PY(1,None,x0s).logpdf(data[1])).squeeze()
+  post1 = prior1*likes1
+  post1 /= np.trapz(post1, x=x0s.flatten())
+  
+  plt.plot(x0s, post1)
 
+else:
+  x0s = np.linspace(-4,4,1000).reshape((-1,1))
+  prior = np.exp(my_model.PX0().logpdf(x0s)).flatten()
+  for t in range(len(data)):
+    likes = np.exp(my_model.PY(t,None,x0s).logpdf(data[t])).squeeze()
+    post = prior*likes
+    post /= np.trapz(post, x=x0s.flatten())
+    if t < len(data) - 1:
+      kernel = np.exp(np.array([my_model.PX(t, x0).logpdf(x0s) for x0 in x0s])).squeeze()
+      prior = kernel@post
+      prior /= np.trapz(prior, x=x0s.flatten())
+    
+  
 
-#%% more systematically
+#%% 
 algorithms = [enk.WEnKF, enk.NudgedPF, enk.EnsembleKalman, ssm.Bootstrap]
 alg_titles = ["WEnKF", "NudgedPF", "EnKF", "Bootstrap"]
 # algorithms = [enk.EnsembleKalman, ssm.Bootstrap]
@@ -116,21 +145,59 @@ plt.tight_layout()
 
 #%%
 if len(data) == 1:
-  plt.figure()
+  plt.figure(figsize=(6,6))
   for n_alg, alg in enumerate(algorithms):
       fk = alg(my_model, data)
       filt = particles.SMC(fk=fk, N=J, collect=[Moments()], store_history=True) 
       filt.run()
     
       plt.subplot(len(algorithms),1,n_alg+1)
-      plt.hist(filt.X, 1500, weights=filt.W, density=True)
+      plt.hist(filt.X, 15, weights=filt.W, density=True)
+      print(f"range of samples in {alg}: {np.min(filt.X)} -- {np.max(filt.X)}")
       plt.plot(x0s, post, 'k--')
       plt.xlim([0,2.5])
       plt.title(alg_titles[n_alg])
     
       colors = ["tab:blue", "tab:green", "tab:orange"]
 
-plt.tight_layout()
+  plt.tight_layout()
+  
+if len(data) == 2:
+  plt.figure(figsize=(6,6))
+  for n_alg, alg in enumerate(algorithms):
+      fk = alg(my_model, data)
+      filt = particles.SMC(fk=fk, N=J, collect=[Moments()], store_history=True) 
+      filt.run()
+    
+      plt.subplot(len(algorithms),1,n_alg+1)
+      # plt.hist(filt.X, 150, density=True)
+      plt.hist(filt.X, 150, weights=filt.W, density=True)
+      print(f"range of samples in {alg}: {np.min(filt.X)} -- {np.max(filt.X)}")
+      plt.plot(x0s, post1, 'k--')
+      plt.xlim([-2,2.5])
+      plt.title(alg_titles[n_alg])
+    
+      colors = ["tab:blue", "tab:green", "tab:orange"]
+
+  plt.tight_layout()
+
+else:
+  plt.figure(figsize=(6,6))
+  for n_alg, alg in enumerate(algorithms):
+      fk = alg(my_model, data)
+      filt = particles.SMC(fk=fk, N=J, collect=[Moments()], store_history=True) 
+      filt.run()
+    
+      plt.subplot(len(algorithms),1,n_alg+1)
+      plt.hist(filt.X, 150, weights=filt.W, density=True)
+      plt.plot(x0s, post, 'k--')
+      plt.xlim([-2,2.5])
+      plt.title(alg_titles[n_alg])
+    
+      colors = ["tab:blue", "tab:green", "tab:orange"]
+  
+  plt.tight_layout()
+  
 #%%
 plt.figure()
 color_quantile = ["tab:green", "tab:orange", "tab:red"]
