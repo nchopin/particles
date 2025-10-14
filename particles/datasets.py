@@ -44,6 +44,7 @@ adds an intercept) predictors/features for a regression or classification task.
 
 """
 
+import collections
 from pathlib import Path
 
 import numpy as np
@@ -372,5 +373,13 @@ class Sonar(BinaryRegDataset):
 
     """
 
+    def convert_last_col(x):
+        if x == "R":
+            return 1.0
+        elif x == "M":
+            return 0.0
+        else:
+            return np.nan
+
     file_name = "sonar.all-data"
-    load_opts = {"delimiter": ",", "converters": {60: lambda x: 1 if x == b"R" else 0}}
+    load_opts = {"delimiter": ",", "converters": {60: convert_last_col}}
