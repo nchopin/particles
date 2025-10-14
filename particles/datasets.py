@@ -67,7 +67,9 @@ class Dataset:
         return raw_data
 
     def __init__(self, **kwargs):
-        self.raw_data = np.loadtxt(get_path(self.file_name), **self.load_opts)
+        self.raw_data = np.loadtxt(
+            get_path(self.file_name), **self.load_opts, encoding="utf-8"
+        )
         self.data = self.preprocess(self.raw_data, **kwargs)
 
 
@@ -348,7 +350,7 @@ class Eeg(BinaryRegDataset):
 
     A dataset with 122 observations and 64 predictors.
 
-    * Response: alcohic vs control
+    * Response: alcoholic vs control
     * predictors: EEG measurements
 
     Reference
