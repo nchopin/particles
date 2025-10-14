@@ -6,8 +6,11 @@ All notable changes to this project will be documented in this file.
 - distributions: dirichlet
 - smc_samplers: magic method __len__ added to ThetaParticles
 
+### BUG FIXES
+- datasets: Sonar all responses were set to 0
+
 ## [0.4] - 2023-09-01
-# Blog post: TBA
+# Blog post: <https://statisfaction-blog.github.io/posts/01-09-2023-particles-v0.4/>
 ### Added
 - nested: NS-SMC sampler of Salomone et al (2018)
 - datasets: Liver
