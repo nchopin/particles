@@ -37,12 +37,12 @@ class Lorenz_63(enk.MVNonlinearGauss):
 
 # my_model = Lorenz_63(rho=28., sigma=10., beta=8./3, dt=0.01, covX = np.eye(3), covY = 1.*np.eye(1))  # actual model
 
-my_model = enk.MVNonlinearGauss(F=lambda t, x: 0.9*x, G=lambda t, x: x+1*np.exp(x), covX=1., covY=1.5, mu0=None, cov0=None)
+my_model = enk.MVNonlinearGauss(F=lambda t, x: 0.8*x, G=lambda t, x: np.exp(x), covX=0.1, covY=0.05, mu0=None, cov0=None)
 # my_model = ssm.StochVol()
 # toymodel = enk.MVNonlinearGauss(F=lambda x: x, G=lambda x: np.exp(x), covX=1., covY=.1, mu0=None, cov0=None)
-true_states, data = my_model.simulate(2) #200  # we simulate from the model 100 data points
+true_states, data = my_model.simulate(12) #200  # we simulate from the model 100 data points
 
-J = 500000 # size of ensembles
+J = 50000 # size of ensembles
 
 plt.figure()
 plt.subplot(211)
@@ -80,25 +80,32 @@ if len(data) == 2:
   
   plt.plot(x0s, post1)
 
-else:
+elif len(data) <= 15:
+  priors = []
+  posts = []
   x0s = np.linspace(-4,4,1000).reshape((-1,1))
   prior = np.exp(my_model.PX0().logpdf(x0s)).flatten()
+  priors.append(prior)
   for t in range(len(data)):
     likes = np.exp(my_model.PY(t,None,x0s).logpdf(data[t])).squeeze()
     post = prior*likes
     post /= np.trapz(post, x=x0s.flatten())
+    posts.append(post)
     if t < len(data) - 1:
       kernel = np.exp(np.array([my_model.PX(t, x0).logpdf(x0s) for x0 in x0s])).squeeze()
       prior = kernel@post
       prior /= np.trapz(prior, x=x0s.flatten())
+      priors.append(prior)
     
   
 
 #%% 
-algorithms = [enk.WEnKF, enk.NudgedPF, enk.EnsembleKalman, ssm.Bootstrap]
-alg_titles = ["WEnKF", "NudgedPF", "EnKF", "Bootstrap"]
+# algorithms = [enk.WEnKF, enk.NudgedPF, enk.EnsembleKalman, ssm.Bootstrap]
+# alg_titles = ["WEnKF", "NudgedPF", "EnKF", "Bootstrap"]
 # algorithms = [enk.EnsembleKalman, ssm.Bootstrap]
 # alg_titles = ["EnKF", "Bootstrap"]
+algorithms = [enk.EnsembleKalman, enk.WEnKF, ssm.Bootstrap]
+alg_titles = ["EnKF", "WEnKF", "Bootstrap"]
 plt.figure(figsize=(6,6))
 N_MC = 25
 MSEs_mean = [[None  for m in range(N_MC)] for n in range(len(algorithms))]
@@ -163,7 +170,7 @@ if len(data) == 1:
   plt.tight_layout()
   
 if len(data) == 2:
-  plt.figure(figsize=(6,6))
+  plt.figure(figsize=(int(3*len(data)),6))
   for n_alg, alg in enumerate(algorithms):
       fk = alg(my_model, data)
       filt = particles.SMC(fk=fk, N=J, collect=[Moments()], store_history=True) 
@@ -181,22 +188,30 @@ if len(data) == 2:
 
   plt.tight_layout()
 
-else:
-  plt.figure(figsize=(6,6))
+elif len(data) <= 15:
   for n_alg, alg in enumerate(algorithms):
       fk = alg(my_model, data)
-      filt = particles.SMC(fk=fk, N=J, collect=[Moments()], store_history=True) 
+      filt = particles.SMC(fk=fk, N=J, collect=[Moments()], store_history=True, ESSrmin=1) 
       filt.run()
-    
-      plt.subplot(len(algorithms),1,n_alg+1)
-      plt.hist(filt.X, 150, weights=filt.W, density=True)
-      plt.plot(x0s, post, 'k--')
-      plt.xlim([-2,2.5])
-      plt.title(alg_titles[n_alg])
+  
+      plt.figure(figsize=(10,8)) 
+      T = len(data)
+      from math import ceil, sqrt
+      nrowcol = ceil(sqrt(T))
+      for t in range(len(data)):    
+        # plt.subplot(len(data),2,2*t+1)
+        # plt.hist(filt.hist.X[t], bins=np.arange(min(x0s), max(x0s), 0.2), density=True)
+        # plt.plot(x0s, priors[t], 'k--')
+        # plt.xlim([-2,2.5])
+        plt.subplot(nrowcol, nrowcol,t+1)
+        plt.hist(filt.hist.X[t], bins=np.arange(min(x0s), max(x0s), 0.1), weights=filt.hist.wgts[t].W, density=True)
+        plt.plot(x0s, posts[t], 'k--')
+        plt.xlim([-2,2.5])
+      plt.suptitle(alg_titles[n_alg])
     
       colors = ["tab:blue", "tab:green", "tab:orange"]
   
-  plt.tight_layout()
+      plt.tight_layout()
   
 #%%
 plt.figure()

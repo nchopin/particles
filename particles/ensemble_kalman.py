@@ -74,7 +74,7 @@ def EnK_step_for_WEnKF(ssm, t, xp, x_prop, y):
   if t == 0:
     Qhat = K@ssm.covY@K.T
   else:
-    Qhat = Cuu - Cup@CppGammainv@Cup.T + 1e-8*np.eye(dx)#+ K@Cpp@K + K@#cov_shrinkage@Cuu@cov_shrinkage.T
+    Qhat = Cuu - K@Cup.T + 1e-8*np.eye(dx)#+ K@Cpp@K + K@#cov_shrinkage@Cuu@cov_shrinkage.T
   Qhatinv = np.linalg.inv(Qhat)
   if t == 0:
     Qinv = np.linalg.inv(ssm.cov0)
@@ -123,9 +123,18 @@ class MVNonlinearGauss(ssms.StateSpaceModel):
         self.dx, self.dy = self.covX.shape[0], self.covY.shape[0]
         self.mu0 = np.zeros(self.dx) if mu0 is None else mu0
         self.cov0 = self.covX if cov0 is None else np.atleast_2d(cov0)
-        self.F = (lambda t, x: x) if F is None else F # TODO: Fix this
-        
-        self.G = (lambda t, x: x[0:self.dy]) if G is None else G
+        # Assign F and G only if they are not already defined as methods
+        if not hasattr(self, "F"):
+            if F is None:
+                self.F = lambda t, x: x
+            else:
+                self.F = F
+
+        if not hasattr(self, "G"):
+            if G is None:
+                self.G = lambda t, x: x[0:self.dy]
+            else:
+                self.G = G
         self.check_shapes()
         if hasattr(self, "default_params"):
             self.__dict__.update(self.default_params)
