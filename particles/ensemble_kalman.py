@@ -12,8 +12,7 @@ import particles
 
 
 
-def EnK_step(ssm, t, xp, x_prop, y, return_weights = False):
-  
+def EnK_step(ssm, t, xp, x_prop, y, return_weights = False):  
   flag_reshape = False
   if x_prop.ndim == 1:
     flag_reshape = True
@@ -50,48 +49,6 @@ def EnK_step(ssm, t, xp, x_prop, y, return_weights = False):
   else:
     return new_filt, K, None
 
-
-
-def EnK_step_for_WEnKF(ssm, t, xp, x_prop, y):
-  assert isinstance(ssm, MVNonlinearGauss)
-  if x_prop.ndim == 1:
-    dx = 1
-    J = len(x_prop)
-    mapped_X_prop = ssm.G(t, x_prop)# ssm.PY(t, xp, x_prop).rvs(size=x_prop.shape[0])
-    x_prop = np.reshape(x_prop, (J,1))
-  else:
-    J, dx = x_prop.shape    
-    mapped_X_prop = ssm.G(t, x_prop)#ssm.PY(t, xp, x_prop).rvs(size=x_prop.shape[0])
-  # weights = ssm.PY(t, xp, x_prop).logpdf(mapped_X_prop)
-  mapped_X_prop = np.reshape(mapped_X_prop, (J,1))
-  full_cov = np.cov(x_prop,mapped_X_prop, rowvar=False)
-  Cuu = np.atleast_2d(full_cov[0:dx, 0:dx])
-  Cup = np.atleast_2d(full_cov[0:dx, dx:])
-  Cpp = np.atleast_2d(full_cov[dx:, dx:])
-  CppGamma =  Cpp + ssm.covY
-  CppGammainv = np.linalg.inv(CppGamma)
-  K = Cup@CppGammainv
-  if t == 0:
-    Qhat = K@ssm.covY@K.T
-  else:
-    Qhat = Cuu - K@Cup.T + 1e-8*np.eye(dx)#+ K@Cpp@K + K@#cov_shrinkage@Cuu@cov_shrinkage.T
-  Qhatinv = np.linalg.inv(Qhat)
-  if t == 0:
-    Qinv = np.linalg.inv(ssm.cov0)
-  else:
-    Qinv = np.linalg.inv(ssm.covX)
-  betas = np.random.multivariate_normal(np.zeros(dx), Qhat, size=J)
-  new_filt = x_prop - (K@(mapped_X_prop.T - y.T)).T + betas
-  # corr_weight0 = 0.5*np.einsum('ij,ji->i', new_filt-x_prop, np.dot(Qinv, new_filt-x_prop.T))
-  corr_weight1 = 0.5*np.einsum('ij,ji->i', betas, np.dot(Qhatinv, betas.T))
-  if t == 0:
-    diff = new_filt - ssm.mu0
-  else:
-    diff = new_filt - x_prop
-  corr_weight2 = 0.5*np.einsum('ij,ji->i', diff, np.dot(Qinv, diff.T))
-  # resid = y - ssm.G(t, new_filt)
-  # corr_weight3 = 0.5*np.einsum('ij,ji->i', resid, np.dot(np.linalg.inv(ssm.covY), resid.T)) # if dimension is large, save inverse of covY in ssm!
-  return new_filt, (corr_weight1 - corr_weight2 )#+ corr_weight3)
 
 error_msg = "arguments of MVNonlinearGauss.__init__ have inconsistent shapes"
 
@@ -161,68 +118,6 @@ class MVNonlinearGauss(ssms.StateSpaceModel):
         return dists.MvNormal(loc=self.G(t, x), cov=self.covY)
 
     
-class NudgedPF(ssms.Bootstrap):
-  """nudged particle filter for a given state-space model.
-  
-  Parameters
-  ----------
-  
-  ssm: StateSpaceModel object
-      the considered state-space model
-  data: list-like
-      the data
-  
-  Returns
-  -------
-  FeynmanKac object
-      the Feynman-Kac representation of the nudged particle filter for the
-      considered state-space model
-  
-  """
-  
-  def M0(self, N):
-      x_prop = self.ssm.PX0().rvs(size=N)
-      # return self.ssm.PX0().rvs(size=N)
-      if np.isnan(self.data[0]):
-        new_filt = x_prop
-      else:
-        new_filt, K, Gamma = EnK_step(self.ssm, 0, None, x_prop, self.data[0])
-      
-      self.nudged_particles = new_filt 
-      self.nudging = new_filt - x_prop # need for computation of logG! make sure order is always M, then logG
-      self.K = K
-      return new_filt
-  
-  def M(self, t, xp):
-      x_prop = self.ssm.PX(t, xp).rvs(size=xp.shape[0])
-      if np.isnan(self.data[t]):
-        new_filt = x_prop
-      else:
-        new_filt, K, Gamma = EnK_step(self.ssm, t, xp, x_prop, self.data[t])
-      
-      self.nudged_particles = new_filt 
-      self.nudging = new_filt - x_prop # need for computation of logG! make sure order is always M, then logG
-      self.K = K
-      return new_filt
-  def logG(self, t, xp, x):
-      if t == 0:
-        return (
-            self.ssm.PX0().logpdf(x)
-            + self.ssm.PY(0, xp, x).logpdf(self.data[0])
-            - self.ssm.PX0().logpdf(x-self.nudging)
-        )#return self.ssm.PY(0, xp, x).logpdf(self.data[0])   
-      else:
-        return (
-            self.ssm.PX(t, xp).logpdf(x)
-            + self.ssm.PY(t, xp, x).logpdf(self.data[t])
-            - self.ssm.PX(t, xp).logpdf(x-self.nudging)
-        )
-  
-  def Gamma0(self, u): 
-      return self.ssm.proposal0(self.data).ppf(u)
-  
-  def Gamma(self, t, xp, u):
-      return self.ssm.proposal(t, xp, self.data).ppf(u)
 
 class EnsembleKalman(particles.FeynmanKac):
   """ Ensemble Kalman formalism of a given state-space model.
@@ -273,82 +168,3 @@ class EnsembleKalman(particles.FeynmanKac):
       return np.zeros(x.shape[0])
 
     
-class WEnKF(ssms.Bootstrap):
-    """weighted Ensemble Kalman filter for a given state-space model.
-
-    Parameters
-    ----------
-
-    ssm: StateSpaceModel object
-        the considered state-space model
-    data: list-like
-        the data
-
-    Returns
-    -------
-    FeynmanKac object
-        the Feynman-Kac representation of the WEnKF for the
-        considered state-space model
-
-    """
-    def __init__(self, ssm, data):
-      assert isinstance(ssm, MVNonlinearGauss)
-      super().__init__(ssm, data)
-
-    def M0(self, N):
-        x_prop = self.ssm.PX0().rvs(size=N) # x_prop = np.repeat(self.ssm.PX0().loc, N).reshape((N,-1))
-        if np.isnan(self.data[0]):
-          new_filt = x_prop
-          self.K = 0
-        else:
-
-
-          new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, 0, None, x_prop, self.data[0])
-          self.correction_logweights = correction_logweights
- 
-        return new_filt
-
-    def M(self, t, xp):
-        x_prop = self.ssm.F(t, xp)#self.ssm.PX(t, xp).rvs(size=xp.shape[0])
-        if np.isnan(self.data[t]):
-          new_filt = x_prop
-          self.K = 0
-          self.correction_logweights = 0
-        else:
-
-          # mapped_X_prop = self.ssm.PY(t, xp, x_prop).rvs(size=xp.shape[0])
-          # if x_prop.ndim == 1:
-          #   ndX = 1
-          #   Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:].squeeze()
-          # else:
-          #   ndX = x_prop.shape[1]
-          #   Cup = np.cov(x_prop,mapped_X_prop, rowvar=False)[0:ndX,ndX:]
-          # CppGamma = np.cov(mapped_X_prop, rowvar=False)
-          # if mapped_X_prop.ndim == 1:
-          #   new_filt = x_prop - (((mapped_X_prop - self.data[t])/CppGamma)*Cup).T
-          # else:
-          #   new_filt = x_prop - (Cup@(np.linalg.solve(CppGamma, mapped_X_prop.T - self.data[t].T))).T
-
-
-          new_filt, correction_logweights = EnK_step_for_WEnKF(self.ssm, t, xp, x_prop, self.data[t])
-          
-          self.correction_logweights = correction_logweights
-        
-        return new_filt
-    def logG(self, t, xp, x):
-        if t == 0:
-          return (
-              self.ssm.PY(0, xp, x).logpdf(self.data[0])
-              + self.correction_logweights )
-        else:
-          return (
-              self.ssm.PY(t, xp, x).logpdf(self.data[t])
-              + self.correction_logweights)
-
-
-          
-    def Gamma0(self, u): 
-        return self.ssm.proposal0(self.data).ppf(u)
-
-    def Gamma(self, t, xp, u):
-        return self.ssm.proposal(t, xp, self.data).ppf(u)

@@ -35,14 +35,11 @@ class Lorenz_63(enk.MVNonlinearGauss):
   def G(self, t, x):  # Distribution of Y_t given X_t=x (and possibly X_{t-1}=xp)
       return x[:,[0]]#return dists.Normal(loc=x[:,0], scale=self.obsnoise)
   
-  
+
+
 
 my_model = Lorenz_63(rho=28., sigma=10., beta=8./3, dt=0.01, covX = np.eye(3), covY = 1.*np.eye(1))  # actual model
-
-#my_model = enk.MVNonlinearGauss(F=lambda t, x: 0.8*x, G=lambda t, x: np.exp(x), covX=0.1, covY=0.05, mu0=None, cov0=None)
-# my_model = ssm.StochVol()
-# toymodel = enk.MVNonlinearGauss(F=lambda x: x, G=lambda x: np.exp(x), covX=1., covY=.1, mu0=None, cov0=None)
-true_states, data = my_model.simulate(500) #200  # we simulate from the model 100 data points
+true_states, data = my_model.simulate(200) #200  # we simulate from the model 100 data points
 
 J = 30 # size of ensembles
 
@@ -53,7 +50,6 @@ plt.subplot(212)
 plt.plot(np.vstack(data))
 
 
-#%% 
 
 algorithms = [enk.EnsembleKalman, ssm.Bootstrap]
 alg_titles = ["EnKF", "Bootstrap"]
@@ -101,7 +97,6 @@ coverage = np.array(coverage)
 plt.tight_layout()
 
 
-#%%
 plt.figure()
 color_quantile = ["tab:green", "tab:orange", "tab:red"]
 
