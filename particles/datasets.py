@@ -33,10 +33,11 @@ Dataset           parent class          typical use/model
 `Eeg`             `BinaryRegDataset`    binary regression
 `GBP_vs_USD_9798` `LogReturnsDataset`   stochastic volatility
 `Liver`           `BinaryRegDataset`    binary regression
+`Musk`            `BinaryRegDataset`    binary regression
+`Neuro`           `Dataset`             neuroscience ssm
 `Nutria`          `Dataset`             population ecology
 `Pima`            `BinaryRegDataset`    binary regression
 `Sonar`           `BinaryRegDataset`    binary regression
-`Neuro`           `Dataset`             neuroscience ssm
 ================= ===================== =======================
 
 See also utility function `prepare_predictors`, which prepares (rescales,
@@ -385,3 +386,18 @@ class Sonar(BinaryRegDataset):
 
     file_name = "sonar.all-data"
     load_opts = {"delimiter": ",", "converters": {60: convert_last_col}}
+
+
+class Musk(BinaryRegDataset):
+    """Musk dataset (version 1) from UCI repository.
+
+    A dataset with 476 observations (molecules) and 166 predictors.
+
+    * Response: musk vs non-musk
+
+    `Link <https://archive.ics.uci.edu/dataset/74/musk+version+1>`__
+
+    """
+
+    file_name = "musk.data"
+    load_opts = {"delimiter": ",", "usecols": range(2, 169)}

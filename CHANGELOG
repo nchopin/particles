@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - distributions: dirichlet
 - smc_samplers: magic method __len__ added to ThetaParticles
+- datasets: added Musk
 
 ### BUG FIXES
 - datasets: Sonar all responses were set to 0
