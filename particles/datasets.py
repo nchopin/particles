@@ -365,7 +365,7 @@ class Eeg(BinaryRegDataset):
 class Sonar(BinaryRegDataset):
     """Sonar dataset from UCI repository.
 
-    A dataset with 110 observations and 60 predictors.
+    A dataset with 208 observations and 60 predictors.
 
     * Response: rock vs mine
     * predictors: numbers in range [0, 1] representing the energy within a
