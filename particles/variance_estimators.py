@@ -133,9 +133,9 @@ def var_estimate(W, phi_x, B):
 @jit(nopython=True)
 def _sum_over_branches(w_phi, B):
     N = w_phi.shape[0]
-    s = np.zeros(N)
+    s = np.zeros_like(w_phi)
     for m in range(N):
-        s[B[m]] += w_phi[m]
+        s[B[m], ...] += w_phi[m, ...]
     return np.sum(s ** 2, axis=0)
 
 

@@ -87,8 +87,12 @@ alg.run()
 ```
 
 That's it! Head to the
-[documentation](https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/) 
-for more examples, explanations, and installation instructions. 
+[documentation](https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/)
+for more examples, explanations, and installation instructions. (It is strongly
+recommended to start with the
+[tutorials](https://particles-sequential-monte-carlo-in-python.readthedocs.io/en/latest/tutorials.html),
+to get a general idea on what you can do, and how.)
+
 
 ## Who do I talk to? ##
 

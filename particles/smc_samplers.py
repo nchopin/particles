@@ -11,13 +11,13 @@ Bayesian inference, rare-event simulation, etc.  For more background on
 (standard) SMC samplers, see Chapter 17 (and references therein). For the
 waste-free variant, see Dau & Chopin (2022).
 
-The following type of sequences of distributions are implemented: 
+The following type of sequences of distributions are implemented:
 
 * SMC tempering: target distribution at time t has a density of the form
-  mu(theta) L(theta)^{gamma_t}, with gamma_t increasing from 0 to 1. 
+  mu(theta) L(theta)^{gamma_t}, with gamma_t increasing from 0 to 1.
 
 * IBIS: target distribution at time t is the posterior of parameter theta
-  given data Y_{0:t}, for a given model. 
+  given data Y_{0:t}, for a given model.
 
 * SMC^2: same as IBIS, but a for state-space model. For each
   theta-particle, a local particle filter is run to approximate the
@@ -122,7 +122,7 @@ To run IBIS instead, you may do::
     fk_ibis = IBIS(model=toy_model, len_chain=100)
     alg = SMC(fk=fk_ibis, N=200)
 
-Again see the notebook tutorials for more details and examples. 
+Again see the notebook tutorials for more details and examples.
 
 Under the hood
 ==============
@@ -157,16 +157,16 @@ MCMC schemes
 ------------
 
 A MCMC scheme (e.g. random walk Metropolis) is represented as an
-`ArrayMCMC` object, which has two methods: 
+`ArrayMCMC` object, which has two methods:
 
 * ``self.calibrate(W, x)``: calibrate (tune the hyper-parameters of)
   the MCMC kernel to the weighted sample (W, x).
 
 * ``self.step(x)``: apply a single step to the `ThetaParticles` object
-  ``x``, in place. 
+  ``x``, in place.
 
 Furthermore, the different ways one may repeat a given MCMC kernel  is
-represented by a `MCMCSequence` object, which you may pass as an argument 
+represented by a `MCMCSequence` object, which you may pass as an argument
 when instantiating the `FeynmanKac` object that represents the algorithm you
 want to run::
 
@@ -177,24 +177,23 @@ want to run::
 
 Such objects may either keep all intermediate states (as in waste-free SMC, see
 sub-class `MCMCSequenceWF`) or only the states of the last iteration (as in
-standard SMC, see sub-class `AdaptiveMCMCSequence`).  
+standard SMC, see sub-class `AdaptiveMCMCSequence`).
 
 The bottom line is: if you wish to implement a different MCMC scheme to move
 the particles, you should sub-class `ArrayMCMC`. If you wish to implement a new
 strategy to repeat several MCMC steps, you should sub-cass MCMCSequence (or one
-of its sub-classes). 
+of its sub-classes).
 
 
 References
 ==========
 
 Dau, H.D. and Chopin, N. Waste-free Sequential Monte Carlo,
-J. R. Stat. Soc. Ser. B. Stat. Methodol. 84, 1 (2022), 114–148, 
-`arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_, 
+J. R. Stat. Soc. Ser. B. Stat. Methodol. 84, 1 (2022), 114–148,
+`arxiv:2011.02328 <https://arxiv.org/abs/2011.02328>`_,
 `doi:10.1111/rssb.12475 <http://dx.doi.org/10.1111/rssb.12475>`_
 
 """
-
 
 import copy as cp
 import itertools
@@ -432,6 +431,9 @@ class ThetaParticles:
     def N(self):
         return len(next(iter(self.dict_fields.values())))
 
+    def __len__(self):
+        return self.N
+
     @property
     def dict_fields(self):
         return {k: v for k, v in self.__dict__.items() if k != "shared"}
@@ -444,7 +446,7 @@ class ThetaParticles:
             return self.__class__(shared=self.shared.copy(), **fields)
 
     def __setitem__(self, key, value):
-        for k, v in self.dict_fields.item():
+        for k, v in self.dict_fields.items():
             v[key] = getattr(value, k)
 
     def copy(self):
@@ -505,6 +507,7 @@ class ThetaParticles:
 #############################
 # Basic importance sampler
 
+
 class ImportanceSampler:
     """Importance sampler.
 
@@ -551,6 +554,7 @@ class ImportanceSampler:
 
 ##################################
 # MCMC steps (within SMC samplers)
+
 
 class ArrayMCMC:
     """Base class for a (single) MCMC step applied to an array.
@@ -722,7 +726,6 @@ class AdaptiveMCMCSequence(MCMCSequence):
 #############################
 # FK classes for SMC samplers
 class FKSMCsampler(particles.FeynmanKac):
-
     """Base FeynmanKac class for SMC samplers.
     Parameters
     ----------
@@ -886,6 +889,7 @@ class Tempering(FKSMCsampler):
         msg = FKSMCsampler.summary_format(self, smc)
         return msg + ", tempering exponent=%.3g" % smc.X.shared["exponents"][-1]
 
+
 def next_annealing_epn(epn, alpha, lw):
     """Find next annealing exponent by solving ESS(exp(lw)) = alpha * N.
 
@@ -899,13 +903,16 @@ def next_annealing_epn(epn, alpha, lw):
         log-weights
     """
     N = lw.shape[0]
+
     def f(e):
         ess = rs.essl(e * lw) if e > 0.0 else N  # avoid 0 x inf issue when e==0
         return ess - alpha * N
-    if f(1. - epn) < 0.:
+
+    if f(1.0 - epn) < 0.0:
         return epn + optimize.brentq(f, 0.0, 1.0 - epn)
     else:
         return 1.0
+
 
 class AdaptiveTempering(Tempering):
     """Feynman-Kac class for adaptive tempering SMC.
@@ -919,8 +926,15 @@ class AdaptiveTempering(Tempering):
     See base class for other parameters.
     """
 
-    def __init__(self, model=None, wastefree=True, len_chain=10, move=None, 
-                 ESSrmin=0.5, max_iter=1000):
+    def __init__(
+        self,
+        model=None,
+        wastefree=True,
+        len_chain=10,
+        move=None,
+        ESSrmin=0.5,
+        max_iter=1000,
+    ):
         FKSMCsampler.__init__(
             self, model=model, wastefree=wastefree, len_chain=len_chain, move=move
         )
@@ -940,9 +954,9 @@ class AdaptiveTempering(Tempering):
             return smc.X.shared["exponents"][-1] >= 1.0
 
     def logG(self, t, xp, x):
-        epn = x.shared['exponents'][-1]
+        epn = x.shared["exponents"][-1]
         new_epn = next_annealing_epn(epn, self.ESSrmin, x.llik)
-        x.shared['exponents'].append(new_epn)
+        x.shared["exponents"].append(new_epn)
         return self.logG_tempering(x, new_epn - epn)
 
     def M(self, t, xp):
@@ -992,7 +1006,7 @@ def var_wf(smc, phi):
     fmean = np.average(fx, weights=smc.W)
     wphi = smc.W * (fx - fmean)
     wphi_reshaped = np.reshape(wphi, (-1, smc.N), "C")
-    return MCMC_variance(wphi_reshaped, method="init_seq") * N0 ** 2
+    return MCMC_variance(wphi_reshaped, method="init_seq") * N0**2
 
 
 class Var_phi(Collector):
@@ -1161,7 +1175,7 @@ class SMC2(FKSMCsampler):
         return particles.SMC(
             fk=self.fk_cls(ssm=self.ssm_cls(**theta), data=self.data),
             N=N,
-            **self.smc_options
+            **self.smc_options,
         )
 
     def current_target(self, t, Nx):

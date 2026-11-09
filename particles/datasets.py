@@ -29,6 +29,7 @@ sub-class for more details on the preprocessing step.
 Dataset           parent class          typical use/model
 ================= ===================== =======================
 `Boston`          `RegressionDataset`   regression
+`Concrete`        `RegressionDataset`   regression
 `Eeg`             `BinaryRegDataset`    binary regression
 `GBP_vs_USD_9798` `LogReturnsDataset`   stochastic volatility
 `Liver`           `BinaryRegDataset`    binary regression
@@ -43,7 +44,7 @@ adds an intercept) predictors/features for a regression or classification task.
 
 """
 
-
+import collections
 from pathlib import Path
 
 import numpy as np
@@ -66,7 +67,9 @@ class Dataset:
         return raw_data
 
     def __init__(self, **kwargs):
-        self.raw_data = np.loadtxt(get_path(self.file_name), **self.load_opts)
+        self.raw_data = np.loadtxt(
+            get_path(self.file_name), **self.load_opts, encoding="utf-8"
+        )
         self.data = self.preprocess(self.raw_data, **kwargs)
 
 
@@ -294,7 +297,7 @@ class BinaryRegDataset(Dataset):
 class Pima(BinaryRegDataset):
     r"""Pima Indians Diabetes.
 
-    A dataset with 768 observations and 9 predictors.
+    A dataset with 768 observations and 8 predictors.
 
     Response: diabetes test.
 
@@ -347,7 +350,7 @@ class Eeg(BinaryRegDataset):
 
     A dataset with 122 observations and 64 predictors.
 
-    * Response: alcohic vs control
+    * Response: alcoholic vs control
     * predictors: EEG measurements
 
     Reference
@@ -362,7 +365,7 @@ class Eeg(BinaryRegDataset):
 class Sonar(BinaryRegDataset):
     """Sonar dataset from UCI repository.
 
-    A dataset with 110 observations and 60 predictors.
+    A dataset with 208 observations and 60 predictors.
 
     * Response: rock vs mine
     * predictors: numbers in range [0, 1] representing the energy within a
@@ -372,5 +375,13 @@ class Sonar(BinaryRegDataset):
 
     """
 
+    def convert_last_col(x):
+        if x == "R":
+            return 1.0
+        elif x == "M":
+            return 0.0
+        else:
+            return np.nan
+
     file_name = "sonar.all-data"
-    load_opts = {"delimiter": ",", "converters": {60: lambda x: 1 if x == b"R" else 0}}
+    load_opts = {"delimiter": ",", "converters": {60: convert_last_col}}

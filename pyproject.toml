@@ -14,7 +14,7 @@ authors = [
 dependencies = [
     "joblib",
     "numba",
-    "numpy >= 1.18, < 2",
+    "numpy >= 1.18",
     "scipy >= 1.7",
     "scikit-learn"
 ]

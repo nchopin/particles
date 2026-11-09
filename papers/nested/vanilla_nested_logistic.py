@@ -19,8 +19,8 @@ from particles import nested
 from particles import smc_samplers as ssps
 from particles.utils import multiplexer
 
-datasets = {'pima': dts.Pima, 'eeg': dts.Eeg, 'sonar': dts.Sonar}
-dataset_name = 'pima'  # choose one of the three
+datasets = {"pima": dts.Pima, "eeg": dts.Eeg, "sonar": dts.Sonar}
+dataset_name = "pima"  # choose one of the three
 data = datasets[dataset_name]().data
 T, p = data.shape
 
@@ -31,40 +31,42 @@ T, p = data.shape
 
 
 # prior & model
-scales = 5. * np.ones(p)
-scales[0] = 20.  # intercept has a larger scale
-prior = dists.StructDist({'beta':dists.MvNormal(scale=scales,
-                                                cov=np.eye(p))})
+scales = 5.0 * np.ones(p)
+scales[0] = 20.0  # intercept has a larger scale
+prior = dists.StructDist({"beta": dists.MvNormal(scale=scales, cov=np.eye(p))})
+
 
 class LogisticRegression(ssps.StaticModel):
     def logpyt(self, theta, t):
         # log-likelihood factor t, for given theta
-        lin = np.matmul(theta['beta'], data[t, :])
-        return - np.logaddexp(0., -lin)
+        lin = np.matmul(theta["beta"], data[t, :])
+        return -np.logaddexp(0.0, -lin)
+
 
 model = LogisticRegression(data=data, prior=prior)
 
-def worker(N=1000, nsteps=50):
+
+def worker(N=1_000, nsteps=50):
     alg = nested.Nested_RWmoves(model=model, N=N, nsteps=nsteps, eps=1e-5)
     alg.run()
-    return {'est': alg.lZhats[-1], 'T': len(alg.lZhats), 'cpu': alg.cpu_time}
+    return {"est": alg.lZhats[-1], "T": len(alg.lZhats), "cpu": alg.cpu_time}
+
 
 nruns = 10
 nsteps = [10, 20, 30, 40, 50]
 results = multiplexer(f=worker, nsteps=nsteps, nruns=nruns, nprocs=0)
 
-true_val = -392.8684  # average over may runs SMC sampler runs
+true_val = -392.8684  # average over many runs SMC sampler runs
 for r in results:
-    r['bias'] = np.abs(r['est'] - true_val)
+    r["bias"] = np.abs(r["est"] - true_val)
 
 # PLOTS
 #######
-plt.style.use('ggplot')
+plt.style.use("ggplot")
 
 plt.figure()
-sb.boxplot(y=[r['bias'] for r in results],
-           x=[r['nsteps'] for r in results])
-plt.xlabel('nr steps')
-plt.ylabel('error log-evidence')
+sb.boxplot(y=[r["bias"] for r in results], x=[r["nsteps"] for r in results])
+plt.xlabel("nr steps")
+plt.ylabel("error log-evidence")
 plt.show()
-plt.savefig(f'{dataset_name}_bias_vanilla.pdf')
+plt.savefig(f"{dataset_name}_bias_vanilla.pdf")

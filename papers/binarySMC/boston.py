@@ -1,3 +1,10 @@
+"""
+First example from Schäfer and Chopin (2013), Boston housing dataset.
+
+To generate bar plots as in the paper, see bar_plots.py
+"""
+
+
 import numpy as np
 import sklearn.linear_model as lin
 
@@ -7,6 +14,7 @@ from particles import datasets
 from particles import distributions as dists
 from particles import smc_samplers as ssps
 
+data_name = 'boston'
 dataset = datasets.Boston()
 names = dataset.predictor_names
 raw = dataset.raw_data  # do NOT rescale predictors
@@ -38,27 +46,21 @@ data = preds, response
 reg = lin.LinearRegression(fit_intercept=False)
 reg.fit(preds, response)
 
-# n, p = 30, 5
-# preds = np.random.randn(n, p)
-# preds[:, 0] = 1. # intercept
-# noise = np.random.randn(n)
-# response = np.sum(preds[:, :3], axis=1) + 0.8 * noise
-# data = preds, response
-
 prior = dists.IID(bin.Bernoulli(0.5), npreds)
 model = bin.BayesianVS(data=data, prior=prior)
 
-# gam, l = model.complete_enum()
-# probs = rs.exp_and_normalise(l)
-# marg_probs = np.average(gam, weights=probs, axis=0)
-
-# print(marg_probs)
-
 N = 10**5
-P = 1000
+P = 1_000
 M = N // P
+nruns = 3
 move = ssps.MCMCSequenceWF(mcmc=bin.BinaryMetropolis(), len_chain=P)
 fk = ssps.AdaptiveTempering(model, len_chain=P, move=move)
-results = particles.multiSMC(fk=fk, N=M, verbose=True, nruns=50, nprocs=0)
-# pf = particles.SMC(fk=fk, N=1000, verbose=True)
-# pf.run()
+results = particles.multiSMC(fk=fk, N=M, verbose=True, nruns=nruns, nprocs=0)
+
+# save results
+mp = [np.average(r['output'].X.theta, axis=0, weights=r['output'].W)
+      for r in results]
+to_save = {'marg_probs': np.array(mp),
+           'pred_names': list(cols.keys())}
+with open(f'{data_name}.pkl', 'wb') as f:
+    pickle.dump(to_save, f)
