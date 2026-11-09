@@ -1,3 +1,51 @@
+# =============================================================================
+# CUSTOM MODIFICATIONS: MPI PARALLELIZATION OF SMC²
+# =============================================================================
+#
+# This module extends the original `particles` library to support MPI-based
+# parallel execution of the SMC² algorithm.
+#
+# Motivation
+# ----------
+# SMC² maintains a collection of parameter particles, each associated with
+# an independent particle filter used to estimate the likelihood.
+# Evaluating these particle filters sequentially becomes computationally
+# expensive when the number of parameter particles is large.
+#
+# The modifications introduced here distribute these particle filters
+# across multiple MPI processes to accelerate likelihood evaluations.
+#
+# Implementation
+# --------------
+# The parallel implementation follows a master-worker architecture:
+#
+# - Rank 0 manages the outer SMC² algorithm, including parameter particle
+#   resampling, MCMC rejuvenation, and weight updates.
+#
+# - Parameter particles are distributed across MPI processes.
+#
+# - Each MPI process independently runs the particle filters associated
+#   with its assigned parameter particles.
+#
+# - Likelihood estimates are gathered by rank 0 to update the weights
+#   of the parameter particles.
+#
+# - Following resampling and MCMC rejuvenation, particle-filter states
+#   are redistributed to maintain consistency across processes.
+#
+# Compatibility
+# -------------
+# The original sequential implementation is preserved.
+#
+# mpi = 0 : Sequential execution (original implementation).
+# mpi != 0 : MPI-based parallel execution.
+#
+# Dependencies
+# ------------
+# - mpi4py
+# - An MPI implementation (e.g., Open MPI)
+#
+# =============================================================================
 """
 Classical and waste-free SMC samplers.
 
@@ -1123,6 +1171,11 @@ class SMC2(FKSMCsampler):
         self.init_Nx = init_Nx
         self.ar_to_increase_Nx = ar_to_increase_Nx
 
+        # MPI MODIFICATION:
+        # Initialize MPI communication only when parallel execution is enabled.
+        # Rank 0 coordinates the outer SMC² algorithm, while all ranks
+        # execute their assigned particle-filter computations.
+
         if self.isMPI != 0 :
             self.thetas_mpi = None
             self.comm = MPI.COMM_WORLD
@@ -1134,6 +1187,14 @@ class SMC2(FKSMCsampler):
         return 0 if self.data is None else len(self.data)
 
     def logG(self, t, xp, x):
+        # MPI MODIFICATION:
+        # Advance the distributed particle filters and collect their
+        # incremental log-likelihood estimates on rank 0.
+        #
+        # The collected likelihoods are used to update the posterior
+        # weights of the parameter particles.
+
+
         # exchange step (should occur only immediately after a move step)
         try:
             ar = np.mean(x.shared["acc_rates"][-1])
@@ -1179,6 +1240,12 @@ class SMC2(FKSMCsampler):
         )
 
     def current_target(self, t, Nx):
+        # MPI MODIFICATION:
+        # During MCMC rejuvenation, proposed parameter particles must
+        # be evaluated by running new particle filters.
+        #
+        # These computations are distributed across MPI processes,
+        # and the resulting posterior evaluations are collected by rank 0.
         def func(x):
 
             if self.isMPI == 0 :
@@ -1217,6 +1284,12 @@ class SMC2(FKSMCsampler):
         return x0
 
     def M(self, t, xp, A = None):
+        # MPI MODIFICATION:
+        # Synchronize particle-filter states following resampling and
+        # MCMC rejuvenation.
+        #
+        # The updated filters must be redistributed so that subsequent
+        # likelihood evaluations correspond to the correct parameter particles.
         if xp.shared["rs_flag"]:
             # in IBIS, target at time t is posterior given y_0:t-1
             if self.isMPI == 0 :
@@ -1269,18 +1342,45 @@ class SMC2(FKSMCsampler):
             Number of theta particles in each core.
         Nx : int
             Number of particles in each SMC.
-        t : int
-            Time step or iteration index. Special values:
-            -1 : Initialize the particle filters for every core after sampling from the prior.
-            -2 : Run resample-move-reweight for the particle filters in every core.
-        move : int, optional
-            Indicates whether to perform an MCMC move (default is 0).
-            -0 : Gather all the pfs from the cores
-            -1 : MCMC step in waste-free fashion.
-            -2 : Initialize the particle filters after MCMC move.
         xp : object, optional
-            An object containing theta and pfs attributes used for scattering data across cores.
+                    An object containing theta and pfs attributes used for scattering data across cores.
+                
         
+        MPI operations
+        --------------
+        t = -1:
+            Initialize the particle filters on all MPI processes.
+
+            1. Rank 0 distributes parameter particles using Scatter.
+            2. Each process initializes its local particle filters.
+
+        t = -2:
+            Propagate the distributed particle filters by one time step.
+
+            1. Each process advances its local particle filters.
+            2. Local likelihood estimates are gathered by rank 0.
+
+        t >= 0, move = 0:
+            Gather particle-filter objects from all MPI processes.
+
+            Used before resampling and MCMC rejuvenation.
+
+        t >= 0, move = 1:
+            Evaluate proposed parameter particles during MCMC.
+
+            1. Rank 0 distributes the proposed parameter particles.
+            2. Each process initializes and runs the corresponding
+            particle filters up to the requested time step.
+            3. Posterior evaluations and particle-filter objects
+            are gathered by rank 0.
+
+        t >= 0, move = 2:
+            Redistribute particle filters following MCMC rejuvenation.
+
+            1. Rank 0 distributes the updated parameter particles.
+            2. Updated particle-filter states are scattered across
+            MPI processes.
+            3. Each process resumes execution with its assigned filters.
             
         """
         if t == -1 :
